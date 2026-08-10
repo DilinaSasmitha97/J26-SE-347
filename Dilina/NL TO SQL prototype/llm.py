@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from groq import Groq
+from openai import OpenAI
 
 from profiler import time_block, log_step
 
@@ -11,34 +12,58 @@ from profiler import time_block, log_step
 load_dotenv()
 
 PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower().strip()
-GROQ_MODEL = "llama-3.3-70b-versatile"
-GEMINI_MODEL = "gemini-3.5-flash"
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "qwen/qwen-2.5-coder-32b-instruct:free")
 
 # Lazy Client Initialization
 _gemini_client = None
 _groq_client = None
+_openrouter_client = None
+_sambanova_client = None
 
-def get_client():
-    global _gemini_client, _groq_client
-    if PROVIDER == "gemini":
+def get_client(provider_override: str = None):
+    global _gemini_client, _groq_client, _openrouter_client, _sambanova_client
+    active_provider = provider_override or PROVIDER
+    if active_provider == "gemini":
         if _gemini_client is None:
             gemini_key = os.getenv("GEMINI_API_KEY")
             if not gemini_key:
                 raise ValueError("GEMINI_API_KEY is not set correctly in .env")
             _gemini_client = genai.Client(api_key=gemini_key)
         return _gemini_client
-    elif PROVIDER == "groq":
+    elif active_provider == "groq":
         if _groq_client is None:
             groq_key = os.getenv("GROQ_API_KEY")
             if not groq_key:
                 raise ValueError("GROQ_API_KEY is not set correctly in .env")
             _groq_client = Groq(api_key=groq_key)
         return _groq_client
+    elif active_provider == "openrouter":
+        if _openrouter_client is None:
+            openrouter_key = os.getenv("OPENROUTER_API_KEY")
+            if not openrouter_key:
+                raise ValueError("OPENROUTER_API_KEY is not set correctly in .env")
+            _openrouter_client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=openrouter_key
+            )
+        return _openrouter_client
+    elif active_provider == "sambanova":
+        if _sambanova_client is None:
+            sambanova_key = os.getenv("SAMBANOVA_API_KEY")
+            if not sambanova_key:
+                raise ValueError("SAMBANOVA_API_KEY is not set correctly in .env")
+            _sambanova_client = OpenAI(
+                base_url="https://api.sambanova.ai/v1",
+                api_key=sambanova_key
+            )
+        return _sambanova_client
     else:
-        raise ValueError(f"Unsupported LLM_PROVIDER: {PROVIDER}")
+        raise ValueError(f"Unsupported LLM_PROVIDER: {active_provider}")
 
 
-def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, dict]:
+def call_llm(prompt_string: str, model_name: str = None, retries: int = 3, profiler=None) -> tuple[str, dict]:
     """
     Executes an LLM request with automatic retry-on-failure and exact token usage tracking.
     
@@ -46,21 +71,35 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
         tuple[str, dict]: (response_text, token_stats)
         where token_stats = {"prompt_tokens": int, "completion_tokens": int, "total_tokens": int}
     """
-    client = get_client()
-    active_model = GEMINI_MODEL if PROVIDER == "gemini" else GROQ_MODEL
+    # Detect provider based on model prefix
+    if model_name:
+        if model_name.startswith("sambanova/") or "DeepSeek" in model_name or model_name.startswith("Meta-"):
+            current_provider = "sambanova"
+            active_model = model_name.replace("sambanova/", "")
+        elif ":" in model_name or "/" in model_name:
+            current_provider = "openrouter"
+            active_model = model_name
+        else:
+            current_provider = PROVIDER
+            active_model = model_name
+    else:
+        current_provider = PROVIDER
+        active_model = GROQ_MODEL
+
+    client = get_client(provider_override=current_provider)
     
     attempt = 0
-    backoff_delay = 1.0
+    backoff_delay = 5.0
     
     while attempt < retries:
         attempt += 1
         try:
-            with time_block(f"LLM Call ({PROVIDER.upper()} - {active_model}, attempt {attempt}/{retries})", 
+            with time_block(f"LLM Call ({current_provider.upper()} - {active_model}, attempt {attempt}/{retries})", 
                             parent_summary=profiler.categories if profiler else None, 
                             category="LLM API Inference"):
-                if PROVIDER == "gemini":
+                if current_provider == "gemini":
                     response = client.models.generate_content(
-                        model=GEMINI_MODEL,
+                        model=active_model,
                         contents=prompt_string,
                         config=types.GenerateContentConfig(temperature=0.0)
                     )
@@ -72,9 +111,9 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
                     completion_tokens = getattr(usage, 'candidates_token_count', 0) if usage else 0
                     total_tokens = getattr(usage, 'total_token_count', 0) if usage else (prompt_tokens + completion_tokens)
                     
-                elif PROVIDER == "groq":
+                elif current_provider in ("groq", "openrouter", "sambanova"):
                     response = client.chat.completions.create(
-                        model=GROQ_MODEL,
+                        model=active_model,
                         messages=[
                             {"role": "system", "content": "You are an expert SQL assistant. Your only goal is to generate correct SQL queries."},
                             {"role": "user", "content": prompt_string}

@@ -14,13 +14,14 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 GEMINI_MODEL = "gemini-3.5-flash"
 
 
-def translate(nl_query: str, schema_meta: str, injected_rules: str = None, profiler=None) -> tuple[str, dict]:
+def translate(nl_query: str, schema_meta: str, injected_rules: str = None, model_name: str = None, profiler=None) -> tuple[str, dict]:
     """
     Standard contract function for Member 1 naive translator baseline.
     Accepts:
         - nl_query: Natural language question
         - schema_meta: Database schema string (DDL / CREATE statements)
         - injected_rules: Placeholder parameter reserved for Member 3 authorization & security rules
+        - model_name: Optional model override (e.g. 'mixtral-8x7b-32768', 'llama-3.1-8b-instant')
     
     Returns:
         tuple[str, dict]: (clean_sql_query, token_stats_dict)
@@ -30,7 +31,7 @@ def translate(nl_query: str, schema_meta: str, injected_rules: str = None, profi
         prompt_string = prompts.generate_crp_prompt(schema_meta, nl_query, injected_rules=injected_rules)
         
     # 2. Call LLM via wrapper with retries & token tracking
-    raw_output, token_stats = llm.call_llm(prompt_string, retries=3, profiler=profiler)
+    raw_output, token_stats = llm.call_llm(prompt_string, model_name=model_name, retries=3, profiler=profiler)
     
     # 3. Post-process raw output
     with time_block("Post-process raw output to extract clean SQL", parent_summary=profiler.categories if profiler else None, category="SQL Cleanup"):

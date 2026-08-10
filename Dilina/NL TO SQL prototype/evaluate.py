@@ -63,9 +63,9 @@ def categorize_failure(predicted_sql: str, gold_sql: str, pred_exec_error: str =
     return "RESULT_MISMATCH"
 
 
-def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str = "all") -> dict:
+def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str = "all", model_name: str = None, delay: float = 0.0) -> dict:
     diff_filter = difficulty.lower().strip() if difficulty else "all"
-    log_step(f"Loading Spider dataset from {dataset_path} (Filter: difficulty='{diff_filter}')...")
+    log_step(f"Loading Spider dataset from {dataset_path} (Filter: difficulty='{diff_filter}', model='{model_name or 'default'}', delay={delay}s)...")
     
     if not os.path.exists(dataset_path):
         log_step(f"Dataset file not found: {dataset_path}", level="ERROR")
@@ -140,7 +140,7 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
             schema = extract_sqlite_schema_as_create_statements(conn, profiler=sample_profiler)
             
             # 2. Generate SQL with translate contract stub
-            predicted_sql, token_stats = translate(question, schema, profiler=sample_profiler)
+            predicted_sql, token_stats = translate(question, schema, model_name=model_name, profiler=sample_profiler)
             
             p_tok = token_stats.get('prompt_tokens', 0)
             c_tok = token_stats.get('completion_tokens', 0)
@@ -205,6 +205,9 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
                 eval_profiler.categories[cat] = eval_profiler.categories.get(cat, 0.0) + dur
             
         print("-" * 50)
+        if delay > 0:
+            import time
+            time.sleep(delay)
         
     accuracy = (correct / total) * 100 if total > 0 else 0
     avg_tokens = (total_tokens_all / total) if total > 0 else 0
@@ -212,6 +215,7 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
     avg_completion_tokens = (total_completion_tokens_all / total) if total > 0 else 0
     
     summary_report = {
+        "model_name": model_name or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
         "difficulty_filter": diff_filter,
         "requested_max_samples": max_samples,
         "available_matching_count": total_available_matching,
@@ -234,6 +238,7 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
     log_step(f"Exported failure taxonomy report to {report_file}")
 
     print(f"\n=== Evaluation Complete ===")
+    print(f"Model                  : {summary_report['model_name']}")
     print(f"Difficulty Filter      : {diff_filter.upper()}")
     print(f"Total Available Matching: {total_available_matching}")
     print(f"Total Evaluated        : {total}")
@@ -256,10 +261,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Spider Benchmark Evaluation Harness with Complexity Filtering")
     parser.add_argument("-n", "--samples", type=int, default=10, help="Maximum number of samples to evaluate (default: 10)")
     parser.add_argument("-d", "--difficulty", type=str, default="all", choices=["all", "easy", "medium", "hard", "extra"], help="Query complexity level filter (easy, medium, hard, extra, all)")
+    parser.add_argument("-m", "--model", type=str, default=None, help="Groq model override (e.g. mixtral-8x7b-32768, llama-3.1-8b-instant, llama-3.3-70b-versatile)")
+    parser.add_argument("--delay", type=float, default=0.0, help="Pause delay in seconds between queries to prevent API rate limits")
     parser.add_argument("--dataset", type=str, default=r"D:\spider_data\dev.json", help="Path to Spider dev.json dataset")
     
     args = parser.parse_args()
-    evaluate_spider(dataset_path=args.dataset, max_samples=args.samples, difficulty=args.difficulty)
+    
+    # Auto-apply 3.0s rate limit delay for OpenRouter free models if delay not explicitly passed
+    run_delay = args.delay
+    if run_delay == 0.0 and args.model and (":" in args.model or "/" in args.model):
+        run_delay = 3.0
+        
+    evaluate_spider(dataset_path=args.dataset, max_samples=args.samples, difficulty=args.difficulty, model_name=args.model, delay=run_delay)
 
 
 
