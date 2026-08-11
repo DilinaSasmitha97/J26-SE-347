@@ -76,12 +76,10 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
         active_model = "default-model"
     
     attempt = 0
-    backoff_delay = 1.0
-    
-    while attempt < retries:
+    while True:
         attempt += 1
         try:
-            with time_block(f"LLM Call ({PROVIDER.upper()} - {active_model}, attempt {attempt}/{retries})", 
+            with time_block(f"LLM Call ({PROVIDER.upper()} - {active_model}, attempt {attempt})", 
                             parent_summary=profiler.categories if profiler else None, 
                             category="LLM API Inference"):
                 if PROVIDER == "gemini":
@@ -125,11 +123,17 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
                 return raw_output, token_stats
                 
         except Exception as e:
-            log_step(f"LLM Call attempt {attempt}/{retries} failed: {e}", level="WARN")
-            if attempt >= retries:
-                log_step(f"All {retries} retries failed for LLM Call.", level="ERROR")
-                raise e
-            time.sleep(backoff_delay)
-            backoff_delay *= 2.0  # Exponential backoff
+            err_msg = str(e)
+            log_step(f"LLM Call attempt {attempt} failed: {e}", level="WARN")
+            # If rate limited (429), pause 15 seconds and retry same sample indefinitely until success
+            if "429" in err_msg or "rate_limit" in err_msg or "too_many_requests" in err_msg:
+                log_step("    [RATE-LIMIT 429] Waiting 15s before retrying same query sample...", level="WARN")
+                time.sleep(15.0)
+            else:
+                # If non-rate-limit error (e.g. fatal syntax), max 3 attempts then re-raise
+                if attempt >= retries:
+                    log_step(f"All {retries} attempts failed for LLM Call.", level="ERROR")
+                    raise e
+                time.sleep(2.0)
             
     raise RuntimeError("LLM execution failed after retries.")
