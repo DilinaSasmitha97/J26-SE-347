@@ -2,6 +2,7 @@ import os
 import json
 import sqlite3
 import argparse
+import time
 from database import get_sqlite_connection, extract_sqlite_schema_as_create_statements
 from main import translate
 from profiler import CycleProfiler, time_block, log_step
@@ -63,7 +64,7 @@ def categorize_failure(predicted_sql: str, gold_sql: str, pred_exec_error: str =
     return "RESULT_MISMATCH"
 
 
-def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str = "all") -> dict:
+def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str = "all", delay: float = 0.0) -> dict:
     diff_filter = difficulty.lower().strip() if difficulty else "all"
     log_step(f"Loading Spider dataset from {dataset_path} (Filter: difficulty='{diff_filter}')...")
     
@@ -205,6 +206,8 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
                 eval_profiler.categories[cat] = eval_profiler.categories.get(cat, 0.0) + dur
             
         print("-" * 50)
+        if delay > 0 and idx < total - 1:
+            time.sleep(delay)
         
     accuracy = (correct / total) * 100 if total > 0 else 0
     avg_tokens = (total_tokens_all / total) if total > 0 else 0
@@ -256,10 +259,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Spider Benchmark Evaluation Harness with Complexity Filtering")
     parser.add_argument("-n", "--samples", type=int, default=10, help="Maximum number of samples to evaluate (default: 10)")
     parser.add_argument("-d", "--difficulty", type=str, default="all", choices=["all", "easy", "medium", "hard", "extra"], help="Query complexity level filter (easy, medium, hard, extra, all)")
+    parser.add_argument("-m", "--model", type=str, default=None, help="Model name to evaluate (e.g. llama-3.3-70b-versatile, llama-3.1-8b-instant)")
+    parser.add_argument("--delay", type=float, default=0.0, help="Delay in seconds between sample evaluation cycles")
     parser.add_argument("--dataset", type=str, default=r"D:\spider_data\dev.json", help="Path to Spider dev.json dataset")
     
     args = parser.parse_args()
-    evaluate_spider(dataset_path=args.dataset, max_samples=args.samples, difficulty=args.difficulty)
+    if args.model:
+        import main
+        main.GROQ_MODEL = args.model
+    evaluate_spider(dataset_path=args.dataset, max_samples=args.samples, difficulty=args.difficulty, delay=args.delay)
 
 
 

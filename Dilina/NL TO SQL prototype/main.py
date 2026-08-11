@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import database
 import prompts
 import llm
+import schema_extractor
 from profiler import CycleProfiler, time_block, log_step
 
 # Load environment variables
@@ -14,17 +15,23 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 GEMINI_MODEL = "gemini-3.5-flash"
 
 
-def translate(nl_query: str, schema_meta: str, injected_rules: str = None, profiler=None) -> tuple[str, dict]:
+def translate(nl_query: str, schema_meta: str, injected_rules: str = None, profiler=None, use_pruning: bool = True) -> tuple[str, dict]:
     """
     Standard contract function for Member 1 naive translator baseline.
     Accepts:
         - nl_query: Natural language question
         - schema_meta: Database schema string (DDL / CREATE statements)
         - injected_rules: Placeholder parameter reserved for Member 3 authorization & security rules
+        - use_pruning: If True, uses Task 1 Minimal-Context Schema Extractor
     
     Returns:
         tuple[str, dict]: (clean_sql_query, token_stats_dict)
     """
+    # 0. Apply Task 1 Minimal-Context Schema Extraction
+    if use_pruning:
+        pruned_schema, pruning_stats = schema_extractor.extract_minimal_schema(nl_query, schema_meta, profiler=profiler)
+        schema_meta = pruned_schema
+
     # 1. Build Prompt
     with time_block("Build Code Representation Prompt (CRP)", parent_summary=profiler.categories if profiler else None, category="Prompt Construction"):
         prompt_string = prompts.generate_crp_prompt(schema_meta, nl_query, injected_rules=injected_rules)

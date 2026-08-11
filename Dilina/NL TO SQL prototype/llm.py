@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from groq import Groq
+from openai import OpenAI
 
 from profiler import time_block, log_step
 
@@ -13,13 +14,15 @@ load_dotenv()
 PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower().strip()
 GROQ_MODEL = "llama-3.3-70b-versatile"
 GEMINI_MODEL = "gemini-3.5-flash"
+CEREBRAS_MODEL = "gemma-4-31b"
 
 # Lazy Client Initialization
 _gemini_client = None
 _groq_client = None
+_cerebras_client = None
 
 def get_client():
-    global _gemini_client, _groq_client
+    global _gemini_client, _groq_client, _cerebras_client
     if PROVIDER == "gemini":
         if _gemini_client is None:
             gemini_key = os.getenv("GEMINI_API_KEY")
@@ -34,6 +37,22 @@ def get_client():
                 raise ValueError("GROQ_API_KEY is not set correctly in .env")
             _groq_client = Groq(api_key=groq_key)
         return _groq_client
+    elif PROVIDER in ("cerebras", "sambanova", "openrouter"):
+        if _cerebras_client is None:
+            if PROVIDER == "cerebras":
+                key = os.getenv("CEREBRAS_API_KEY")
+                base_url = "https://api.cerebras.ai/v1"
+            elif PROVIDER == "sambanova":
+                key = os.getenv("SAMBANOVA_API_KEY")
+                base_url = "https://api.sambanova.ai/v1"
+            else:
+                key = os.getenv("OPENROUTER_API_KEY")
+                base_url = "https://openrouter.ai/api/v1"
+                
+            if not key:
+                raise ValueError(f"{PROVIDER.upper()}_API_KEY is not set in .env")
+            _cerebras_client = OpenAI(api_key=key, base_url=base_url)
+        return _cerebras_client
     else:
         raise ValueError(f"Unsupported LLM_PROVIDER: {PROVIDER}")
 
@@ -47,7 +66,14 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
         where token_stats = {"prompt_tokens": int, "completion_tokens": int, "total_tokens": int}
     """
     client = get_client()
-    active_model = GEMINI_MODEL if PROVIDER == "gemini" else GROQ_MODEL
+    if PROVIDER == "gemini":
+        active_model = GEMINI_MODEL
+    elif PROVIDER == "groq":
+        active_model = GROQ_MODEL
+    elif PROVIDER == "cerebras":
+        active_model = CEREBRAS_MODEL
+    else:
+        active_model = "default-model"
     
     attempt = 0
     backoff_delay = 1.0
@@ -72,9 +98,9 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
                     completion_tokens = getattr(usage, 'candidates_token_count', 0) if usage else 0
                     total_tokens = getattr(usage, 'total_token_count', 0) if usage else (prompt_tokens + completion_tokens)
                     
-                elif PROVIDER == "groq":
+                elif PROVIDER in ("groq", "cerebras", "sambanova", "openrouter"):
                     response = client.chat.completions.create(
-                        model=GROQ_MODEL,
+                        model=active_model,
                         messages=[
                             {"role": "system", "content": "You are an expert SQL assistant. Your only goal is to generate correct SQL queries."},
                             {"role": "user", "content": prompt_string}
