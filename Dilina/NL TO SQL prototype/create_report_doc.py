@@ -173,21 +173,23 @@ def create_document():
     p.paragraph_format.space_after = Pt(8)
 
     # --- SECTION 4: EMPIRICAL BENCHMARK RESULTS ---
-    add_heading_1("4. Empirical Benchmark Results (N = 100 Queries)")
+    add_heading_1("4. Stage 1 Baseline Empirical Benchmark Results (N = 1,034 Queries)")
     p = doc.add_paragraph(
-        "To evaluate baseline performance, N = 100 queries were evaluated across all 4 difficulty levels (easy, medium, hard, extra) "
-        "using Meta Llama-3.3-70B (Baseline), Meta Llama-3.1-8B (Model Scale Comparison), and Cohere North Mini Code (Specialized Code LLM)."
+        "To establish a comprehensive, un-throttled baseline for the research project, all N = 1,034 Spider benchmark queries "
+        "were evaluated across all 4 difficulty levels (easy, medium, hard, extra) using Cerebras Cloud 31B (gemma-4-31b). "
+        "With our zero-skip infinite retry loop, 0 queries were dropped or skipped due to rate limits."
     )
     p.paragraph_format.space_after = Pt(6)
 
-    res_table = doc.add_table(rows=5, cols=5)
+    res_table = doc.add_table(rows=6, cols=3)
     res_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     res_headers = [
-        ("Metric / Dimension", "Llama-3.3-70B (Groq)", "Llama-3.1-8B (Groq)", "Cohere Code (OpenRouter)", "DeepSeek V3 (SambaNova)"),
-        ("Execution Accuracy", "77.00% (77/100)", "68.00% (68/100)", "71.43% (35/49 valid)", "88.89% (16/18 valid)"),
-        ("Schema Linking Errors", "0 (0.0%)", "13 (13.0%)", "0 (0.0%)", "0 (0.0%)"),
-        ("Primary Failure Mode", "RESULT_MISMATCH (20)", "SCHEMA_LINKING (13)", "Rate Limiting (51)", "Rate Limiting (82)"),
-        ("LLM Latency Bottleneck", "99.6% (210.95s total)", "99.6% (276.32s total)", "85.4% (1063.17s total)", "66.4% (1629.11s total)")
+        ("Metric / Dimension", "Stage 1 Baseline (Full DDL N=1,034)", "Empirical Finding & Research Takeaway"),
+        ("Execution Accuracy", "65.18% (674 / 1,034 correct)", "High baseline accuracy achieved on open 31B model"),
+        ("Average Prompt Tokens", "448.6 tokens / query", "Dumping full DDL results in heavy token consumption"),
+        ("Schema Linking Errors", "7 errors (0.7%)", "Full DDL creates distractor tables leading to column hallucination"),
+        ("Foreign Key JOIN Errors", "7 errors (0.7%)", "Multi-table JOIN queries occasionally fail without graph traversal"),
+        ("Syntax Errors", "185 errors (17.9%)", "T-SQL pagination syntax (OFFSET/FETCH) confused with SQLite LIMIT")
     ]
 
     for r_idx, row_data in enumerate(res_headers):

@@ -137,6 +137,7 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
         try:
             # 1. Connect and extract schema
             conn = get_sqlite_connection(db_path, profiler=sample_profiler)
+            conn.text_factory = lambda b: b.decode('utf-8', errors='ignore')
             schema = extract_sqlite_schema_as_create_statements(conn, profiler=sample_profiler)
             
             # 2. Generate SQL with translate contract stub
