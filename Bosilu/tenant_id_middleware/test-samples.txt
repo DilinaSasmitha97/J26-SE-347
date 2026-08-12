@@ -1,0 +1,183 @@
+// 1. PASS
+checkTenantSql(
+  101,
+  `SELECT * FROM customers
+   WHERE tenant_id = 101`
+);
+
+// 2. PASS - reversed
+checkTenantSql(
+  101,
+  `SELECT * FROM customers
+   WHERE 101 = tenant_id`
+);
+
+// 3. FAIL - missing
+checkTenantSql(
+  101,
+  `SELECT * FROM customers`
+);
+
+// 4. FAIL - wrong tenant
+checkTenantSql(
+  101,
+  `SELECT * FROM customers
+   WHERE tenant_id = 202`
+);
+
+// 5. FAIL - multiple tenants
+checkTenantSql(
+  101,
+  `SELECT * FROM customers
+   WHERE tenant_id IN (101, 202)`
+);
+
+// 6. FAIL - OR bypass
+checkTenantSql(
+  101,
+  `SELECT * FROM customers
+   WHERE tenant_id = 101
+      OR name = 'John'`
+);
+
+// 7. PASS - safe OR
+checkTenantSql(
+  101,
+  `
+  SELECT *
+  FROM customers
+  WHERE
+      (tenant_id = 101 AND status = 'ACTIVE')
+      OR
+      (tenant_id = 101 AND status = 'PENDING')
+  `
+);
+
+// 8. PASS - JOIN
+checkTenantSql(
+  101,
+  `
+  SELECT *
+  FROM customers c
+  JOIN orders o
+       ON o.customer_id = c.id
+      AND o.tenant_id = c.tenant_id
+  WHERE c.tenant_id = 101
+  `
+);
+
+// 9. FAIL - JOIN not tenant protected
+checkTenantSql(
+  101,
+  `
+  SELECT *
+  FROM customers c
+  JOIN orders o
+       ON o.customer_id = c.id
+  WHERE c.tenant_id = 101
+  `
+);
+
+// 10. PASS - correlated subquery
+checkTenantSql(
+  101,
+  `
+  SELECT *
+  FROM customers c
+  WHERE c.tenant_id = 101
+    AND EXISTS (
+       SELECT 1
+       FROM orders o
+       WHERE o.customer_id = c.id
+         AND o.tenant_id = c.tenant_id
+    )
+  `
+);
+
+// 11. FAIL - unsafe subquery
+checkTenantSql(
+  101,
+  `
+  SELECT *
+  FROM customers c
+  WHERE c.tenant_id = 101
+    AND EXISTS (
+       SELECT 1
+       FROM orders o
+       WHERE o.customer_id = c.id
+    )
+  `
+);
+
+// 12. PASS - insert
+checkTenantSql(
+  101,
+  `
+  INSERT INTO customers
+  (tenant_id, name)
+  VALUES (101, 'John')
+  `
+);
+
+// 13. FAIL - cross tenant insert
+checkTenantSql(
+  101,
+  `
+  INSERT INTO customers
+  (tenant_id, name)
+  VALUES (202, 'John')
+  `
+);
+
+// 14. PASS
+checkTenantSql(
+  101,
+  `
+  UPDATE orders
+  SET status = 'COMPLETED'
+  WHERE tenant_id = 101
+    AND id = 50
+  `
+);
+
+// 15. FAIL
+checkTenantSql(
+  101,
+  `
+  UPDATE orders
+  SET status = 'COMPLETED'
+  WHERE id = 50
+  `
+);
+
+// 16. FAIL - moving data between tenants
+checkTenantSql(
+  101,
+  `
+  UPDATE orders
+  SET tenant_id = 202
+  WHERE tenant_id = 101
+  `
+);
+
+// 17. PASS
+checkTenantSql(
+  101,
+  `
+  DELETE FROM orders
+  WHERE tenant_id = 101
+    AND id = 50
+  `
+);
+
+// 18. FAIL
+checkTenantSql(
+  101,
+  `DELETE FROM orders`
+);
+
+// 19. FAIL - DDL
+checkTenantSql(
+  101,
+  `DROP TABLE orders`
+);

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Tenant SQL Security Checker</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+
+            font-family:
+                Arial,
+                sans-serif;
+
+            background: #f5f7fb;
+
+            color: #1d2939;
+        }
+
+        .container {
+
+            max-width: 900px;
+
+            margin: 50px auto;
+
+            padding: 20px;
+
+        }
+
+        h1 {
+
+            margin-bottom: 5px;
+
+        }
+
+        .description {
+
+            color: #667085;
+
+            margin-bottom: 30px;
+
+        }
+
+        .card {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 15px;
+
+            box-shadow:
+                0 5px 25px rgba(0, 0, 0, 0.07);
+
+        }
+
+        label {
+
+            display: block;
+
+            font-weight: bold;
+
+            margin-bottom: 8px;
+
+        }
+
+        input {
+
+            width: 100%;
+
+            padding: 12px;
+
+            border:
+
+                1px solid #d0d5dd;
+
+            border-radius: 8px;
+
+            font-size: 16px;
+
+            margin-bottom: 20px;
+
+        }
+
+        textarea {
+
+            width: 100%;
+
+            height: 250px;
+
+            padding: 15px;
+
+            border-radius: 8px;
+
+            border: none;
+
+            background: #101828;
+
+            color: #ffffff;
+
+            font-size: 15px;
+
+            font-family:
+                Consolas,
+                monospace;
+
+            line-height: 1.5;
+
+            resize: vertical;
+
+        }
+
+        button {
+
+            margin-top: 20px;
+
+            background: #4f46e5;
+
+            color: white;
+
+            border: none;
+
+            padding:
+                13px 25px;
+
+            border-radius: 8px;
+
+            font-size: 16px;
+
+            cursor: pointer;
+
+        }
+
+        button:hover {
+
+            background: #4338ca;
+
+        }
+
+        .result {
+
+            margin-top: 25px;
+
+            padding: 20px;
+
+            border-radius: 10px;
+
+            display: none;
+
+        }
+
+        .pass {
+
+            display: block;
+
+            background: #ecfdf3;
+
+            border:
+                1px solid #75e0a7;
+
+            color: #067647;
+
+        }
+
+        .fail {
+
+            display: block;
+
+            background: #fef3f2;
+
+            border:
+                1px solid #fda29b;
+
+            color: #b42318;
+
+        }
+
+        .result-title {
+
+            font-size: 28px;
+
+            font-weight: bold;
+
+            margin-bottom: 10px;
+
+        }
+
+        .info {
+
+            margin-top: 10px;
+
+            color: #344054;
+
+        }
+
+        .examples {
+
+            margin-top: 25px;
+
+        }
+
+        .example-button {
+
+            background: #eef2ff;
+
+            color: #3730a3;
+
+            margin-right: 5px;
+
+            padding: 8px 12px;
+
+            font-size: 13px;
+
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>
+            Tenant SQL Security Checker
+        </h1>
+
+        <p class="description">
+
+            Check whether a MySQL query
+            securely follows the authenticated
+            tenant ID.
+
+        </p>
+
+        <div class="card">
+
+            <label>
+                Authenticated Tenant ID
+            </label>
+
+            <input id="tenantId" type="text" value="101" placeholder="Example: 101">
+
+            <label>
+                SQL Query
+            </label>
+
+            <textarea id="sqlQuery">SELECT *
+FROM customers
+WHERE tenant_id = 101;</textarea>
+
+
+            <br>
+
+            <button onclick="checkQuery()">
+                Check Query
+            </button>
+
+
+            <div class="examples">
+
+                <strong>
+                    Test examples:
+                </strong>
+
+                <br>
+
+                <button class="example-button" onclick="loadPassExample()">
+                    PASS
+                </button>
+
+                <button class="example-button" onclick="loadMissingExample()">
+                    Missing Tenant
+                </button>
+
+                <button class="example-button" onclick="loadWrongExample()">
+                    Wrong Tenant
+                </button>
+
+                <button class="example-button" onclick="loadOrExample()">
+                    Unsafe OR
+                </button>
+
+                <button class="example-button" onclick="loadJoinExample()">
+                    JOIN
+                </button>
+
+            </div>
+
+
+            <div id="result" class="result">
+
+                <div id="resultTitle" class="result-title"></div>
+
+                <div id="reason"></div>
+
+                <div class="info">
+
+                    <strong>
+                        Code:
+                    </strong>
+
+                    <span id="code"></span>
+
+                </div>
+
+
+                <div class="info">
+
+                    <strong>
+                        Tenant:
+                    </strong>
+
+                    <span id="resultTenant"></span>
+
+                </div>
+
+
+                <div class="info">
+
+                    <strong>
+                        Statement:
+                    </strong>
+
+                    <span id="statementType"></span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        async function checkQuery() {
+
+            const tenantId =
+                document
+                    .getElementById("tenantId")
+                    .value;
+
+            const sqlQuery =
+                document
+                    .getElementById("sqlQuery")
+                    .value;
+
+
+            const response =
+                await fetch(
+                    "/api/check",
+                    {
+
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                tenantId,
+                                sqlQuery
+                            })
+
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            const result =
+                document
+                    .getElementById("result");
+
+
+            const title =
+                document
+                    .getElementById(
+                        "resultTitle"
+                    );
+
+
+            if (data.pass) {
+
+                result.className =
+                    "result pass";
+
+                title.innerHTML =
+                    "✅ PASS";
+
+            }
+
+            else {
+
+                result.className =
+                    "result fail";
+
+                title.innerHTML =
+                    "❌ FAIL";
+
+            }
+
+
+            document
+                .getElementById("reason")
+                .innerText =
+                data.reason;
+
+
+            document
+                .getElementById("code")
+                .innerText =
+                data.code || "-";
+
+
+            document
+                .getElementById("resultTenant")
+                .innerText =
+                data.tenantId ||
+                tenantId;
+
+
+            document
+                .getElementById("statementType")
+                .innerText =
+                data.statementType ||
+                "-";
+
+        }
+
+
+
+        function loadPassExample() {
+
+            document
+                .getElementById("sqlQuery")
+                .value =
+                `SELECT *
+FROM customers
+WHERE tenant_id = 101;`;
+
+        }
+
+
+
+        function loadMissingExample() {
+
+            document
+                .getElementById("sqlQuery")
+                .value =
+                `SELECT *
+FROM customers
+WHERE name = 'John';`;
+
+        }
+
+
+
+        function loadWrongExample() {
+
+            document
+                .getElementById("sqlQuery")
+                .value =
+                `SELECT *
+FROM customers
+WHERE tenant_id = 202;`;
+
+        }
+
+
+
+        function loadOrExample() {
+
+            document
+                .getElementById("sqlQuery")
+                .value =
+                `SELECT *
+FROM customers
+WHERE tenant_id = 101
+OR name = 'John';`;
+
+        }
+
+
+
+        function loadJoinExample() {
+
+            document
+                .getElementById("sqlQuery")
+                .value =
+                `SELECT
+    c.name,
+    o.total
+FROM customers c
+
+JOIN orders o
+    ON o.customer_id = c.id
+    AND o.tenant_id = c.tenant_id
+
+WHERE c.tenant_id = 101;`;
+
+        }
+
+    </script>
+
+
+</body>
+
+</html>
