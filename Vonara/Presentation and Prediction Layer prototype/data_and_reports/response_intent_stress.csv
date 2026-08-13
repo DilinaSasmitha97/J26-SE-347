@@ -1,0 +1,46 @@
+id,user_query,expected_intent,input_quality,quality_note,expected_blocks,domain,notes
+ST01,can you kindly let me know the department that is spending more than the others,SINGLE_ANSWER,VERBOSE,Polite multi-clause paraphrase of a superlative,ANSWER,finance,Stress - no superlative keyword used
+ST02,i was wondering if you could put together the sales figures for me,TABLE_CONTENT,VERBOSE,Indirect request with hedging,TABLE,sales,Stress - conversational register
+ST03,dont give me a chart just the totals,TABLE_CONTENT,NEGATION,Explicit negation of the chart modality,TABLE,finance,Stress - negation must not trigger CHART
+ST04,i dont need the full list only the top one,SINGLE_ANSWER,NEGATION,Negates the table and asserts a scalar,ANSWER,generic,Stress - double negation-ish
+ST05,no tables please just explain it to me,SHORT_SUMMARY,NEGATION,Negates table asserts prose,SUMMARY,generic,Stress - negation plus assertion
+ST06,what is our MRR and how is it trending,MIXED_SUMMARY,MULTI_CLAUSE,A scalar question and a trend question joined,SUMMARY|TABLE|CHART,saas,Stress - two questions in one
+ST07,pull the churn numbers then chart them by cohort,MIXED_SUMMARY,MULTI_CLAUSE,Sequenced data plus chart request,SUMMARY|TABLE|CHART,saas,Stress - sequential phrasing
+ST08,DSO by business unit please,CHART,JARGON,Finance acronym plus a grouping,CHART,finance,Stress - domain acronym
+ST09,show me the AR aging bucket distribution,CHART,JARGON,Accounting jargon plus distribution,CHART,finance,Stress - jargon
+ST10,what is our NPS,SINGLE_ANSWER,JARGON,Acronym scalar metric,ANSWER,crm,Stress - acronym with no format cue
+ST11,kindly to provide the details of all the pending invoice,TABLE_CONTENT,NON_NATIVE,Non-native phrasing with singular/plural slip,TABLE,finance,Stress - ESL phrasing
+ST12,i want know which supplier is giving most delay,SINGLE_ANSWER,NON_NATIVE,Dropped auxiliary and article,ANSWER,logistics,Stress - ESL phrasing
+ST13,please to make one report about the sales of last year,MIXED_SUMMARY,NON_NATIVE,Non-native report request,SUMMARY|TABLE|CHART,sales,Stress - ESL phrasing
+ST14,give summary and also the raw numbers for the quarter,MIXED_SUMMARY,WELL_FORMED,Two formats joined by also,SUMMARY|TABLE|CHART,finance,Stress - conjunction variant
+ST15,how does this month compare to last month,CHART,COMPARATIVE,Period over period comparison,CHART,finance,Stress - implicit comparison
+ST16,is revenue up or down since Q1,SHORT_SUMMARY,COMPARATIVE,Yes/no framing wanting an explanation,SUMMARY,finance,Stress - polar question
+ST17,are we doing better than last year,SHORT_SUMMARY,COMPARATIVE,Polar comparison question,SUMMARY,finance,Stress - vague subject
+ST18,break down the numbers,TABLE_CONTENT,ELLIPTIC,Breakdown with no dimension named,TABLE,generic,Stress - breakdown without an axis
+ST19,and for the north region,TABLE_CONTENT,FOLLOWUP,Fragment continuing a prior turn,TABLE,sales,Stress - no standalone content
+ST20,same thing but for last quarter,TABLE_CONTENT,FOLLOWUP,Anaphoric follow-up,TABLE,generic,Stress - requires conversation state
+ST21,what about as a pie chart,CHART,FOLLOWUP,Follow-up naming a format,CHART,generic,Stress - format named without a subject
+ST22,I need to understand why our logistics costs went up in November and what the biggest contributing categories were so I can brief the board next week,MIXED_SUMMARY,VERBOSE,Long multi-part analytical request,SUMMARY|TABLE|CHART,logistics,Stress - very long input
+ST23,list every single one of them,TABLE_CONTENT,ELLIPTIC,Emphatic enumeration no subject,TABLE,generic,Stress - emphasis words
+ST24,just one number please nothing else,SINGLE_ANSWER,WELL_FORMED,Emphatic scalar request,ANSWER,generic,Stress - redundant emphasis
+ST25,how many departments are there and which one spends most,MIXED_SUMMARY,MULTI_CLAUSE,Count plus a superlative entity,SUMMARY|TABLE|CHART,finance,Stress - two scalar questions joined
+ST26,plot it,CHART,ELLIPTIC,Two word chart command,CHART,generic,Stress - minimal chart request
+ST27,visualize,CHART,ELLIPTIC,Single word,CHART,generic,Stress - one word format request
+ST28,tabulate the monthly totals,TABLE_CONTENT,JARGON,Tabulate as a verb,TABLE,finance,Stress - uncommon verb
+ST29,i need this in excel,TABLE_CONTENT,WELL_FORMED,Excel implies rows,TABLE,generic,Stress - tool name implies format
+ST30,send me the spreadsheet of overdue accounts,TABLE_CONTENT,WELL_FORMED,Spreadsheet marker,TABLE,finance,Stress - spreadsheet synonym
+ST31,graph it out over the year,CHART,WELL_FORMED,Phrasal verb graph it out,CHART,finance,Stress - phrasal verb
+ST32,paint me a picture of our growth,CHART,IDIOM,Figurative request for a visual,CHART,growth,Stress - idiom
+ST33,give me the headline number,SINGLE_ANSWER,IDIOM,Headline number idiom,ANSWER,finance,Stress - idiom
+ST34,what does the data tell us,SHORT_SUMMARY,VAGUE,Open interpretation request,SUMMARY,generic,Stress - maximally vague
+ST35,run the numbers on supplier performance,TABLE_CONTENT,IDIOM,Run the numbers idiom,TABLE,procurement,Stress - idiom
+ST36,anything I should worry about in the payables,SHORT_SUMMARY,VAGUE,Concern framing wanting narrative,SUMMARY,finance,Stress - risk framing
+ST37,top,TABLE_CONTENT,ELLIPTIC,Single word fragment,TABLE,generic,Stress - one word
+ST38,revenue 2024 vs 2023,CHART,ELLIPTIC,Fragment with vs,CHART,finance,Stress - telegraphic comparison
+ST39,customers > 10000,TABLE_CONTENT,ELLIPTIC,Filter expression as a query,TABLE,crm,Stress - symbolic filter
+ST40,SELECT * FROM invoices,TABLE_CONTENT,ADVERSARIAL,Raw SQL pasted as the question,TABLE,security,Stress - SQL as input
+ST41,summarise but keep the table too,MIXED_SUMMARY,WELL_FORMED,Summary plus table retained,SUMMARY|TABLE|CHART,generic,Stress - but as conjunction
+ST42,everything,MIXED_SUMMARY,ELLIPTIC,Single word exhaustive request,SUMMARY|TABLE|CHART,generic,Stress - one word mixed
+ST43,which vendors are we overpaying,TABLE_CONTENT,WELL_FORMED,Plural entity no superlative word,TABLE,procurement,Stress - plural entity implicit comparison
+ST44,who spent the most and who spent the least,TABLE_CONTENT,AMBIGUOUS,Two entity questions joined,TABLE,finance,Stress - paired entity superlatives
+ST45,forecast next quarter and explain the assumptions,MIXED_SUMMARY,MULTI_CLAUSE,Forecast plus explanation,SUMMARY|TABLE|CHART,finance,Stress - prediction plus prose
