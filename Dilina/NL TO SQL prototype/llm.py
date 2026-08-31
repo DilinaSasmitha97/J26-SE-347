@@ -11,50 +11,68 @@ from profiler import time_block, log_step
 # Load environment variables
 load_dotenv()
 
-PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower().strip()
-GROQ_MODEL = "llama-3.3-70b-versatile"
-GEMINI_MODEL = "gemini-3.5-flash"
-CEREBRAS_MODEL = "gemma-4-31b"
+PROVIDER = os.getenv("LLM_PROVIDER", "cerebras").lower().strip()
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+CEREBRAS_MODEL = os.getenv("CEREBRAS_MODEL", "gemma-4-31b")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 # Lazy Client Initialization
 _gemini_client = None
 _groq_client = None
 _cerebras_client = None
+_openrouter_client = None
+_openai_client = None
 
 def get_client():
-    global _gemini_client, _groq_client, _cerebras_client
-    if PROVIDER == "gemini":
+    global _gemini_client, _groq_client, _cerebras_client, _openrouter_client, _openai_client
+    current_provider = os.getenv("LLM_PROVIDER", "cerebras").lower().strip()
+    
+    if current_provider == "gemini":
         if _gemini_client is None:
             gemini_key = os.getenv("GEMINI_API_KEY")
             if not gemini_key:
                 raise ValueError("GEMINI_API_KEY is not set correctly in .env")
             _gemini_client = genai.Client(api_key=gemini_key)
         return _gemini_client
-    elif PROVIDER == "groq":
+    elif current_provider == "groq":
         if _groq_client is None:
             groq_key = os.getenv("GROQ_API_KEY")
             if not groq_key:
                 raise ValueError("GROQ_API_KEY is not set correctly in .env")
             _groq_client = Groq(api_key=groq_key)
         return _groq_client
-    elif PROVIDER in ("cerebras", "sambanova", "openrouter"):
+    elif current_provider == "cerebras":
         if _cerebras_client is None:
-            if PROVIDER == "cerebras":
-                key = os.getenv("CEREBRAS_API_KEY")
-                base_url = "https://api.cerebras.ai/v1"
-            elif PROVIDER == "sambanova":
-                key = os.getenv("SAMBANOVA_API_KEY")
-                base_url = "https://api.sambanova.ai/v1"
-            else:
-                key = os.getenv("OPENROUTER_API_KEY")
-                base_url = "https://openrouter.ai/api/v1"
-                
+            key = os.getenv("CEREBRAS_API_KEY")
             if not key:
-                raise ValueError(f"{PROVIDER.upper()}_API_KEY is not set in .env")
-            _cerebras_client = OpenAI(api_key=key, base_url=base_url)
+                raise ValueError("CEREBRAS_API_KEY is not set in .env")
+            _cerebras_client = OpenAI(api_key=key, base_url="https://api.cerebras.ai/v1")
         return _cerebras_client
+    elif current_provider == "openrouter":
+        if _openrouter_client is None:
+            key = os.getenv("OPENROUTER_API_KEY")
+            if not key:
+                raise ValueError("OPENROUTER_API_KEY is not set in .env")
+            _openrouter_client = OpenAI(api_key=key, base_url="https://openrouter.ai/api/v1")
+        return _openrouter_client
+    elif current_provider == "sambanova":
+        if _cerebras_client is None:
+            key = os.getenv("SAMBANOVA_API_KEY")
+            if not key:
+                raise ValueError("SAMBANOVA_API_KEY is not set in .env")
+            _cerebras_client = OpenAI(api_key=key, base_url="https://api.sambanova.ai/v1")
+        return _cerebras_client
+    elif current_provider == "openai":
+        if _openai_client is None:
+            key = os.getenv("OPENAI_API_KEY")
+            if not key:
+                raise ValueError("OPENAI_API_KEY is not set in .env")
+            _openai_client = OpenAI(api_key=key)
+        return _openai_client
     else:
-        raise ValueError(f"Unsupported LLM_PROVIDER: {PROVIDER}")
+        raise ValueError(f"Unsupported LLM_PROVIDER: {current_provider}")
 
 
 def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, dict]:
@@ -63,15 +81,21 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
     
     Returns:
         tuple[str, dict]: (response_text, token_stats)
-        where token_stats = {"prompt_tokens": int, "completion_tokens": int, "total_tokens": int}
+        where token_stats = {"prompt_tokens": int, "completion_tokens": int, "total_tokens": int, "model": str}
     """
+    current_provider = os.getenv("LLM_PROVIDER", "cerebras").lower().strip()
     client = get_client()
-    if PROVIDER == "gemini":
+
+    if current_provider == "gemini":
         active_model = GEMINI_MODEL
-    elif PROVIDER == "groq":
+    elif current_provider == "groq":
         active_model = GROQ_MODEL
-    elif PROVIDER == "cerebras":
+    elif current_provider == "cerebras":
         active_model = CEREBRAS_MODEL
+    elif current_provider == "openrouter":
+        active_model = OPENROUTER_MODEL
+    elif current_provider == "openai":
+        active_model = OPENAI_MODEL
     else:
         active_model = "default-model"
     
@@ -79,12 +103,12 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
     while True:
         attempt += 1
         try:
-            with time_block(f"LLM Call ({PROVIDER.upper()} - {active_model}, attempt {attempt})", 
+            with time_block(f"LLM Call ({current_provider.upper()} - {active_model}, attempt {attempt})", 
                             parent_summary=profiler.categories if profiler else None, 
                             category="LLM API Inference"):
-                if PROVIDER == "gemini":
+                if current_provider == "gemini":
                     response = client.models.generate_content(
-                        model=GEMINI_MODEL,
+                        model=active_model,
                         contents=prompt_string,
                         config=types.GenerateContentConfig(temperature=0.0)
                     )
@@ -96,11 +120,11 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
                     completion_tokens = getattr(usage, 'candidates_token_count', 0) if usage else 0
                     total_tokens = getattr(usage, 'total_token_count', 0) if usage else (prompt_tokens + completion_tokens)
                     
-                elif PROVIDER in ("groq", "cerebras", "sambanova", "openrouter"):
+                elif current_provider in ("groq", "cerebras", "sambanova", "openrouter", "openai"):
                     response = client.chat.completions.create(
                         model=active_model,
                         messages=[
-                            {"role": "system", "content": "You are an expert SQL assistant. Your only goal is to generate correct SQL queries."},
+                            {"role": "system", "content": "You are an expert Microsoft SQL Server database assistant. Your only goal is to generate correct T-SQL queries."},
                             {"role": "user", "content": prompt_string}
                         ],
                         temperature=0.0

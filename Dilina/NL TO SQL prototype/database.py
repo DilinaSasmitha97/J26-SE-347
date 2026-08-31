@@ -33,8 +33,8 @@ def get_db_connection(profiler=None):
             f"Database={database_name};"
             f"{auth_part}"
             f"MultipleActiveResultSets=true;"
-            f"TrustServerCertificate=true;"
-            f"Encrypt=false;"
+            f"TrustServerCertificate=yes;"
+            f"Encrypt=no;"
             f"Command Timeout=0;"
         )
         try:
@@ -56,7 +56,14 @@ def extract_schema_as_create_statements(conn, profiler=None) -> str:
     """
     Extracts the database schema (tables, columns, datatypes, PKs, FKs) 
     and formats them strictly as CREATE TABLE SQL statements including schema prefixes.
+    Caches output to local erp_schema_cache.sql for instant 0.001s loading.
     """
+    cache_path = os.path.join(os.path.dirname(__file__), "erp_schema_cache.sql")
+    if os.path.exists(cache_path):
+        log_step(f"Loaded ERP schema DDL instantly from local cache: {cache_path}")
+        with open(cache_path, "r", encoding="utf-8") as f:
+            return f.read()
+
     cursor = conn.cursor()
     
     # 1. Get all Base Tables with their Schema Name
@@ -116,7 +123,6 @@ def extract_schema_as_create_statements(conn, profiler=None) -> str:
                     max_len = col[2]
                     is_nullable = "NULL" if col[3] == "YES" else "NOT NULL"
                     
-                    # Format types with lengths like varchar(50) or nvarchar(MAX)
                     type_str = data_type
                     if type_str in ['varchar', 'nvarchar', 'char', 'nchar']:
                         length = "MAX" if max_len == -1 else str(max_len)
@@ -124,12 +130,10 @@ def extract_schema_as_create_statements(conn, profiler=None) -> str:
                         
                     col_defs.append(f"    [{col_name}] {type_str} {is_nullable}")
                     
-                # Append Primary Key definitions
                 if pks:
                     pk_cols = ", ".join([f"[{pk}]" for pk in pks])
                     col_defs.append(f"    PRIMARY KEY ({pk_cols})")
                     
-                # Append Foreign Key definitions
                 for fk in fks:
                     col_defs.append(f"    FOREIGN KEY ([{fk[0]}]) REFERENCES [{fk[1]}].[{fk[2]}]([{fk[3]}])")
                     
@@ -137,8 +141,17 @@ def extract_schema_as_create_statements(conn, profiler=None) -> str:
                 create_stmt += "\n);"
                 schema_statements.append(create_stmt)
         
-    # Join all tables with newlines for readability
-    return "\n\n".join(schema_statements)
+    full_ddl = "\n\n".join(schema_statements)
+    
+    # Save cache file for instant future runs
+    try:
+        with open(cache_path, "w", encoding="utf-8") as f:
+            f.write(full_ddl)
+        log_step(f"Saved ERP schema DDL cache to: {cache_path}")
+    except Exception as e:
+        log_step(f"Warning: Could not save DDL cache: {e}", level="WARN")
+
+    return full_ddl
 
 def get_sqlite_connection(db_path: str, profiler=None):
     """
@@ -155,17 +168,44 @@ def extract_sqlite_schema_as_create_statements(conn, profiler=None) -> str:
     Extracts the database schema for SQLite.
     SQLite conveniently stores the exact CREATE TABLE statement in the sqlite_master catalog.
     """
-    with time_block("Extract SQLite Master Schema", parent_summary=profiler.categories if profiler else None, category="SQLite Schema Extraction"):
+def execute_query(sql_query: str, max_rows: int = 100):
+    """
+    Executes a SQL query against the configured database and returns
+    column headers and row data as JSON-serializable dictionaries.
+    """
+    conn = get_db_connection()
+    try:
         cursor = conn.cursor()
-        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-        
-        schema_statements = []
-        for row in cursor.fetchall():
-            if row[0]: # Sometimes sql can be None for internal tables
-                stmt = row[0].strip()
-                if not stmt.endswith(';'):
-                    stmt += ';'
-                schema_statements.append(stmt)
-                
-        return "\n\n".join(schema_statements)
+        cursor.execute(sql_query)
+        columns = [col[0] for col in cursor.description] if cursor.description else []
+        rows = []
+        if columns:
+            for row in cursor.fetchmany(max_rows):
+                row_dict = {}
+                for col_name, val in zip(columns, row):
+                    if val is not None and not isinstance(val, (int, float, bool, str)):
+                        row_dict[col_name] = str(val)
+                    else:
+                        row_dict[col_name] = val
+                rows.append(row_dict)
+        return columns, rows
+    finally:
+        conn.close()
+
+
+def get_cached_or_live_schema(force_refresh: bool = False) -> str:
+    """
+    Returns full DDL schema from local erp_schema_cache.sql cache or extracts from live DB.
+    """
+    cache_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_schema_cache.sql")
+    if not force_refresh and os.path.exists(cache_path):
+        with open(cache_path, "r", encoding="utf-8") as f:
+            return f.read()
+            
+    conn = get_db_connection()
+    try:
+        schema = extract_schema_as_create_statements(conn)
+        return schema
+    finally:
+        conn.close()
 

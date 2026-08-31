@@ -6,3 +6,7 @@ scikit-learn
 python-dotenv
 google-genai
 groq
+fastapi
+uvicorn
+pydantic
+pyngrok

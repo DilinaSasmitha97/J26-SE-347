@@ -178,8 +178,11 @@ class MinimalSchemaExtractor:
             # Sort tables by score descending
             ranked_tables = sorted(scores.items(), key=lambda item: item[1], reverse=True)
             
-            # Filter tables above threshold score (> 0.05)
-            relevant_tables = {t_name for t_name, score in ranked_tables if score > 0.05}
+            # Filter tables above threshold score (> 0.05), capped to top 10 tables max
+            ranked_relevant = [t_name for t_name, score in ranked_tables if score > 0.05]
+            if len(ranked_relevant) > 10:
+                ranked_relevant = ranked_relevant[:10]
+            relevant_tables = set(ranked_relevant)
             
             # Check for ambiguous 0-match questions
             needs_clarification = False
@@ -193,6 +196,12 @@ class MinimalSchemaExtractor:
                 
             # Expand Foreign Key Graph to preserve JOINs
             final_selected_tables = self._expand_foreign_key_graph(relevant_tables, tables)
+            
+            # Cap final selected tables to 25 tables max (~6,500 tokens) to safely avoid Groq/Cerebras TPM limits while preserving accuracy
+            if len(final_selected_tables) > 25:
+                # Prioritize relevant_tables first, then fill up to 25 with graph expansion tables
+                ordered_final = list(relevant_tables) + [t for t in final_selected_tables if t not in relevant_tables]
+                final_selected_tables = set(ordered_final[:25])
             
             # Re-assemble pruned DDL statements
             pruned_statements = [tables[t_name]["raw_sql"] for t_name in final_selected_tables if t_name in tables]
