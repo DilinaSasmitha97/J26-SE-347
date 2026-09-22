@@ -87,15 +87,15 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
     client = get_client()
 
     if current_provider == "gemini":
-        active_model = GEMINI_MODEL
+        active_model = os.getenv("GEMINI_MODEL", GEMINI_MODEL)
     elif current_provider == "groq":
-        active_model = GROQ_MODEL
+        active_model = os.getenv("GROQ_MODEL", GROQ_MODEL)
     elif current_provider == "cerebras":
-        active_model = CEREBRAS_MODEL
+        active_model = os.getenv("CEREBRAS_MODEL", CEREBRAS_MODEL)
     elif current_provider == "openrouter":
-        active_model = OPENROUTER_MODEL
+        active_model = os.getenv("OPENROUTER_MODEL", OPENROUTER_MODEL)
     elif current_provider == "openai":
-        active_model = OPENAI_MODEL
+        active_model = os.getenv("OPENAI_MODEL", OPENAI_MODEL)
     else:
         active_model = "default-model"
     

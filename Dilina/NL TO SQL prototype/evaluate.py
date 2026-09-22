@@ -110,6 +110,13 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
         "RESULT_MISMATCH": 0
     }
     
+    diff_stats = {
+        "easy": {"total": 0, "correct": 0},
+        "medium": {"total": 0, "correct": 0},
+        "hard": {"total": 0, "correct": 0},
+        "extra": {"total": 0, "correct": 0},
+    }
+    
     base_dir = os.path.dirname(dataset_path)
     db_dir = os.path.join(base_dir, "database")
     
@@ -123,6 +130,8 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
         gold_sql = item['query']
         db_id = item['db_id']
         sample_diff = get_sql_difficulty(item.get('sql', {}))
+        if sample_diff in diff_stats:
+            diff_stats[sample_diff]["total"] += 1
         
         db_path = os.path.join(db_dir, db_id, f"{db_id}.sqlite")
         
@@ -186,6 +195,8 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
                     if pred_set == gold_set:
                         log_step("    [MATCH] Results are identical", level="SUCCESS")
                         correct += 1
+                        if sample_diff in diff_stats:
+                            diff_stats[sample_diff]["correct"] += 1
                     else:
                         cat = categorize_failure(predicted_sql, gold_sql, pred_exec_error)
                         taxonomy_counts[cat] = taxonomy_counts.get(cat, 0) + 1
@@ -215,6 +226,7 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
     avg_completion_tokens = (total_completion_tokens_all / total) if total > 0 else 0
     
     summary_report = {
+        "model_name": os.getenv("OPENROUTER_MODEL") if os.getenv("LLM_PROVIDER") == "openrouter" else os.getenv("GROQ_MODEL", "qwen/qwen-2.5-coder-32b-instruct"),
         "difficulty_filter": diff_filter,
         "requested_max_samples": max_samples,
         "available_matching_count": total_available_matching,
@@ -227,6 +239,13 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
         "avg_tokens_per_query": round(avg_tokens, 1),
         "avg_prompt_tokens": round(avg_prompt_tokens, 1),
         "avg_completion_tokens": round(avg_completion_tokens, 1),
+        "difficulty_breakdown": {
+            d: {
+                "total": s["total"],
+                "correct": s["correct"],
+                "accuracy_pct": round((s["correct"] / s["total"] * 100) if s["total"] > 0 else 0, 2)
+            } for d, s in diff_stats.items() if s["total"] > 0
+        },
         "failure_taxonomy": taxonomy_counts
     }
     
@@ -237,6 +256,7 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
     log_step(f"Exported failure taxonomy report to {report_file}")
 
     print(f"\n=== Evaluation Complete ===")
+    print(f"Model                  : {summary_report['model_name']}")
     print(f"Difficulty Filter      : {diff_filter.upper()}")
     print(f"Total Available Matching: {total_available_matching}")
     print(f"Total Evaluated        : {total}")
@@ -246,6 +266,10 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
     print(f"Evaluation Errors      : {errors}")
     print(f"Execution Accuracy     : {accuracy:.2f}%")
     print(f"Avg Tokens per Query   : {avg_tokens:.1f} ({avg_prompt_tokens:.1f} in / {avg_completion_tokens:.1f} out)")
+    print("-" * 50)
+    print("Difficulty Tier Breakdown:")
+    for d_name, d_data in summary_report.get("difficulty_breakdown", {}).items():
+        print(f"  • {d_name.capitalize():<8}: {d_data['correct']}/{d_data['total']} ({d_data['accuracy_pct']}%)")
     print("-" * 50)
     print("Failure Taxonomy Breakdown:")
     for f_cat, f_count in taxonomy_counts.items():
