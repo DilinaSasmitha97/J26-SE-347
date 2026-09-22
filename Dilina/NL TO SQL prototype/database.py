@@ -168,6 +168,19 @@ def extract_sqlite_schema_as_create_statements(conn, profiler=None) -> str:
     Extracts the database schema for SQLite.
     SQLite conveniently stores the exact CREATE TABLE statement in the sqlite_master catalog.
     """
+    with time_block("Extract SQLite Master Schema", parent_summary=profiler.categories if profiler else None, category="SQLite Schema Extraction"):
+        cursor = conn.cursor()
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+        
+        schema_statements = []
+        for row in cursor.fetchall():
+            if row[0]:  # Sometimes sql can be None for internal tables
+                stmt = row[0].strip()
+                if not stmt.endswith(';'):
+                    stmt += ';'
+                schema_statements.append(stmt)
+                
+        return "\n\n".join(schema_statements)
 def execute_query(sql_query: str, max_rows: int = 100):
     """
     Executes a SQL query against the configured database and returns

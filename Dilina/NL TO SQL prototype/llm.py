@@ -15,6 +15,7 @@ PROVIDER = os.getenv("LLM_PROVIDER", "cerebras").lower().strip()
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 CEREBRAS_MODEL = os.getenv("CEREBRAS_MODEL", "gemma-4-31b")
+SAMBANOVA_MODEL = os.getenv("SAMBANOVA_MODEL", "gemma-4-31B-it")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
@@ -22,11 +23,12 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 _gemini_client = None
 _groq_client = None
 _cerebras_client = None
+_sambanova_client = None
 _openrouter_client = None
 _openai_client = None
 
 def get_client():
-    global _gemini_client, _groq_client, _cerebras_client, _openrouter_client, _openai_client
+    global _gemini_client, _groq_client, _cerebras_client, _sambanova_client, _openrouter_client, _openai_client
     current_provider = os.getenv("LLM_PROVIDER", "cerebras").lower().strip()
     
     if current_provider == "gemini":
@@ -50,6 +52,13 @@ def get_client():
                 raise ValueError("CEREBRAS_API_KEY is not set in .env")
             _cerebras_client = OpenAI(api_key=key, base_url="https://api.cerebras.ai/v1")
         return _cerebras_client
+    elif current_provider == "sambanova":
+        if _sambanova_client is None:
+            key = os.getenv("SAMBANOVA_API_KEY")
+            if not key:
+                raise ValueError("SAMBANOVA_API_KEY is not set in .env")
+            _sambanova_client = OpenAI(api_key=key, base_url="https://api.sambanova.ai/v1")
+        return _sambanova_client
     elif current_provider == "openrouter":
         if _openrouter_client is None:
             key = os.getenv("OPENROUTER_API_KEY")
@@ -57,13 +66,6 @@ def get_client():
                 raise ValueError("OPENROUTER_API_KEY is not set in .env")
             _openrouter_client = OpenAI(api_key=key, base_url="https://openrouter.ai/api/v1")
         return _openrouter_client
-    elif current_provider == "sambanova":
-        if _cerebras_client is None:
-            key = os.getenv("SAMBANOVA_API_KEY")
-            if not key:
-                raise ValueError("SAMBANOVA_API_KEY is not set in .env")
-            _cerebras_client = OpenAI(api_key=key, base_url="https://api.sambanova.ai/v1")
-        return _cerebras_client
     elif current_provider == "openai":
         if _openai_client is None:
             key = os.getenv("OPENAI_API_KEY")
@@ -87,15 +89,17 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
     client = get_client()
 
     if current_provider == "gemini":
-        active_model = GEMINI_MODEL
+        active_model = os.getenv("GEMINI_MODEL", GEMINI_MODEL)
     elif current_provider == "groq":
-        active_model = GROQ_MODEL
+        active_model = os.getenv("GROQ_MODEL", GROQ_MODEL)
     elif current_provider == "cerebras":
-        active_model = CEREBRAS_MODEL
+        active_model = os.getenv("CEREBRAS_MODEL", CEREBRAS_MODEL)
+    elif current_provider == "sambanova":
+        active_model = os.getenv("SAMBANOVA_MODEL", SAMBANOVA_MODEL)
     elif current_provider == "openrouter":
-        active_model = OPENROUTER_MODEL
+        active_model = os.getenv("OPENROUTER_MODEL", OPENROUTER_MODEL)
     elif current_provider == "openai":
-        active_model = OPENAI_MODEL
+        active_model = os.getenv("OPENAI_MODEL", OPENAI_MODEL)
     else:
         active_model = "default-model"
     
@@ -124,7 +128,7 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
                     response = client.chat.completions.create(
                         model=active_model,
                         messages=[
-                            {"role": "system", "content": "You are an expert Microsoft SQL Server database assistant. Your only goal is to generate correct T-SQL queries."},
+                            {"role": "system", "content": "You are an expert database assistant. Your goal is to generate accurate, syntactically valid SQL queries adhering strictly to the provided database schema."},
                             {"role": "user", "content": prompt_string}
                         ],
                         temperature=0.0

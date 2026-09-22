@@ -64,9 +64,9 @@ def categorize_failure(predicted_sql: str, gold_sql: str, pred_exec_error: str =
     return "RESULT_MISMATCH"
 
 
-def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str = "all", delay: float = 0.0) -> dict:
+def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str = "all", delay: float = 0.0, enable_refinement: bool = True) -> dict:
     diff_filter = difficulty.lower().strip() if difficulty else "all"
-    log_step(f"Loading Spider dataset from {dataset_path} (Filter: difficulty='{diff_filter}')...")
+    log_step(f"Loading Spider dataset from {dataset_path} (Filter: difficulty='{diff_filter}', Refinement={'ENABLED' if enable_refinement else 'DISABLED'})...")
     
     if not os.path.exists(dataset_path):
         log_step(f"Dataset file not found: {dataset_path}", level="ERROR")
@@ -97,6 +97,9 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
     total = len(data)
     correct = 0
     errors = 0
+    healed_total = 0
+    refinement_attempts_total = 0
+    refinement_tokens_total = 0
     
     total_tokens_all = 0
     total_prompt_tokens_all = 0
@@ -113,7 +116,7 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
     base_dir = os.path.dirname(dataset_path)
     db_dir = os.path.join(base_dir, "database")
     
-    eval_profiler = CycleProfiler(f"Spider Evaluation ({total} samples, difficulty='{diff_filter}')")
+    eval_profiler = CycleProfiler(f"Spider Evaluation ({total} samples, difficulty='{diff_filter}', refinement={enable_refinement})")
     eval_profiler.start()
     
     log_step(f"Starting evaluation of {total} queries (Available matching: {total_available_matching})...\n")
@@ -140,12 +143,25 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
             conn = get_sqlite_connection(db_path, profiler=sample_profiler)
             schema = extract_sqlite_schema_as_create_statements(conn, profiler=sample_profiler)
             
-            # 2. Generate SQL with translate contract stub
-            predicted_sql, token_stats = translate(question, schema, profiler=sample_profiler)
+            # 2. Generate SQL with translate contract stub & optional refinement
+            predicted_sql, token_stats = translate(
+                nl_query=question, 
+                schema_meta=schema, 
+                profiler=sample_profiler,
+                enable_refinement=enable_refinement,
+                max_refinement_attempts=2,
+                db_conn=conn,
+                full_schema_meta=schema
+            )
             
             p_tok = token_stats.get('prompt_tokens', 0)
             c_tok = token_stats.get('completion_tokens', 0)
             t_tok = token_stats.get('total_tokens', 0)
+            
+            if token_stats.get("healed", False):
+                healed_total += 1
+            refinement_attempts_total += token_stats.get("refinement_attempts", 0)
+            refinement_tokens_total += token_stats.get("refinement_tokens", 0)
             
             total_prompt_tokens_all += p_tok
             total_completion_tokens_all += c_tok
@@ -153,7 +169,7 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
             
             print(f"    Predicted SQL: {predicted_sql.strip()}")
             print(f"    Gold SQL:      {gold_sql.strip()}")
-            print(f"    Tokens:        {t_tok} total ({p_tok} prompt / {c_tok} completion)")
+            print(f"    Tokens:        {t_tok} total ({p_tok} prompt / {c_tok} completion) | Refinement: {token_stats.get('refinement_attempts', 0)} attempts (Healed: {token_stats.get('healed', False)})")
             
             # 3. Execute both queries
             cursor = conn.cursor()
@@ -216,12 +232,16 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
     
     summary_report = {
         "difficulty_filter": diff_filter,
+        "refinement_enabled": enable_refinement,
         "requested_max_samples": max_samples,
         "available_matching_count": total_available_matching,
         "total_evaluated": total,
         "boundary_notice": boundary_notice,
         "correct": correct,
         "errors": errors,
+        "healed_queries": healed_total,
+        "refinement_attempts_total": refinement_attempts_total,
+        "refinement_tokens_total": refinement_tokens_total,
         "execution_accuracy_pct": round(accuracy, 2),
         "total_tokens": total_tokens_all,
         "avg_tokens_per_query": round(avg_tokens, 1),
@@ -238,14 +258,18 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
 
     print(f"\n=== Evaluation Complete ===")
     print(f"Difficulty Filter      : {diff_filter.upper()}")
+    print(f"Refinement Loop        : {'ENABLED' if enable_refinement else 'DISABLED'}")
     print(f"Total Available Matching: {total_available_matching}")
     print(f"Total Evaluated        : {total}")
     if boundary_notice:
         print(f" Notice                : {boundary_notice}")
     print(f"Correct (Match)        : {correct}")
     print(f"Evaluation Errors      : {errors}")
+    print(f"Healed by Refinement   : {healed_total}")
     print(f"Execution Accuracy     : {accuracy:.2f}%")
     print(f"Avg Tokens per Query   : {avg_tokens:.1f} ({avg_prompt_tokens:.1f} in / {avg_completion_tokens:.1f} out)")
+    if enable_refinement and healed_total > 0:
+        print(f"Refinement Tokens Total: {refinement_tokens_total} ({refinement_attempts_total} total attempts)")
     print("-" * 50)
     print("Failure Taxonomy Breakdown:")
     for f_cat, f_count in taxonomy_counts.items():
@@ -262,12 +286,20 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", type=str, default=None, help="Model name to evaluate (e.g. llama-3.3-70b-versatile, llama-3.1-8b-instant)")
     parser.add_argument("--delay", type=float, default=0.0, help="Delay in seconds between sample evaluation cycles")
     parser.add_argument("--dataset", type=str, default=r"D:\spider_data\dev.json", help="Path to Spider dev.json dataset")
+    parser.add_argument("--refine", dest="refine", action="store_true", default=True, help="Enable Task 3 automated query refinement loop (default: True)")
+    parser.add_argument("--no-refine", dest="refine", action="store_false", help="Disable Task 3 query refinement loop for baseline A/B comparison")
     
     args = parser.parse_args()
     if args.model:
         import main
         main.GROQ_MODEL = args.model
-    evaluate_spider(dataset_path=args.dataset, max_samples=args.samples, difficulty=args.difficulty, delay=args.delay)
+    evaluate_spider(
+        dataset_path=args.dataset, 
+        max_samples=args.samples, 
+        difficulty=args.difficulty, 
+        delay=args.delay,
+        enable_refinement=args.refine
+    )
 
 
 

@@ -37,6 +37,8 @@ class TranslateRequest(BaseModel):
     schema_meta: str = Field(..., description="DDL or schema CREATE TABLE statements", example="CREATE TABLE stadium (stadium_id INT, name VARCHAR, capacity INT, average INT);")
     injected_rules: Optional[str] = Field(None, description="Security / RBAC grounding rules from Member 3", example="STRICT CONSTRAINT: Filter all results by tenant_id = 'tenant_a_123'.")
     use_pruning: Optional[bool] = Field(True, description="Whether to apply Task 1 schema pruning")
+    enable_refinement: Optional[bool] = Field(True, description="Whether to apply Task 3 automated self-correction loop")
+    max_refinement_attempts: Optional[int] = Field(2, description="Maximum self-correction refinement attempts")
 
 class TranslateResponse(BaseModel):
     status: str
@@ -120,7 +122,10 @@ def translate_query(req: TranslateRequest):
             nl_query=req.user_query,
             schema_meta=req.schema_meta,
             injected_rules=req.injected_rules,
-            use_pruning=req.use_pruning
+            use_pruning=req.use_pruning,
+            enable_refinement=req.enable_refinement,
+            max_refinement_attempts=req.max_refinement_attempts,
+            full_schema_meta=req.schema_meta
         )
         
         execution_time_ms = round((time.time() - start_time) * 1000, 2)
@@ -149,27 +154,51 @@ def ask_database(req: AskRequest):
     1. Loads live/cached ERP database schema
     2. Prunes schema using Task 1 schema extractor
     3. Translates Natural Language question into SQL
-    4. Executes the SQL against your local database (if execute_query=True)
-    5. Returns both the SQL query and the actual data rows!
+    4. Validates & self-corrects using SQL Server compiler dry-run (Task 3)
+    5. Executes the SQL against your local database (if execute_query=True)
+    6. Returns both the SQL query and the actual data rows!
     """
     start_time = time.time()
+    conn = None
     try:
         # 1. Fetch schema from live database or cache
         schema_meta = database.get_cached_or_live_schema()
 
-        # 2. Translate question to SQL
+        # Connect to DB for live dry-run validation and row fetch
+        if req.execute_query:
+            try:
+                conn = database.get_db_connection()
+            except Exception as e:
+                conn = None
+
+        # 2. Translate question to SQL with self-correction
         sql, token_stats = main.translate(
             nl_query=req.question,
             schema_meta=schema_meta,
             injected_rules=req.injected_rules,
-            use_pruning=True
+            use_pruning=True,
+            enable_refinement=True,
+            max_refinement_attempts=2,
+            db_conn=conn,
+            full_schema_meta=schema_meta
         )
 
         columns = []
         rows = []
-        if req.execute_query:
+        if req.execute_query and conn:
             try:
-                columns, rows = database.execute_query(sql, max_rows=req.max_rows)
+                cursor = conn.cursor()
+                cursor.execute(sql)
+                columns = [col[0] for col in cursor.description] if cursor.description else []
+                if columns:
+                    for row in cursor.fetchmany(req.max_rows):
+                        row_dict = {}
+                        for col_name, val in zip(columns, row):
+                            if val is not None and not isinstance(val, (int, float, bool, str)):
+                                row_dict[col_name] = str(val)
+                            else:
+                                row_dict[col_name] = val
+                        rows.append(row_dict)
             except Exception as db_err:
                 if isinstance(token_stats, dict):
                     token_stats["db_execution_error"] = str(db_err)
@@ -196,6 +225,12 @@ def ask_database(req: AskRequest):
                 "detail": str(e)
             }
         )
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 @app.post("/api/v1/extract-schema", response_model=SchemaExtractResponse, summary="Minimal-Context Schema Extractor")
 def extract_schema(req: SchemaExtractRequest):
