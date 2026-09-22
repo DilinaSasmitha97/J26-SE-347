@@ -14,7 +14,7 @@ load_dotenv()
 PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower().strip()
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "qwen/qwen-2.5-coder-32b-instruct:free")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "qwen/qwen-2.5-coder-32b-instruct")
 
 # Lazy Client Initialization
 _gemini_client = None
@@ -90,7 +90,16 @@ def call_llm(prompt_string: str, model_name: str = None, retries: int = 3, profi
             active_model = model_name
     else:
         current_provider = PROVIDER
-        active_model = "gemma-4-31b" if PROVIDER == "cerebras" else GROQ_MODEL
+        if current_provider == "openrouter":
+            active_model = os.getenv("OPENROUTER_MODEL", OPENROUTER_MODEL)
+        elif current_provider == "cerebras":
+            active_model = "gemma-4-31b"
+        elif current_provider == "sambanova":
+            active_model = os.getenv("SAMBANOVA_MODEL", "gemma-4-31B-it")
+        elif current_provider == "gemini":
+            active_model = os.getenv("GEMINI_MODEL", GEMINI_MODEL)
+        else:
+            active_model = os.getenv("GROQ_MODEL", GROQ_MODEL)
 
     client = get_client(provider_override=current_provider)
     
