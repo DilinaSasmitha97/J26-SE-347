@@ -1,8 +1,0 @@
-pyodbc
-openai
-langchain
-pandas
-scikit-learn
-python-dotenv
-google-genai
-groq
