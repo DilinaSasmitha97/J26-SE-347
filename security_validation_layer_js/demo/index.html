@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Query Security &amp; Validation Layer — test harness</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --ink: #1a1d23;
+    --muted: #667085;
+    --line: #e1e4ea;
+    --accent: #2f5fd0;
+    --safe: #17794a;
+    --safe-bg: #e6f4ec;
+    --block: #b3261e;
+    --block-bg: #fdeceb;
+    --mono: ui-monospace, "Cascadia Code", Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 20px 60px;
+    background: var(--bg); color: var(--ink);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header { margin-bottom: 22px; }
+  h1 { margin: 0 0 4px; font-size: 21px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px;
+  }
+  .panel h2 {
+    margin: 0 0 12px; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--muted); font-weight: 600;
+  }
+  textarea {
+    width: 100%; min-height: 130px; resize: vertical; padding: 11px 12px;
+    font: 13.5px/1.5 var(--mono); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 7px; background: #fcfcfd;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .controls { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+  button.run {
+    background: var(--accent); color: #fff; border: 0; border-radius: 7px;
+    padding: 9px 18px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  button.run:hover { background: #2650b0; }
+  label.check { display: flex; align-items: center; gap: 7px; font-size: 13.5px; cursor: pointer; }
+  .hint { color: var(--muted); font-size: 12.5px; margin-left: auto; }
+
+  .verdict { display: flex; align-items: center; gap: 12px; padding: 13px 15px; border-radius: 8px; margin-bottom: 14px; }
+  .verdict.safe { background: var(--safe-bg); color: var(--safe); }
+  .verdict.blocked { background: var(--block-bg); color: var(--block); }
+  .verdict .label { font-size: 17px; font-weight: 700; letter-spacing: 0.02em; }
+  .verdict .stmt { margin-left: auto; font: 12.5px var(--mono); opacity: 0.85; }
+
+  ul.violations { list-style: none; margin: 0; padding: 0; }
+  ul.violations li { border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; margin-bottom: 8px; }
+  ul.violations code {
+    font: 12px var(--mono); background: #eef1f6; color: #33406b;
+    padding: 2px 7px; border-radius: 4px;
+  }
+  ul.violations p { margin: 7px 0 0; font-size: 13.5px; color: #3d4450; }
+  .none { color: var(--muted); font-size: 13.5px; margin: 0; }
+
+  details { margin-top: 14px; }
+  details summary { cursor: pointer; font-size: 12.5px; color: var(--muted); }
+  details pre {
+    margin: 9px 0 0; padding: 11px; background: #1e2229; color: #dfe4ec;
+    border-radius: 7px; font: 12px/1.5 var(--mono); overflow-x: auto;
+  }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>AI Query Security &amp; Validation Layer</h1>
+    <p>Test harness — queries are checked by the real <code>validate()</code> function. Nothing is executed against a database.</p>
+  </header>
+
+  <div class="cols">
+    <div class="panel">
+      <h2>Query under test</h2>
+      <textarea id="sql" spellcheck="false">SELECT * FROM users WHERE 1=1</textarea>
+      <div class="controls">
+        <button class="run" id="run">Validate</button>
+        <label class="check">
+          <input type="checkbox" id="allowWrites">
+          Authorize writes
+        </label>
+        <span class="hint">Ctrl + Enter</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Result</h2>
+      <div id="result">
+        <p class="none">Run a query to see the verdict.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const sqlEl = document.getElementById('sql');
+const allowEl = document.getElementById('allowWrites');
+const resultEl = document.getElementById('result');
+
+async function run() {
+  const body = { sql: sqlEl.value, allowWrites: allowEl.checked };
+  let data;
+  try {
+    const res = await fetch('/api/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    data = await res.json();
+  } catch (e) {
+    resultEl.innerHTML = '<p class="none">Could not reach the server. Is it still running?</p>';
+    return;
+  }
+  render(data);
+}
+
+function render(data) {
+  resultEl.textContent = '';
+
+  const verdict = document.createElement('div');
+  verdict.className = 'verdict ' + (data.safe ? 'safe' : 'blocked');
+  const label = document.createElement('span');
+  label.className = 'label';
+  label.textContent = data.safe ? 'SAFE' : 'BLOCKED';
+  const stmt = document.createElement('span');
+  stmt.className = 'stmt';
+  stmt.textContent = data.statementType;
+  verdict.append(label, stmt);
+  resultEl.appendChild(verdict);
+
+  if (!data.violations.length) {
+    const p = document.createElement('p');
+    p.className = 'none';
+    p.textContent = 'No violations — this query would be passed on for execution.';
+    resultEl.appendChild(p);
+  } else {
+    const ul = document.createElement('ul');
+    ul.className = 'violations';
+    for (const v of data.violations) {
+      const li = document.createElement('li');
+      const code = document.createElement('code');
+      code.textContent = v.type;
+      li.appendChild(code);
+      if (v.detail) {
+        const p = document.createElement('p');
+        p.textContent = v.detail;
+        li.appendChild(p);
+      }
+      ul.appendChild(li);
+    }
+    resultEl.appendChild(ul);
+  }
+
+  const details = document.createElement('details');
+  const summary = document.createElement('summary');
+  summary.textContent = 'Raw response (what an integrating service receives)';
+  const pre = document.createElement('pre');
+  pre.textContent = JSON.stringify(data, null, 2);
+  details.append(summary, pre);
+  resultEl.appendChild(details);
+}
+
+document.getElementById('run').onclick = run;
+sqlEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) run();
+});
+
+run();
+</script>
+</body>
+</html>
