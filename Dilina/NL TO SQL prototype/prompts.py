@@ -15,25 +15,44 @@ def get_dialect_display_name(dialect: str = "sqlite") -> str:
         return "MySQL"
     return "SQL"
 
-def generate_crp_prompt(schema_context: str, user_request: str, injected_rules: str = None, dialect: str = "sqlite") -> str:
+def generate_crp_prompt(
+    schema_context: str, 
+    user_request: str, 
+    injected_rules: str = None, 
+    dialect: str = "sqlite",
+    value_groundings: str = None,
+    join_paths: str = None
+) -> str:
     """
-    Constructs the exact string representation for the LLM based on Phase 1 rules.
+    Constructs the exact string representation for the LLM based on Phase 1-4 rules.
     Combines strict formatting, SQL schema context in comment blocks, optional authorization/security 
-    rules placeholder (reserved for Member 3 integration), dialect hint, and the natural language request.
+    rules placeholder (reserved for Member 3 integration), dialect hint, entity value groundings,
+    multi-hop join paths, and the natural language request.
     """
     dialect_name = get_dialect_display_name(dialect)
     rules_block = ""
     if injected_rules and str(injected_rules).strip():
         rules_block = f"\n/* Injected Authorization & Security Rules:\n{injected_rules}\n*/\n"
 
-    prompt = f"""Complete {dialect_name} query only and with no explanation
+    grounding_block = ""
+    if value_groundings and str(value_groundings).strip():
+        grounding_block = f"\n{value_groundings.strip()}\n"
+
+    join_block = ""
+    if join_paths and str(join_paths).strip():
+        join_block = f"\n{join_paths.strip()}\n"
+
+    top_directive = "LIMIT 1" if dialect_name == "SQLite" else "TOP 1"
+
+    prompt = f"""Complete {dialect_name} query only and with no explanation.
+-- Rule 1: Project ONLY the exact columns requested in the question. Do not include unrequested auxiliary counts or metrics in SELECT.
+-- Rule 2: For questions asking for an item with the maximum or minimum of a property, use ORDER BY and {top_directive}. Do not use MAX() with GROUP BY.
 
 /* Given the following database schema:
 {schema_context}
-*/{rules_block}
+*/{rules_block}{grounding_block}{join_block}
 
 /* Answer the following: {user_request} */
 SELECT"""
     
     return prompt
-

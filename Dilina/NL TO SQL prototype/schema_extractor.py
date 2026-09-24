@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Optional
 from profiler import time_block, log_step
 
 class MinimalSchemaExtractor:
@@ -86,10 +86,10 @@ class MinimalSchemaExtractor:
     def _calculate_semantic_scores(self, question: str, tables: Dict[str, dict]) -> Dict[str, float]:
         """
         Calculates semantic similarity scores for each table based on table names, column names, and question words.
-        Uses TF-IDF and word-n-gram cosine similarity for instant, dependency-free high accuracy.
+        Uses pure-Python Term Frequency & N-gram Cosine Similarity for instant (<1ms), thread-safe accuracy.
         """
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        from sklearn.metrics.pairwise import cosine_similarity
+        import math
+        from collections import Counter
 
         scores = {t_name: 0.0 for t_name in tables}
         question_clean = re.sub(r'[^\w\s]', ' ', question.lower())
@@ -108,26 +108,29 @@ class MinimalSchemaExtractor:
                 if col_lower in question_clean or any(w == col_lower for w in q_words):
                     scores[t_name] += 0.5
 
-        # 2. TF-IDF Cosine Similarity for Synonyms & Intent
-        table_documents = []
-        table_names_list = list(tables.keys())
+        # 2. Pure Python N-gram Term Frequency Cosine Similarity
+        q_tokens = question_clean.split()
+        q_ngrams = list(q_tokens)
+        for i in range(len(q_tokens) - 1):
+            q_ngrams.append(f"{q_tokens[i]} {q_tokens[i+1]}")
+        q_counts = Counter(q_ngrams)
+        q_norm = math.sqrt(sum(v * v for v in q_counts.values())) if q_counts else 0.0
 
-        for t_name in table_names_list:
-            meta = tables[t_name]
-            doc = f"{t_name} " + " ".join(meta["columns"])
-            table_documents.append(doc.lower())
+        if q_norm > 0:
+            for t_name, meta in tables.items():
+                doc = f"{t_name} " + " ".join(meta["columns"])
+                doc_clean = re.sub(r'[^\w\s]', ' ', doc.lower())
+                doc_tokens = doc_clean.split()
+                doc_ngrams = list(doc_tokens)
+                for i in range(len(doc_tokens) - 1):
+                    doc_ngrams.append(f"{doc_tokens[i]} {doc_tokens[i+1]}")
+                doc_counts = Counter(doc_ngrams)
+                doc_norm = math.sqrt(sum(v * v for v in doc_counts.values())) if doc_counts else 0.0
 
-        if table_documents:
-            try:
-                vectorizer = TfidfVectorizer(ngram_range=(1, 2)).fit(table_documents + [question_clean])
-                table_vecs = vectorizer.transform(table_documents)
-                q_vec = vectorizer.transform([question_clean])
-                sims = cosine_similarity(q_vec, table_vecs).flatten()
-
-                for idx, t_name in enumerate(table_names_list):
-                    scores[t_name] += float(sims[idx]) * 0.8
-            except Exception as e:
-                log_step(f"TF-IDF similarity calculation warning: {e}", level="WARN")
+                if doc_norm > 0:
+                    dot_product = sum(q_counts[k] * doc_counts[k] for k in q_counts if k in doc_counts)
+                    cosine_sim = dot_product / (q_norm * doc_norm)
+                    scores[t_name] += float(cosine_sim) * 0.8
 
         return scores
 
@@ -153,9 +156,11 @@ class MinimalSchemaExtractor:
                     
         return expanded
 
-    def extract_minimal_schema(self, question: str, full_ddl: str, top_k: int = 3, profiler=None) -> tuple[str, dict]:
+    def extract_minimal_schema(self, question: str, full_ddl: str, top_k: int = 3, profiler=None, protected_tables: Optional[Set[str]] = None) -> tuple[str, dict]:
         """
         Main entry point: Accepts question + full DDL, returns (minimal_ddl_string, metadata_dict).
+        Optional protected_tables parameter guarantees that grounded entity tables and multi-hop
+        bridge tables are always preserved in the pruned schema.
         """
         with time_block("Minimal-Context Schema Extractor (Task 1)", parent_summary=profiler.categories if profiler else None, category="Schema Extraction - Minimal Context"):
             tables = self._parse_ddl_into_tables(full_ddl)
@@ -183,6 +188,13 @@ class MinimalSchemaExtractor:
             if len(ranked_relevant) > 10:
                 ranked_relevant = ranked_relevant[:10]
             relevant_tables = set(ranked_relevant)
+
+            # Ingest protected tables from Task 4 (Entity Resolver & Multi-Hop Bridges)
+            if protected_tables:
+                for pt in protected_tables:
+                    for t_key in tables:
+                        if t_key.lower() == pt.lower():
+                            relevant_tables.add(t_key)
             
             # Check for ambiguous 0-match questions
             needs_clarification = False
@@ -226,5 +238,5 @@ class MinimalSchemaExtractor:
 # Singleton instance for simple imports
 _extractor_instance = MinimalSchemaExtractor()
 
-def extract_minimal_schema(question: str, full_ddl: str, top_k: int = 3, profiler=None) -> tuple[str, dict]:
-    return _extractor_instance.extract_minimal_schema(question, full_ddl, top_k=top_k, profiler=profiler)
+def extract_minimal_schema(question: str, full_ddl: str, top_k: int = 3, profiler=None, protected_tables: Optional[Set[str]] = None) -> tuple[str, dict]:
+    return _extractor_instance.extract_minimal_schema(question, full_ddl, top_k=top_k, profiler=profiler, protected_tables=protected_tables)

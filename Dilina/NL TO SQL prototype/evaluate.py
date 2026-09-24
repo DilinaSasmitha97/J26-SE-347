@@ -1,4 +1,14 @@
 import os
+import sys
+import platform
+
+# Prevent Python 3.12 Windows WMI query hang in platform module called by OpenAI SDK
+if sys.platform == "win32":
+    platform.win32_ver = lambda *args, **kwargs: ('10', '10.0.19045', 'SP0', 'Multiprocessor Free')
+    platform.platform = lambda *args, **kwargs: 'Windows-10-10.0.19045-SP0'
+    platform.system = lambda *args, **kwargs: 'Windows'
+    platform.uname = lambda *args, **kwargs: platform.uname_result(('Windows', 'PC', '10', '10.0.19045', 'AMD64', 'Intel64'))
+
 import json
 import sqlite3
 import argparse

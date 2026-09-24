@@ -1,4 +1,15 @@
 import os
+import sys
+import platform
+import re
+
+# Prevent Python 3.12 Windows WMI query hang in platform module called by OpenAI SDK
+if sys.platform == "win32":
+    platform.win32_ver = lambda *args, **kwargs: ('10', '10.0.19045', 'SP0', 'Multiprocessor Free')
+    platform.platform = lambda *args, **kwargs: 'Windows-10-10.0.19045-SP0'
+    platform.system = lambda *args, **kwargs: 'Windows'
+    platform.uname = lambda *args, **kwargs: platform.uname_result(('Windows', 'PC', '10', '10.0.19045', 'AMD64', 'Intel64'))
+
 from dotenv import load_dotenv
 
 import database
@@ -6,6 +17,8 @@ import prompts
 import llm
 import schema_extractor
 import refinement_loop
+from entity_resolver import entity_resolver
+from relationship_mapper import relationship_mapper
 from profiler import CycleProfiler, time_block, log_step
 
 # Load environment variables
@@ -26,23 +39,13 @@ def translate(
     max_refinement_attempts: int = 2,
     db_conn = None,
     full_schema_meta: str = None,
-    dialect: str = None
+    dialect: str = None,
+    use_entity_resolution: bool = True,
+    use_relationship_mapping: bool = True
 ) -> tuple[str, dict]:
     """
-    Standard contract function for Member 1 translator engine with self-correction.
-    Accepts:
-        - nl_query: Natural language question
-        - schema_meta: Database schema string (DDL / CREATE statements)
-        - injected_rules: Security rules from Member 3
-        - use_pruning: If True, uses Task 1 Minimal-Context Schema Extractor
-        - enable_refinement: If True, uses Task 3 Automated Query Refinement Loop
-        - max_refinement_attempts: Maximum self-correction iterations (default: 2)
-        - db_conn: Active database connection for dry-run compiler validation
-        - full_schema_meta: Full unpruned schema string for zero-delay cached expansion
-        - dialect: Target SQL dialect ('sqlite', 'mssql', etc.)
-    
-    Returns:
-        tuple[str, dict]: (clean_sql_query, token_stats_dict)
+    Standard contract function for Member 1 translator engine with self-correction,
+    contextual entity value grounding (Task 4A), and multi-hop relationship mapping (Task 4B).
     """
     full_schema_context = full_schema_meta or schema_meta
 
@@ -58,14 +61,61 @@ def translate(
     else:
         active_dialect = dialect
 
-    # 0. Apply Task 1 Minimal-Context Schema Extraction
+    # 0A. Contextual Entity & Value Grounding (Task 4A)
+    value_groundings_str = ""
+    grounded_tables = set()
+    if use_entity_resolution:
+        with time_block("Contextual Entity & Value Grounding (Task 4A)", parent_summary=profiler.categories if profiler else None, category="Entity Resolution"):
+            grounding_matches, grounded_tables = entity_resolver.resolve_grounded_entities(
+                nl_query=nl_query,
+                db_conn=db_conn,
+                schema_meta=full_schema_context
+            )
+            value_groundings_str = entity_resolver.format_grounding_hints(grounding_matches)
+
+    # 0B. Relational Graph & Multi-Hop Steiner Bridge Resolution (Task 4B)
+    join_paths_str = ""
+    bridge_tables = set()
+    if use_relationship_mapping:
+        with time_block("Relational Graph & Bridge Discovery (Task 4B)", parent_summary=profiler.categories if profiler else None, category="Relationship Mapping"):
+            candidate_terminals = set(grounded_tables)
+            # Add table names mentioned in query
+            for t_match in re.findall(r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"\[\w\.\-\]]+)', full_schema_context, re.IGNORECASE):
+                t_clean = t_match.strip('`"[]').split('.')[-1]
+                if t_clean.lower() in nl_query.lower():
+                    candidate_terminals.add(t_clean)
+
+            if len(candidate_terminals) >= 2:
+                bridge_tables, join_paths = relationship_mapper.resolve_multi_hop_bridges(
+                    terminal_tables=candidate_terminals,
+                    schema_meta=full_schema_context,
+                    db_conn=db_conn
+                )
+                join_paths_str = relationship_mapper.format_join_path_hints(join_paths)
+
+    # Combine protected tables to prevent accidental over-pruning in Task 1
+    protected_tables = grounded_tables.union(bridge_tables)
+
+    # 0C. Apply Task 1 Minimal-Context Schema Extraction
     if use_pruning:
-        pruned_schema, pruning_stats = schema_extractor.extract_minimal_schema(nl_query, schema_meta, profiler=profiler)
+        pruned_schema, pruning_stats = schema_extractor.extract_minimal_schema(
+            nl_query, 
+            schema_meta, 
+            profiler=profiler,
+            protected_tables=protected_tables if protected_tables else None
+        )
         schema_meta = pruned_schema
 
-    # 1. Build Prompt
-    with time_block("Build Code Representation Prompt (CRP)", parent_summary=profiler.categories if profiler else None, category="Prompt Construction"):
-        prompt_string = prompts.generate_crp_prompt(schema_meta, nl_query, injected_rules=injected_rules, dialect=active_dialect)
+    # 1. Build Prompt with CRP v2 (including Value Groundings, Join Paths & Strict Projection Rules)
+    with time_block("Build Code Representation Prompt (CRP v2)", parent_summary=profiler.categories if profiler else None, category="Prompt Construction"):
+        prompt_string = prompts.generate_crp_prompt(
+            schema_meta, 
+            nl_query, 
+            injected_rules=injected_rules, 
+            dialect=active_dialect,
+            value_groundings=value_groundings_str,
+            join_paths=join_paths_str
+        )
         
     # 2. Call LLM via wrapper with retries & token tracking
     raw_output, token_stats = llm.call_llm(prompt_string, retries=3, profiler=profiler)
