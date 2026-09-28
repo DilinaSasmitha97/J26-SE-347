@@ -75,13 +75,59 @@
     border-radius: 7px; font: 12px/1.5 var(--mono); overflow-x: auto;
   }
 
+  section.wp { margin-top: 18px; }
+  label.field { display: flex; align-items: center; gap: 7px; font-size: 13.5px; }
+  label.field input {
+    width: 110px; padding: 6px 8px; font: 13.5px var(--mono);
+    border: 1px solid var(--line); border-radius: 6px;
+  }
+  .hint-line { color: var(--muted); font-size: 12.5px; margin: 10px 0 0; }
+  button.ghost {
+    background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 7px;
+    padding: 8px 14px; font-size: 13.5px; cursor: pointer;
+  }
+  button.ghost:hover { border-color: var(--accent); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .steps span {
+    font: 12px var(--mono); padding: 3px 9px; border-radius: 999px;
+    background: #eef1f6; color: var(--muted);
+  }
+  .steps span.on { background: var(--accent); color: #fff; }
+  .steps span.bad { background: var(--block); color: #fff; }
+  .kv { font-size: 13.5px; margin: 0 0 12px; }
+  .kv b { font-weight: 600; }
+  .msg { padding: 9px 12px; border-radius: 7px; font-size: 13.5px; margin: 0 0 12px; }
+  .msg.err { background: var(--block-bg); color: var(--block); }
+  .msg.ok { background: var(--safe-bg); color: var(--safe); }
+  .imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  @media (max-width: 860px) { .imgs { grid-template-columns: 1fr; } }
+  .imgs h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 0 0 6px; }
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 7px; }
+  .tbl table { border-collapse: collapse; width: 100%; font: 12px var(--mono); }
+  .tbl th, .tbl td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  .tbl th { background: #f3f5f9; }
+  .tbl td.changed { background: #fff4d6; }
+  .tbl th small { display: block; font-weight: 400; color: var(--muted); }
+  #qresult { margin-top: 14px; }
+  #presult { margin-top: 14px; font-size: 14px; line-height: 2.1; white-space: pre-wrap; }
+  #presult mark { background: #fff1c2; border-radius: 4px; padding: 1px 4px; }
+  #presult mark b { font: 600 10.5px var(--mono); color: #8a5a00; margin-left: 5px; }
+  .tbl th .pii {
+    display: inline-block; margin-top: 3px; font: 600 10.5px var(--mono);
+    background: var(--block-bg); color: var(--block); padding: 1px 6px; border-radius: 4px;
+  }
+  .tbl td.masked { background: #eef3ff; color: #2f4aa0; }
+  #qresult h3.sub { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 14px 0 6px; }
+  #qmode { font: 13px var(--mono); padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; }
+  #qresult .meta { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>AI Query Security &amp; Validation Layer</h1>
-    <p>Test harness — queries are checked by the real <code>validate()</code> function. Nothing is executed against a database.</p>
+    <p>Test harness — queries are checked by the real <code>validate()</code> function. Validation never executes anything; only the Controlled Write Protocol below touches the database.</p>
   </header>
 
   <div class="cols">
@@ -94,6 +140,10 @@
           <input type="checkbox" id="allowWrites">
           Authorize writes
         </label>
+        <label class="check">
+          <input type="checkbox" id="enforceAllowlist">
+          Schema allowlist (svl_demo)
+        </label>
         <span class="hint">Ctrl + Enter</span>
       </div>
     </div>
@@ -105,15 +155,59 @@
       </div>
     </div>
   </div>
+
+  <section class="panel wp">
+    <h2>Run query — validated, then executed read-only</h2>
+    <textarea id="qsql" spellcheck="false" style="min-height: 80px">SELECT c.name AS customer, c.email, c.phone, c.city, o.product, o.amount
+FROM customers c JOIN orders o ON o.customer_id = c.id
+WHERE c.tenant_id = 1</textarea>
+    <div class="controls">
+      <button class="run" id="qrun">Run</button>
+      <label class="check">Masking
+        <select id="qmode"><option value="partial">partial</option><option value="redact">redact</option></select>
+      </label>
+      <label class="check"><input type="checkbox" id="qraw" checked> Show raw values too (demo only)</label>
+      <span class="hint">validate → execute read-only → classify → mask</span>
+    </div>
+    <div id="qresult"></div>
+  </section>
+
+  <section class="panel wp">
+    <h2>PII detector — regex + validation</h2>
+    <textarea id="ptext" spellcheck="false" style="min-height: 80px">Hi, I am Nimal (NIC 851234567V). Call me on 077 123 4567 or email nimal.perera@example.com.
+Card 4111 1111 1111 1111, order #10023 for Rs. 120.00 on 2026-07-19.</textarea>
+    <div class="controls">
+      <button class="run" id="pdetect">Detect</button>
+      <span class="hint">Emails · phones · NIC · cards (Luhn) · IBAN · IPv4</span>
+    </div>
+    <div id="presult"></div>
+  </section>
+
+  <section class="panel wp">
+    <h2>Controlled Write Protocol — preview → approve → commit</h2>
+    <div class="cols">
+      <div>
+        <textarea id="wsql" spellcheck="false">UPDATE orders SET status = 'cancelled' WHERE status = 'pending' AND tenant_id = 1</textarea>
+        <div class="controls">
+          <label class="field">Requested by <input id="requestedBy" value="alice"></label>
+          <button class="run" id="wpreview">Preview</button>
+        </div>
+        <p class="hint-line">Preview runs the write inside a transaction, captures the change, then rolls it back. Nothing is saved until an approved commit.</p>
+      </div>
+      <div id="wstate"><p class="none">Preview a write to start a request.</p></div>
+    </div>
+    <div id="wimages"></div>
+  </section>
 </div>
 
 <script>
 const sqlEl = document.getElementById('sql');
 const allowEl = document.getElementById('allowWrites');
+const allowlistEl = document.getElementById('enforceAllowlist');
 const resultEl = document.getElementById('result');
 
 async function run() {
-  const body = { sql: sqlEl.value, allowWrites: allowEl.checked };
+  const body = { sql: sqlEl.value, allowWrites: allowEl.checked, enforceAllowlist: allowlistEl.checked };
   let data;
   try {
     const res = await fetch('/api/validate', {
@@ -181,6 +275,190 @@ sqlEl.addEventListener('keydown', (e) => {
 });
 
 run();
+
+// ---- Controlled Write Protocol ------------------------------------------
+const wsqlEl = document.getElementById('wsql');
+const wstateEl = document.getElementById('wstate');
+const wimagesEl = document.getElementById('wimages');
+const FLOW = ['pending', 'previewed', 'approved', 'committed'];
+let current = null;
+
+function el(tag, props = {}, ...kids) {
+  const n = Object.assign(document.createElement(tag), props);
+  n.append(...kids);
+  return n;
+}
+
+async function call(method, url, body) {
+  try {
+    const res = await fetch(url, {
+      method, headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { ok: res.ok, data: await res.json() };
+  } catch (e) {
+    return { ok: false, data: { error: 'network', detail: 'Could not reach the server. Is it still running?' } };
+  }
+}
+
+function renderWrite(reqState, message) {
+  wstateEl.textContent = '';
+  wimagesEl.textContent = '';
+  if (message) wstateEl.append(el('p', { className: 'msg ' + message.kind, textContent: message.text }));
+  if (!reqState) return;
+  current = reqState;
+
+  const steps = el('div', { className: 'steps' });
+  const failed = ['rejected', 'expired', 'failed'].includes(reqState.status);
+  const reached = FLOW.indexOf(reqState.status);
+  for (const s of FLOW) {
+    steps.append(el('span', { className: FLOW.indexOf(s) <= reached ? 'on' : '', textContent: s }));
+  }
+  if (failed) steps.append(el('span', { className: 'bad', textContent: reqState.status }));
+  wstateEl.append(steps);
+
+  const p = reqState.preview;
+  wstateEl.append(el('p', { className: 'kv', innerHTML: '' },
+    el('b', { textContent: reqState.statementType }), ` on ${reqState.table} — `,
+    el('b', { textContent: p ? String(p.affectedRows) : '?' }), ' row(s) would change',
+    el('br'), `requested by ${reqState.requestedBy}`,
+    reqState.approvals.length ? ` · approved by ${reqState.approvals.map((a) => a.by).join(', ')}` : '',
+    reqState.reason ? el('span', {}, el('br'), 'reason: ' + reqState.reason) : ''));
+
+  const approver = el('input', { value: 'bob' });
+  const approveBtn = el('button', { className: 'ghost', textContent: 'Approve', disabled: reqState.status !== 'previewed' });
+  const rejectBtn = el('button', { className: 'ghost', textContent: 'Reject', disabled: ['committed', 'rejected', 'expired', 'failed'].includes(reqState.status) });
+  const commitBtn = el('button', { className: 'run', textContent: 'Commit', disabled: reqState.status !== 'approved' });
+  approveBtn.onclick = () => step('approve', { approvedBy: approver.value });
+  rejectBtn.onclick = () => step('reject', { rejectedBy: approver.value, reason: 'Rejected in demo UI' });
+  // Commit sends whatever is in the editor now, so editing the SQL after approval shows the hash check.
+  commitBtn.onclick = () => step('commit', { sql: wsqlEl.value, committedBy: document.getElementById('requestedBy').value });
+  wstateEl.append(el('div', { className: 'controls' },
+    el('label', { className: 'field' }, 'Approver ', approver), approveBtn, rejectBtn, commitBtn));
+
+  if (p) {
+    const imgs = el('div', { className: 'imgs' });
+    imgs.append(imageTable('Before (rows the write matches)', p.before, null, p.primaryKey));
+    imgs.append(imageTable('After (inside the rolled-back preview)', p.after, p.before, p.primaryKey));
+    wimagesEl.append(imgs);
+  }
+
+  const details = el('details', {}, el('summary', { textContent: 'Raw request state (audit history included)' }),
+    el('pre', { textContent: JSON.stringify(reqState, null, 2) }));
+  wimagesEl.append(details);
+}
+
+function imageTable(title, rows, compareTo, pk) {
+  const box = el('div', {}, el('h3', { textContent: title }));
+  if (!rows || !rows.length) {
+    box.append(el('p', { className: 'none', textContent: 'No rows.' }));
+    return box;
+  }
+  const cols = Object.keys(rows[0]);
+  const keyOf = (r) => pk.map((c) => r[c]).join('|');
+  const prev = new Map((compareTo || []).map((r) => [keyOf(r), r]));
+  const table = el('table', {}, el('thead', {}, el('tr', {}, ...cols.map((c) => el('th', { textContent: c })))));
+  const tbody = el('tbody');
+  for (const r of rows) {
+    const old = prev.get(keyOf(r));
+    tbody.append(el('tr', {}, ...cols.map((c) => el('td', {
+      textContent: r[c] === null ? 'NULL' : String(r[c]),
+      className: old && String(old[c]) !== String(r[c]) ? 'changed' : '',
+    }))));
+  }
+  table.append(tbody);
+  box.append(el('div', { className: 'tbl' }, table));
+  return box;
+}
+
+function errorMessage(data) {
+  let text = data.detail || data.error;
+  if (data.violations && data.violations.length) text += ' — ' + data.violations.map((v) => v.type).join(', ');
+  return { kind: 'err', text };
+}
+
+async function step(action, body) {
+  const { ok, data } = await call('POST', `/api/writes/${current.id}/${action}`, body);
+  if (ok) {
+    const text = { approve: 'Approved.', reject: 'Rejected.', commit: 'Committed — the change is now saved.' }[action];
+    return renderWrite(data, { kind: 'ok', text });
+  }
+  const latest = data.request || (await call('GET', `/api/writes/${current.id}`)).data;
+  renderWrite(latest && latest.id ? latest : current, errorMessage(data));
+}
+
+// ---- Read-query execution ----------------------------------------------
+document.getElementById('qrun').onclick = async () => {
+  const out = document.getElementById('qresult');
+  out.textContent = '';
+  const showRaw = document.getElementById('qraw').checked;
+  const { ok, data } = await call('POST', '/api/query', {
+    sql: document.getElementById('qsql').value,
+    maskMode: document.getElementById('qmode').value,
+    includeRaw: showRaw,
+  });
+  if (!ok) {
+    out.append(el('p', { className: 'msg err', textContent: errorMessage(data).text }));
+    return;
+  }
+  out.append(el('p', { className: 'meta', textContent:
+    `${data.rowCount} row(s) · ${data.elapsedMs} ms · ${data.masking.maskedCells} cell(s) masked${data.truncated ? ' · truncated' : ''}` }));
+  out.append(el('h3', { className: 'sub', textContent: 'Masked — what leaves the security layer' }));
+  out.append(resultTable(data.columns, data.rows, data.classification, data.rawRows));
+  if (data.rawRows) {
+    out.append(el('h3', { className: 'sub', textContent: 'Raw — as stored in MySQL (demo only)' }));
+    out.append(resultTable(data.columns, data.rawRows, data.classification));
+  }
+};
+
+// ---- PII detector -------------------------------------------------------
+document.getElementById('pdetect').onclick = async () => {
+  const out = document.getElementById('presult');
+  const text = document.getElementById('ptext').value;
+  const { ok, data } = await call('POST', '/api/pii/detect', { text });
+  out.textContent = '';
+  if (!ok) return out.append(el('p', { className: 'msg err', textContent: errorMessage(data).text }));
+  let pos = 0;
+  for (const s of data.spans) {
+    out.append(text.slice(pos, s.start), el('mark', {}, text.slice(s.start, s.end), el('b', { textContent: s.type })));
+    pos = s.end;
+  }
+  out.append(text.slice(pos));
+  if (!data.spans.length) out.append(el('p', { className: 'none', textContent: 'No PII found.' }));
+};
+
+/**
+ * Header shows the result name, where the value really comes from (traced
+ * through the query, not MySQL's metadata), and the PII classification.
+ */
+function resultTable(columns, rows, classification = [], compareTo = null) {
+  const head = el('tr', {}, ...columns.map((c, i) => {
+    const cls = classification[i] || {};
+    const from = cls.sources && cls.sources.length
+      ? cls.sources.join(', ') + (cls.transforms && cls.transforms.length ? ` via ${cls.transforms.join(', ')}` : '')
+      : 'computed';
+    const th = el('th', {}, c.name, el('small', { textContent: from }));
+    if (cls.piiType) {
+      th.append(el('span', { className: 'pii', textContent: cls.piiType, title: `${cls.method} · ${cls.confidence} confidence` }));
+    }
+    return th;
+  }));
+  const body = el('tbody', {}, ...rows.map((r, ri) => el('tr', {},
+    ...r.map((v, ci) => el('td', {
+      textContent: v === null ? 'NULL' : String(v),
+      className: compareTo && String(compareTo[ri][ci]) !== String(v) ? 'masked' : '',
+    })))));
+  return el('div', { className: 'tbl' }, el('table', {}, el('thead', {}, head), body));
+}
+
+document.getElementById('wpreview').onclick = async () => {
+  const { ok, data } = await call('POST', '/api/writes/preview', {
+    sql: wsqlEl.value, requestedBy: document.getElementById('requestedBy').value,
+  });
+  if (ok) return renderWrite(data, { kind: 'ok', text: 'Previewed and rolled back — nothing was saved.' });
+  current = null;
+  renderWrite(data.request || null, errorMessage(data));
+};
 </script>
 </body>
 </html>

@@ -4,11 +4,12 @@
   "description": "AI Query Security & Validation Layer - allowlist + dangerous-function blocking for NL-to-SQL output (Node.js port)",
   "main": "src/security-middleware.js",
   "scripts": {
-    "start": "node demo/server.js"
+    "start": "node --env-file-if-exists=.env demo/server.js"
   },
   "license": "ISC",
   "dependencies": {
     "express": "^5.2.1",
+    "mysql2": "^3.24.4",
     "node-sql-parser": "^5.4.0"
   }
 }
