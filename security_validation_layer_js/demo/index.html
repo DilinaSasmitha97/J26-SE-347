@@ -108,6 +108,19 @@
   .tbl th, .tbl td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
   .tbl th { background: #f3f5f9; }
   .tbl td.changed { background: #fff4d6; }
+  .tbl th small { display: block; font-weight: 400; color: var(--muted); }
+  #qresult { margin-top: 14px; }
+  #presult { margin-top: 14px; font-size: 14px; line-height: 2.1; white-space: pre-wrap; }
+  #presult mark { background: #fff1c2; border-radius: 4px; padding: 1px 4px; }
+  #presult mark b { font: 600 10.5px var(--mono); color: #8a5a00; margin-left: 5px; }
+  .tbl th .pii {
+    display: inline-block; margin-top: 3px; font: 600 10.5px var(--mono);
+    background: var(--block-bg); color: var(--block); padding: 1px 6px; border-radius: 4px;
+  }
+  .tbl td.masked { background: #eef3ff; color: #2f4aa0; }
+  #qresult h3.sub { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 14px 0 6px; }
+  #qmode { font: 13px var(--mono); padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; }
+  #qresult .meta { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; }
 </style>
 </head>
 <body>
@@ -142,6 +155,33 @@
       </div>
     </div>
   </div>
+
+  <section class="panel wp">
+    <h2>Run query — validated, then executed read-only</h2>
+    <textarea id="qsql" spellcheck="false" style="min-height: 80px">SELECT c.name AS customer, c.email, c.phone, c.city, o.product, o.amount
+FROM customers c JOIN orders o ON o.customer_id = c.id
+WHERE c.tenant_id = 1</textarea>
+    <div class="controls">
+      <button class="run" id="qrun">Run</button>
+      <label class="check">Masking
+        <select id="qmode"><option value="partial">partial</option><option value="redact">redact</option></select>
+      </label>
+      <label class="check"><input type="checkbox" id="qraw" checked> Show raw values too (demo only)</label>
+      <span class="hint">validate → execute read-only → classify → mask</span>
+    </div>
+    <div id="qresult"></div>
+  </section>
+
+  <section class="panel wp">
+    <h2>PII detector — regex + validation</h2>
+    <textarea id="ptext" spellcheck="false" style="min-height: 80px">Hi, I am Nimal (NIC 851234567V). Call me on 077 123 4567 or email nimal.perera@example.com.
+Card 4111 1111 1111 1111, order #10023 for Rs. 120.00 on 2026-07-19.</textarea>
+    <div class="controls">
+      <button class="run" id="pdetect">Detect</button>
+      <span class="hint">Emails · phones · NIC · cards (Luhn) · IBAN · IPv4</span>
+    </div>
+    <div id="presult"></div>
+  </section>
 
   <section class="panel wp">
     <h2>Controlled Write Protocol — preview → approve → commit</h2>
@@ -345,6 +385,70 @@ async function step(action, body) {
   }
   const latest = data.request || (await call('GET', `/api/writes/${current.id}`)).data;
   renderWrite(latest && latest.id ? latest : current, errorMessage(data));
+}
+
+// ---- Read-query execution ----------------------------------------------
+document.getElementById('qrun').onclick = async () => {
+  const out = document.getElementById('qresult');
+  out.textContent = '';
+  const showRaw = document.getElementById('qraw').checked;
+  const { ok, data } = await call('POST', '/api/query', {
+    sql: document.getElementById('qsql').value,
+    maskMode: document.getElementById('qmode').value,
+    includeRaw: showRaw,
+  });
+  if (!ok) {
+    out.append(el('p', { className: 'msg err', textContent: errorMessage(data).text }));
+    return;
+  }
+  out.append(el('p', { className: 'meta', textContent:
+    `${data.rowCount} row(s) · ${data.elapsedMs} ms · ${data.masking.maskedCells} cell(s) masked${data.truncated ? ' · truncated' : ''}` }));
+  out.append(el('h3', { className: 'sub', textContent: 'Masked — what leaves the security layer' }));
+  out.append(resultTable(data.columns, data.rows, data.classification, data.rawRows));
+  if (data.rawRows) {
+    out.append(el('h3', { className: 'sub', textContent: 'Raw — as stored in MySQL (demo only)' }));
+    out.append(resultTable(data.columns, data.rawRows, data.classification));
+  }
+};
+
+// ---- PII detector -------------------------------------------------------
+document.getElementById('pdetect').onclick = async () => {
+  const out = document.getElementById('presult');
+  const text = document.getElementById('ptext').value;
+  const { ok, data } = await call('POST', '/api/pii/detect', { text });
+  out.textContent = '';
+  if (!ok) return out.append(el('p', { className: 'msg err', textContent: errorMessage(data).text }));
+  let pos = 0;
+  for (const s of data.spans) {
+    out.append(text.slice(pos, s.start), el('mark', {}, text.slice(s.start, s.end), el('b', { textContent: s.type })));
+    pos = s.end;
+  }
+  out.append(text.slice(pos));
+  if (!data.spans.length) out.append(el('p', { className: 'none', textContent: 'No PII found.' }));
+};
+
+/**
+ * Header shows the result name, where the value really comes from (traced
+ * through the query, not MySQL's metadata), and the PII classification.
+ */
+function resultTable(columns, rows, classification = [], compareTo = null) {
+  const head = el('tr', {}, ...columns.map((c, i) => {
+    const cls = classification[i] || {};
+    const from = cls.sources && cls.sources.length
+      ? cls.sources.join(', ') + (cls.transforms && cls.transforms.length ? ` via ${cls.transforms.join(', ')}` : '')
+      : 'computed';
+    const th = el('th', {}, c.name, el('small', { textContent: from }));
+    if (cls.piiType) {
+      th.append(el('span', { className: 'pii', textContent: cls.piiType, title: `${cls.method} · ${cls.confidence} confidence` }));
+    }
+    return th;
+  }));
+  const body = el('tbody', {}, ...rows.map((r, ri) => el('tr', {},
+    ...r.map((v, ci) => el('td', {
+      textContent: v === null ? 'NULL' : String(v),
+      className: compareTo && String(compareTo[ri][ci]) !== String(v) ? 'masked' : '',
+    })))));
+  return el('div', { className: 'tbl' }, el('table', {}, el('thead', {}, head), body));
 }
 
 document.getElementById('wpreview').onclick = async () => {

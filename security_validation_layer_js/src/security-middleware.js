@@ -4,7 +4,8 @@
  * Public surface:
  *   validate(sql, allowWrites)  -> ValidationResult
  *   securityMiddleware(opts)    -> Express request guard around validate()
- *   validateRewritten / mask  -> stubs, land in Months 2-4
+ *   mask(result, classification)  -> PII masking of query results (pii-masker.js)
+ *   validateRewritten              -> stub, lands with Member 3's integration
  *
  * The Controlled Write Protocol (preview -> approve -> commit) lives in
  * controlled-write.js and runs every write back through validate().
@@ -22,6 +23,8 @@
 const path = require('path');
 const fs = require('fs');
 const { Parser } = require('node-sql-parser');
+// PII masking for query results (src/pii-masker.js) — re-exported as part of this layer's surface.
+const { mask } = require('./pii-masker');
 
 const DIALECT = 'MySQL';
 const _parser = new Parser();
@@ -805,10 +808,6 @@ function validateRewritten(rewrittenAst) {
   );
 }
 
-/** Apply PII detection + masking before results reach Member 4's layer. */
-function mask(resultSet) {
-  throw new Error('mask() lands in Month 4 (PII detection & masking pipeline).');
-}
 
 /**
  * Build an Express request guard around validate(). The result is always
