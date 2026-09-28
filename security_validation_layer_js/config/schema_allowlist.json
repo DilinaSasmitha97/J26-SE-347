@@ -1,0 +1,8 @@
+{
+  "_comment": "Schema allowlist per database. '*' allows every column of a table; a list allows only those columns (and forbids SELECT * on that table). Tables not listed cannot be queried at all.",
+  "svl_demo": {
+    "customers": ["id", "tenant_id", "name", "email", "phone", "city"],
+    "orders": "*",
+    "legacy_log": "*"
+  }
+}
