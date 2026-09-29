@@ -173,12 +173,12 @@ WHERE c.tenant_id = 1</textarea>
   </section>
 
   <section class="panel wp">
-    <h2>PII detector — regex + validation</h2>
-    <textarea id="ptext" spellcheck="false" style="min-height: 80px">Hi, I am Nimal (NIC 851234567V). Call me on 077 123 4567 or email nimal.perera@example.com.
+    <h2>PII detector — regex + NER</h2>
+    <textarea id="ptext" spellcheck="false" style="min-height: 80px">Hi, I am Nimal Perera (NIC 851234567V). Call me on 077 123 4567 or email nimal.perera@example.com.
 Card 4111 1111 1111 1111, order #10023 for Rs. 120.00 on 2026-07-19.</textarea>
     <div class="controls">
       <button class="run" id="pdetect">Detect</button>
-      <span class="hint">Emails · phones · NIC · cards (Luhn) · IBAN · IPv4</span>
+      <span class="hint">Regex: emails · phones · NIC · cards (Luhn) · IBAN · IPv4 — NER: names</span>
     </div>
     <div id="presult"></div>
   </section>
@@ -403,6 +403,7 @@ document.getElementById('qrun').onclick = async () => {
   }
   out.append(el('p', { className: 'meta', textContent:
     `${data.rowCount} row(s) · ${data.elapsedMs} ms · ${data.masking.maskedCells} cell(s) masked${data.truncated ? ' · truncated' : ''}` }));
+  for (const w of (data.ner && data.ner.warnings) || []) out.append(el('p', { className: 'msg err', textContent: w }));
   out.append(el('h3', { className: 'sub', textContent: 'Masked — what leaves the security layer' }));
   out.append(resultTable(data.columns, data.rows, data.classification, data.rawRows));
   if (data.rawRows) {
@@ -425,6 +426,7 @@ document.getElementById('pdetect').onclick = async () => {
   }
   out.append(text.slice(pos));
   if (!data.spans.length) out.append(el('p', { className: 'none', textContent: 'No PII found.' }));
+  for (const w of data.warnings || []) out.prepend(el('p', { className: 'msg err', textContent: w }));
 };
 
 /**

@@ -18,6 +18,12 @@ const express = require('express');
 const { validate, securityMiddleware, mask } = require('../src/security-middleware');
 const { detectInText } = require('../src/pii-detectors');
 const { classifyColumns } = require('../src/pii-classifier');
+const { createNerClient, applyNer } = require('../src/pii-ner');
+
+// NER side service (pii_service/ner_service.py). If it is down, the pipeline
+// fails closed unless NER_FAIL_MODE=open.
+const ner = createNerClient({ url: process.env.NER_URL || 'http://127.0.0.1:5002' });
+const NER_FAIL_MODE = process.env.NER_FAIL_MODE === 'open' ? 'open' : 'closed';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,10 +62,21 @@ app.post('/api/guarded-query', securityMiddleware({ allowWrites: (req) => Boolea
   res.json({ ok: true, statementType: req.validation.statementType, note: 'Query passed validation and would now be sent for execution.' });
 });
 
-/** Regex PII detection on arbitrary text — no database involved. */
-app.post('/api/pii/detect', (req, res) => {
+/** PII detection on arbitrary text: regex detectors plus NER for names. No database involved. */
+app.post('/api/pii/detect', async (req, res) => {
   const text = String((req.body && req.body.text) || '');
-  res.json({ spans: detectInText(text) });
+  const spans = detectInText(text).map((s) => ({ ...s, source: 'regex' }));
+  const warnings = [];
+  try {
+    const [names] = await ner.analyze([text]);
+    for (const n of names) {
+      if (spans.some((s) => n.start < s.end && n.end > s.start)) continue; // regex already covers it
+      spans.push({ type: n.type, value: text.slice(n.start, n.end), start: n.start, end: n.end, source: 'ner', score: n.score });
+    }
+  } catch (e) {
+    warnings.push(`NER service unavailable (${e.message}) — names were not checked`);
+  }
+  res.json({ spans: spans.sort((a, b) => a.start - b.start), warnings });
 });
 
 /**
@@ -113,14 +130,16 @@ function dbRoute(handler) {
   };
 }
 
-// The full read pipeline: validate -> execute read-only -> classify -> mask.
+// The full read pipeline: validate -> execute read-only -> classify -> NER -> mask.
 // Only masked rows are returned; `includeRaw` exists so the demo can show the
 // before/after side by side and must not be exposed in the integrated system.
 app.post('/api/query', dbRoute(async (b) => {
   const result = await queries.run(b.sql);
   const classification = classifyColumns(result, { sql: b.sql, piiSchema: PII_SCHEMA });
+  const nerRun = await applyNer(result, classification, ner, { failMode: NER_FAIL_MODE });
   const masked = mask(result, classification, { mode: b.maskMode === 'redact' ? 'redact' : 'partial' });
   masked.classification = classification;
+  masked.ner = nerRun;
   if (b.includeRaw) masked.rawRows = result.rows;
   return masked;
 }));
@@ -131,8 +150,12 @@ app.post('/api/writes/:id/approve', dbRoute((b, p) => writes.approve(p.id, { app
 app.post('/api/writes/:id/reject', dbRoute((b, p) => writes.reject(p.id, { rejectedBy: b.rejectedBy, reason: b.reason })));
 app.post('/api/writes/:id/commit', dbRoute((b, p) => writes.commit(p.id, { sql: b.sql, committedBy: b.committedBy })));
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Query validation test UI running at http://localhost:${PORT}`);
+  const h = await ner.health();
+  console.log(h.status === 'ok'
+    ? `NER service connected (${h.model}) at ${ner.url}`
+    : `NER service NOT reachable at ${ner.url} - text columns will be ${NER_FAIL_MODE === 'closed' ? 'fully masked (fail closed)' : 'left unchecked (fail open)'}`);
   console.log(writes
     ? `Query execution + Controlled Write Protocol enabled (database: ${process.env.DB_NAME})`
     : 'Database features disabled - no DB_NAME set (see .env.example)');
