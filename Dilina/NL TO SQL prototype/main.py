@@ -79,10 +79,10 @@ def translate(
     if use_relationship_mapping:
         with time_block("Relational Graph & Bridge Discovery (Task 4B)", parent_summary=profiler.categories if profiler else None, category="Relationship Mapping"):
             candidate_terminals = set(grounded_tables)
-            # Add table names mentioned in query
+            # Add table names mentioned in query (with word boundaries to avoid substring false positives)
             for t_match in re.findall(r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"\[\w\.\-\]]+)', full_schema_context, re.IGNORECASE):
                 t_clean = t_match.strip('`"[]').split('.')[-1]
-                if t_clean.lower() in nl_query.lower():
+                if re.search(rf'\b{re.escape(t_clean)}\b', nl_query, re.IGNORECASE):
                     candidate_terminals.add(t_clean)
 
             if len(candidate_terminals) >= 2:
