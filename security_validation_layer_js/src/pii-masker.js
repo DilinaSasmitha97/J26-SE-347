@@ -100,13 +100,20 @@ const PARTIAL = {
   SECRET: () => '[REDACTED]',
 };
 
-/** Mask every detectable PII span inside a longer string. */
-function maskSpans(str) {
-  const spans = detectInText(str);
+/**
+ * Mask every PII span inside a longer string: regex-detected items, plus any
+ * name spans the NER stage found for this cell ({ start, end } offsets).
+ */
+function maskSpans(str, nameSpans = []) {
+  const spans = [
+    ...detectInText(str),
+    ...nameSpans.map((s) => ({ type: 'PERSON', start: s.start, end: s.end, value: str.slice(s.start, s.end) })),
+  ].sort((a, b) => a.start - b.start);
   if (!spans.length) return { value: str, changed: false };
   let out = '';
   let pos = 0;
   for (const s of spans) {
+    if (s.start < pos) continue; // overlaps an item already masked
     out += str.slice(pos, s.start) + maskValue(s.value, s.type, 'partial');
     pos = s.end;
   }
@@ -148,6 +155,7 @@ function mask(result, classification, { mode = 'partial' } = {}) {
     const type = cls.piiType || null;
     let strategy = null;
     if (type === 'CONTAINS_PII') strategy = 'spans';
+    else if (type === 'UNVERIFIED') strategy = 'full'; // could not be checked for names -> fail closed
     else if (type === 'MIXED') {
       // A column built from several tagged sources: if every part can be found by regex,
       // mask the spans; otherwise (a name is in there) mask the whole cell.
@@ -158,12 +166,13 @@ function mask(result, classification, { mode = 'partial' } = {}) {
   });
 
   let maskedCells = 0;
-  const rows = result.rows.map((row) => row.map((v, i) => {
+  const rows = result.rows.map((row, ri) => row.map((v, i) => {
     const { piiType, strategy } = plan[i];
     if (!strategy || v === null || v === undefined || String(v).trim() === '') return v;
     let out;
     if (strategy === 'spans') {
-      const r = maskSpans(String(v));
+      const names = (classification[i] && classification[i].personSpans && classification[i].personSpans[ri]) || [];
+      const r = maskSpans(String(v), names);
       if (!r.changed) return v;
       out = r.value;
     } else if (strategy === 'full') {

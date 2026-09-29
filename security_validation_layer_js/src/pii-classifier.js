@@ -287,7 +287,7 @@ function typeFromName(name) {
  *   piiSchema  { table: { column: PII_TYPE } } — the declared tags
  *
  * Returns one entry per column:
- *   { name, piiType, sourceTypes, method, confidence, sources, transforms, evidence }
+ *   { name, piiType, sourceTypes, declaredSafe, method, confidence, sources, transforms, evidence }
  * piiType is null for non-PII, a PII type, 'MIXED' when several tagged
  * sources feed one column, or 'CONTAINS_PII' when only some cells hold PII
  * inside longer text (mask() then masks those spans cell by cell).
@@ -307,12 +307,15 @@ function classifyColumns(result, { sql, piiSchema = {}, sampleSize = 50, sampleT
     let method = null;
     let confidence = null;
 
-    const tagged = [...new Set(lineage.sources.map((s) => tags.get(s)).filter(Boolean))];
+    const sourceTags = lineage.sources.map((s) => tags.get(s));
+    const tagged = [...new Set(sourceTags.filter((t) => t && t !== 'NONE'))];
+    // Every source was reviewed and declared NONE: NER may skip it (regex still runs below).
+    const declaredSafe = !tagged.length && sourceTags.length > 0 && sourceTags.every((t) => t === 'NONE');
     if (tagged.length) {
       piiType = tagged.length === 1 ? tagged[0] : 'MIXED';
       method = lineage.transforms.length ? 'lineage' : 'schema-tag';
       confidence = 'high';
-    } else {
+    } else if (!declaredSafe) {
       const names = [...lineage.sources.map((s) => s.split('.')[1]), col.name];
       const guessed = names.map(typeFromName).find(Boolean);
       if (guessed) {
@@ -355,6 +358,7 @@ function classifyColumns(result, { sql, piiSchema = {}, sampleSize = 50, sampleT
       name: col.name,
       piiType,
       sourceTypes: tagged, // every declared type feeding the column (several when MIXED)
+      declaredSafe,
       method,
       confidence,
       sources: lineage.sources,
