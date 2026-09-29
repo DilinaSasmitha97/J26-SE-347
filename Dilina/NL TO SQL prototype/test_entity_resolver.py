@@ -82,15 +82,22 @@ class TestEntityResolver(unittest.TestCase):
         self.assertEqual(matches[0]["column"], "Make")
         self.assertEqual(matches[0]["value"], "amc hornet sportabout (sw)")
 
-    def test_format_grounding_hints(self):
-        matches = [
-            {"term": "france", "table": "COUNTRIES", "column": "CountryName", "value": "France"},
-            {"term": "houses", "table": "Properties", "column": "property_type_code", "value": "HSE"}
+    def test_format_grounding_hints_silent_protection(self):
+        # 1. Direct match ('france' -> 'France') must be SILENT (empty string) to prevent prompt poisoning
+        direct_matches = [
+            {"term": "france", "table": "COUNTRIES", "column": "CountryName", "value": "France", "match_type": "exact_cell_value"}
         ]
-        hints = self.resolver.format_grounding_hints(matches)
-        self.assertIn("Contextual Entity & Cell-Value Groundings", hints)
-        self.assertIn("COUNTRIES.CountryName = 'France'", hints)
-        self.assertIn("Properties.property_type_code = 'HSE'", hints)
+        silent_hints = self.resolver.format_grounding_hints(direct_matches)
+        self.assertEqual(silent_hints, "")
+
+        # 2. Discrepancy match ('houses' -> 'HSE') must be formatted as non-coercive domain translation note
+        discrepancy_matches = [
+            {"term": "houses", "table": "Properties", "column": "property_type_code", "value": "HSE", "match_type": "abbreviation_mapping"}
+        ]
+        disc_hints = self.resolver.format_grounding_hints(discrepancy_matches)
+        self.assertIn("Domain Discrepancy & Code Translation Hints", disc_hints)
+        self.assertIn("Properties.property_type_code = 'HSE'", disc_hints)
+        self.assertNotIn("COUNTRIES", disc_hints)
 
 if __name__ == "__main__":
     unittest.main()

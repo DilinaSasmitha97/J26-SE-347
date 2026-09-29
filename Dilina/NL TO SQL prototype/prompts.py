@@ -42,11 +42,8 @@ def generate_crp_prompt(
     if join_paths and str(join_paths).strip():
         join_block = f"\n{join_paths.strip()}\n"
 
-    top_directive = "LIMIT 1" if dialect_name == "SQLite" else "TOP 1"
-
     prompt = f"""Complete {dialect_name} query only and with no explanation.
 -- Rule 1: Project ONLY the exact columns requested in the question. Do not include unrequested auxiliary counts or metrics in SELECT.
--- Rule 2: For questions asking for an item with the maximum or minimum of a property, use ORDER BY and {top_directive}. Do not use MAX() with GROUP BY.
 
 /* Given the following database schema:
 {schema_context}

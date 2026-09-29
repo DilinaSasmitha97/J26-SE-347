@@ -266,17 +266,30 @@ class ContextualEntityResolver:
     def format_grounding_hints(self, matches: List[Dict[str, str]]) -> str:
         """
         Formats discovered value groundings into compact SQL prompt hints.
+        Filters strictly for genuine discrepancy mappings (e.g. abbreviations like 'house' -> 'HSE',
+        'male' -> 'M', or non-obvious encodings).
+        Direct identical word matches ('dog' -> 'dog', 'France' -> 'France') are silently protected
+        in the schema without injecting distracting prompt directives.
         """
         if not matches:
             return ""
 
+        # Filter strictly for discrepancy mappings (abbreviations or term != value)
+        discrepancy_matches = [
+            m for m in matches 
+            if m.get("match_type") == "abbreviation_mapping" or m["term"].lower().strip() != m["value"].lower().strip()
+        ]
+
+        if not discrepancy_matches:
+            return ""
+
         hints = []
-        for m in matches:
+        for m in discrepancy_matches:
             val_formatted = f"'{m['value']}'" if not m['value'].isdigit() else m['value']
-            hints.append(f"-- '{m['term']}' matches {m['table']}.{m['column']} = {val_formatted}")
+            hints.append(f"-- Note: Term '{m['term']}' maps to database code {m['table']}.{m['column']} = {val_formatted}")
 
         return "\n".join([
-            "/* Contextual Entity & Cell-Value Groundings */",
+            "/* Domain Discrepancy & Code Translation Hints (Use ONLY if relevant): */",
             *hints
         ])
 

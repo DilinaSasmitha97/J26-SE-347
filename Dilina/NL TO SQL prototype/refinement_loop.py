@@ -169,6 +169,47 @@ def dry_run_validate(sql: str, db_conn=None) -> Tuple[bool, str, str]:
         return False, err_msg, err_type
 
 
+def sanitize_sql_keyword_spacing(sql: str) -> str:
+    """
+    Safely separates concatenated table aliases and SQL keywords outside of string literals.
+    Examples:
+      - 'P2ON' -> 'P2 ON'
+      - 'AS T1JOIN' -> 'AS T1 JOIN'
+      - ')JOIN' -> ') JOIN'
+      - 'T2WHERE' -> 'T2 WHERE'
+      - 'T3ON' -> 'T3 ON'
+    Preserves real identifiers like 'LOCATION', 'PERSON', 'ACTION', etc., and quoted strings.
+    """
+    if not sql or not isinstance(sql, str):
+        return sql
+
+    # Split SQL into tokens outside of single-quoted and double-quoted strings
+    parts = re.split(r"('(?:''|[^'])*'|\"(?:\"\"|[^\"])*\")", sql)
+    
+    keywords = r"(ON|JOIN|LEFT\s+JOIN|INNER\s+JOIN|RIGHT\s+JOIN|WHERE|GROUP\s+BY|ORDER\s+BY|HAVING|LIMIT|UNION|INTERSECT|EXCEPT)"
+    
+    sanitized_parts = []
+    for part in parts:
+        # If this part is a string literal, leave it completely untouched
+        if part.startswith("'") or part.startswith('"'):
+            sanitized_parts.append(part)
+            continue
+        
+        # 1. Glued alias ending with digits + keyword (e.g. 'P2ON' -> 'P2 ON', 'T1JOIN' -> 'T1 JOIN', 'HP2ON' -> 'HP2 ON')
+        # English words do not contain digits immediately preceding a SQL keyword
+        s = re.sub(rf"\b([a-zA-Z]+[0-9]+){keywords}\b", r"\1 \2", part, flags=re.IGNORECASE)
+        
+        # 2. Glued keyword after 'AS' alias (e.g. 'AS T1JOIN' -> 'AS T1 JOIN', 'AS empJOIN' -> 'AS emp JOIN')
+        s = re.sub(rf"\b(AS\s+[a-zA-Z0-9_]+?){keywords}\b", r"\1 \2", s, flags=re.IGNORECASE)
+        
+        # 3. Glued keyword after closing parenthesis (e.g. ')JOIN' -> ') JOIN', ')WHERE' -> ') WHERE')
+        s = re.sub(rf"\){keywords}\b", r") \1", s, flags=re.IGNORECASE)
+
+        sanitized_parts.append(s)
+
+    return "".join(sanitized_parts)
+
+
 def build_refinement_prompt(
     nl_query: str,
     failed_sql: str,
@@ -279,6 +320,17 @@ def execute_refinement_loop(
         if is_valid:
             return initial_sql, True, 0, refinement_stats
 
+        # Fast Deterministic Syntax Spacing Sanitizer (Compiler-Gated, 0 tokens)
+        if err_type == "SYNTAX_ERROR":
+            sanitized_sql = sanitize_sql_keyword_spacing(initial_sql)
+            if sanitized_sql != initial_sql:
+                is_sanitized_valid, s_err, s_type = dry_run_validate(sanitized_sql, db_conn)
+                if is_sanitized_valid:
+                    refinement_stats["healed"] = True
+                    refinement_stats["healed_by_sanitizer"] = True
+                    log_step("Initial SQL syntax healed by compiler-gated spacing sanitizer (0 tokens).", level="SUCCESS")
+                    return sanitized_sql, True, 0, refinement_stats
+
         # Determine target SQL dialect
         if not dialect:
             if isinstance(db_conn, sqlite3.Connection):
@@ -330,6 +382,15 @@ def execute_refinement_loop(
 
                 # Re-validate with database compiler
                 is_valid, error_msg, err_type = dry_run_validate(refined_sql, db_conn)
+                if not is_valid and err_type == "SYNTAX_ERROR":
+                    sanitized_refined = sanitize_sql_keyword_spacing(refined_sql)
+                    if sanitized_refined != refined_sql:
+                        s_valid, s_err, s_type = dry_run_validate(sanitized_refined, db_conn)
+                        if s_valid:
+                            is_valid = True
+                            refined_sql = sanitized_refined
+                            error_msg = ""
+                            err_type = ""
                 
                 attempt_log = {
                     "attempt": attempt,
