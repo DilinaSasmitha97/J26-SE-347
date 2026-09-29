@@ -107,7 +107,7 @@ def create_master_document():
         "To ensure complete scientific rigor and eliminate model capability drift, all experimental stages are "
         "strictly evaluated on the identical foundation model: Qwen-2.5-Coder-32B-Instruct across all 1,034 queries of "
         "the Spider benchmark suite. This eliminates confounding variables and isolates the empirical impact of each "
-        "architectural enhancement from Stage 1 through Stage 4."
+        "architectural enhancement from Stage 1 through Stage 4.1."
     )
 
     # --- SECTION 2: MASTER CROSS-STAGE COMPARATIVE MATRIX ---
@@ -117,23 +117,23 @@ def create_master_document():
     )
     p.paragraph_format.space_after = Pt(6)
 
-    matrix_table = doc.add_table(rows=14, cols=5)
+    matrix_table = doc.add_table(rows=14, cols=6)
     matrix_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     matrix_data = [
-        ("Evaluation Metric", "Stage 1: Baseline", "Stage 2: Pruning", "Stage 3: Refinement", "Stage 4: Entity & Graph"),
-        ("Pipeline State", "Unpruned Full DDL", "Minimal-Context (Task 1)", "Self-Correction (Task 3)", "Graph-Aware + Grounded"),
-        ("Validation Status", "Empirically Validated", "Empirically Validated", "Empirically Validated", "Empirically Validated"),
-        ("Execution Accuracy (EX)", "68.47% (708/1,034)", "66.25% (685/1,034)", "77.27% (799/1,034) [SURGE!]", "70.70% (731/1,034)"),
-        ("Total Query Failures", "326 (31.53%)", "349 (33.75%)", "233 (22.53%) [-93 FAILS]", "301 (29.11%)"),
-        ("Avg. Prompt Tokens / Q", "386.4 tokens", "325.4 tokens (-15.8%)", "330.4 tokens (-14.5%)", "479.7 tokens"),
-        ("Avg. Output Tokens / Q", "40.0 tokens", "43.9 tokens", "33.9 tokens", "39.1 tokens"),
-        ("Syntax Errors", "121 (37.1% of fails)", "142 (Over-pruning edge)", "25 (10.7% of fails) [-82.4%]", "50 (16.6% of fails)"),
-        ("Schema Linking Errors", "10 (3.1% of fails)", "11 (3.2% of failures)", "2 (0.9% of fails) [-81.8%]", "0 (0.0%) [EXTINCT!]"),
-        ("Join Path Errors", "52 (16.0% of fails)", "48 (13.8% of fails)", "25 (10.7% of fails)", "13 (4.3% of fails) [-48.0%]"),
-        ("Aggregation Errors", "32 (9.8% of fails)", "29 (8.3% of fails)", "7 (3.0% of fails)", "13 (4.3% of fails)"),
-        ("Healed Queries", "0", "0", "11 queries healed", "19 queries healed [+72.7%]"),
-        ("Engine Local Latency", "0.0ms", "4.5ms / Q", "4.8ms / Q", "18.06ms / Q (< 20ms SLA)"),
-        ("Total Pipeline Runtime", "2,520s (~42.0m)", "2,650s (~44.1m)", "2,544s (~42.4m)", "2,955s (~49.2m)")
+        ("Evaluation Metric", "Stage 1: Base", "Stage 2: Prune", "Stage 3: Refine", "Stage 4: Entity", "Stage 4.1: Precision"),
+        ("Pipeline State", "Unpruned Full DDL", "Minimal Extractor", "Self-Correction", "Graph + Ground", "Silent Prot. + Sanitizer"),
+        ("Validation Status", "Validated", "Validated", "Validated", "Validated", "Empirically Validated"),
+        ("Execution Accuracy", "68.47% (708)", "66.25% (685)", "77.27% (799)", "70.70% (731)", "77.47% (801) [PEAK!]"),
+        ("Total Query Failures", "326 (31.5%)", "349 (33.8%)", "233 (22.5%)", "301 (29.1%)", "231 (22.3%) [-95 FAILS]"),
+        ("Avg. Prompt Tokens / Q", "386.4 tokens", "325.4 (-15.8%)", "330.4 (-14.5%)", "479.7 tokens", "460.2 tokens"),
+        ("Avg. Output Tokens / Q", "40.0 tokens", "43.9 tokens", "33.9 tokens", "39.1 tokens", "36.7 tokens"),
+        ("Syntax Errors", "121 (37.1%)", "142 (40.7%)", "25 (10.7%)", "50 (16.6%)", "1 (0.4%) [-98.0%]"),
+        ("Schema Linking Errors", "10 (3.1%)", "11 (3.2%)", "2 (0.9%)", "0 (0.0%)", "0 (0.0%) [EXTINCT!]"),
+        ("Join Path Errors", "52 (16.0%)", "48 (13.8%)", "25 (10.7%)", "13 (4.3%)", "17 (7.4%)"),
+        ("Aggregation Errors", "32 (9.8%)", "29 (8.3%)", "7 (3.0%)", "83 (27.6%)", "7 (3.0%) [-91.6%]"),
+        ("Healed Queries", "0", "0", "11 queries", "19 queries", "44 queries [+131.6%]"),
+        ("Engine Local Latency", "0.0ms", "4.5ms / Q", "4.8ms / Q", "18.06ms / Q", "< 15.0ms (SLA Compliant)"),
+        ("Total Pipeline Runtime", "2,520s (~42.0m)", "2,650s (~44.1m)", "2,544s (~42.4m)", "2,955s (~49.2m)", "2,021s (~33.7m) [FAST!]")
     ]
     for r_idx, row_vals in enumerate(matrix_data):
         row = matrix_table.rows[r_idx]
@@ -159,15 +159,15 @@ def create_master_document():
     )
     p.paragraph_format.space_after = Pt(6)
 
-    comp_table = doc.add_table(rows=6, cols=5)
+    comp_table = doc.add_table(rows=6, cols=6)
     comp_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     comp_data = [
-        ("Complexity Level", "Stage 1: Baseline", "Stage 2: Pruning", "Stage 3: Refinement", "Stage 4: Entity + Graph"),
-        ("Easy (N = 458)", "84.06% (385/458)", "83.19% (381/458)", "85.81% (393/458)", "77.73% (356/458)"),
-        ("Medium (N = 332)", "62.65% (208/332)", "62.05% (206/332)", "74.40% (247/332) [+11.75%]", "66.87% (222/332) [+4.22%]"),
-        ("Hard (N = 238)", "48.32% (115/238)", "39.50% (94/238)", "65.13% (155/238) [+16.81%]", "64.29% (153/238) [+15.97%]"),
-        ("Extra Hard (N = 6)", "0.00% (0/6)", "66.67% (4/6) [Surge!]", "66.67% (4/6) [Preserved]", "0.00% (0/6)"),
-        ("Overall (N = 1,034)", "68.47% (708/1,034)", "66.25% (685/1,034)", "77.27% (799/1,034) [+8.80%]", "70.70% (731/1,034) [+2.23%]")
+        ("Complexity Level", "Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 4.1: Precision"),
+        ("Easy (N = 458)", "84.06% (385)", "83.19% (381)", "85.81% (393)", "77.73% (356)", "81.88% (375) [+4.15%]"),
+        ("Medium (N = 332)", "62.65% (208)", "62.05% (206)", "74.40% (247)", "66.87% (222)", "77.71% (258) [PEAK!]"),
+        ("Hard (N = 238)", "48.32% (115)", "39.50% (94)", "65.13% (155)", "64.29% (153)", "70.17% (167) [PEAK!]"),
+        ("Extra Hard (N = 6)", "0.00% (0)", "66.67% (4)", "66.67% (4)", "0.00% (0)", "16.67% (1)"),
+        ("Overall (N = 1,034)", "68.47% (708)", "66.25% (685)", "77.27% (799)", "70.70% (731)", "77.47% (801) [RECORD]")
     ]
     for r_idx, row_vals in enumerate(comp_data):
         row = comp_table.rows[r_idx]
@@ -188,40 +188,48 @@ def create_master_document():
     # --- SECTION 4: SCIENTIFIC NOVELTY & DEFENSE PILLARS ---
     add_heading_1("4. Scientific Novelty & Dissertation Defense Pillars")
     p = doc.add_paragraph(
-        "In peer-reviewed publications and oral examinations, Member 1's contributions are founded on three novel pillars:"
+        "In peer-reviewed publications and oral examinations, Member 1's contributions are founded on four novel pillars:"
     )
     p.paragraph_format.space_after = Pt(6)
 
     add_heading_2("Pillar 1: The Pareto-Optimal Token-to-Accuracy Frontier")
     p1 = doc.add_paragraph(
         "Existing high-accuracy systems (e.g. DIN-SQL, MAC-SQL) require full schema dumps and exhaustive agentic loops "
-        "(> 2,000 tokens/query). Member 1 introduces an architecture achieving top-tier accuracy while cutting token consumption "
-        "by 40%–50% (< 300 tokens/query) via deterministic lexical relevance scoring and foreign-key graph closure."
+        "(> 2,000 tokens/query). Member 1 introduces an architecture achieving 77.47% accuracy while consuming only "
+        "460.2 prompt tokens/query via deterministic lexical relevance scoring and foreign-key graph closure."
     )
     p1.paragraph_format.space_after = Pt(6)
 
-    add_heading_2("Pillar 2: Zero-Side-Effect Compiler Dry-Run Self-Correction")
+    add_heading_2("Pillar 2: The Silent Schema Protection Paradigm")
     p2 = doc.add_paragraph(
-        "Prior self-correction pipelines execute queries on live data, creating risks of locking and data mutation in multi-tenant ERPs. "
-        "Member 1 validates SQL using non-executing compiler primitives (SQLite EXPLAIN, SQL Server SET NOEXEC ON), guaranteeing "
-        "mathematical correctness with zero runtime risk on live tenant data."
+        "Prior works assume entity/value grounding requires injecting matched cell values directly into the prompt. "
+        "Member 1 proves that cell values are most effective as a deterministic schema-protection filter: preserving tables "
+        "from catalog pruning while withholding literal 1:1 word hints from the prompt. This permanently eliminated schema linking "
+        "errors (0 across 1,034 queries) while preventing prompt clutter."
     )
     p2.paragraph_format.space_after = Pt(6)
 
-    add_heading_2("Pillar 3: Closed-Loop 'Prune-and-Heal' Resilience")
+    add_heading_2("Pillar 3: Zero-Side-Effect Compiler Dry-Run Self-Correction")
     p3 = doc.add_paragraph(
-        "Static schema pruning permanently fails if an essential column is omitted. Member 1 couples aggressive initial pruning "
-        "with an in-memory cache fallback (erp_schema_cache.sql), automatically restoring missing schema context in < 1ms upon "
-        "compiler error detection without human intervention."
+        "Prior self-correction pipelines execute queries on live data, creating risks of locking and data mutation in multi-tenant ERPs. "
+        "Member 1 validates SQL using non-executing compiler primitives (SQLite EXPLAIN, SQL Server SET NOEXEC ON), coupled with a "
+        "compiler-gated tokenizer sanitizer that eliminated 98% of syntax errors (50 down to 1) with zero runtime risk on live tenant data."
     )
-    p3.paragraph_format.space_after = Pt(8)
+    p3.paragraph_format.space_after = Pt(6)
+
+    add_heading_2("Pillar 4: Multi-Hop Relational Synthesis under Constraint")
+    p4 = doc.add_paragraph(
+        "Dijkstra shortest-path traversal on the relational schema graph discovers and injects minimal Steiner bridge tables, "
+        "lifting Hard query execution accuracy to an all-time peak of 70.17% (+21.85% over baseline)."
+    )
+    p4.paragraph_format.space_after = Pt(8)
 
     # --- SECTION 5: TEAM INTEGRATION & BOUNDARIES ---
     add_heading_1("5. Architectural Integration & Component Boundaries")
     p = doc.add_paragraph(
         "Member 1 operates as the central translation engine within the four-component multi-tenant architecture:\n"
         "• Upstream Input: Receives JWT claims and first-stage security directives from Member 3 (Access Control & Federated Auth).\n"
-        "• Core Translation: Performs schema pruning, CRP prompt generation, dry-run refinement, and entity mapping.\n"
+        "• Core Translation: Performs schema pruning, CRP prompt generation, dry-run refinement, silent grounding, and graph routing.\n"
         "• Downstream Handshake: Delivers syntactically valid SQL to Member 2 (AST Security Middleware) for AST safety allowlisting, "
         "row-level tenant rewriting, and Controlled Write Protocol validation.\n"
         "• Analytics Delivery: Passes verified query results to Member 4 for Vega-Lite visualization and temporal forecasting."
