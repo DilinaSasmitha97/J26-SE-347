@@ -110,6 +110,22 @@ def translate(
         )
         schema_meta = pruned_schema
 
+    # 0C.2 Subgraph Relational Join Paths (Task 4B Precision Enhancement)
+    if use_relationship_mapping:
+        with time_block("Relational Subgraph Path Resolution (Task 4B)", parent_summary=profiler.categories if profiler else None, category="Relationship Mapping"):
+            selected_tables = set()
+            for t_match in re.findall(r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"\[\w\.\-\]]+)', schema_meta, re.IGNORECASE):
+                t_clean = t_match.strip('`"[]').split('.')[-1]
+                selected_tables.add(t_clean)
+            
+            subgraph_hints = relationship_mapper.get_subgraph_join_paths(
+                selected_tables=selected_tables,
+                schema_meta=full_schema_context,
+                db_conn=db_conn
+            )
+            if subgraph_hints:
+                join_paths_str = subgraph_hints
+
     # 0D. Dynamic Exemplar Selection (Task 2.5 - DAIL-SQL In-Context Learning)
     exemplars_str = ""
     if use_exemplars:

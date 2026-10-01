@@ -252,18 +252,71 @@ class RelationshipMapper:
         unique_hints = []
 
         for p in join_paths:
-            hint = f"{p['from_table']}.{p['from_col']} = {p['to_table']}.{p['to_col']}"
-            hint_rev = f"{p['to_table']}.{p['to_col']} = {p['from_table']}.{p['from_col']}"
+            t1 = p['from_table']
+            c1 = p['from_col']
+            t2 = p['to_table']
+            c2 = p['to_col']
+            hint = f"{t1}.{c1} = {t2}.{c2}"
+            hint_rev = f"{t2}.{c2} = {t1}.{c1}"
             if hint not in seen and hint_rev not in seen:
                 seen.add(hint)
-                unique_hints.append(f"-- Join Path: {hint}")
+                unique_hints.append(f"-- {hint}")
 
         if not unique_hints:
             return ""
 
         return "\n".join([
-            "/* Multi-Hop Relational Join Paths */",
-            *unique_hints
+            "/* Relational Join Paths (Foreign Keys):",
+            *unique_hints,
+            "*/"
         ])
+
+    def get_subgraph_join_paths(
+        self,
+        selected_tables: Set[str],
+        schema_meta: str,
+        db_conn=None
+    ) -> str:
+        """
+        Extracts all direct and indirect foreign key relationships between any pair of tables
+        present in selected_tables (the active pruned schema subgraph).
+        Returns formatted SQL comments with exact equality predicates:
+        
+        /* Relational Join Paths (Foreign Keys):
+        -- singer.singer_id = singer_in_concert.singer_id
+        -- concert.concert_id = singer_in_concert.concert_id
+        */
+        """
+        if not selected_tables or len(selected_tables) < 2:
+            return ""
+
+        # 1. Gather all foreign keys
+        if db_conn is not None:
+            relationships = self.parse_foreign_keys_from_sqlite(db_conn)
+            if not relationships:
+                relationships = self.parse_foreign_keys_from_ddl(schema_meta)
+        else:
+            relationships = self.parse_foreign_keys_from_ddl(schema_meta)
+
+        if not relationships:
+            return ""
+
+        # Normalize selected table names to lowercase mapping
+        norm_selected = {t.lower(): t for t in selected_tables}
+
+        # Filter relationships where BOTH from_table and to_table are in the selected subgraph
+        subgraph_paths = []
+        for rel in relationships:
+            f_norm = rel["from_table"].lower()
+            t_norm = rel["to_table"].lower()
+            if f_norm in norm_selected and t_norm in norm_selected:
+                subgraph_paths.append({
+                    "from_table": norm_selected[f_norm],
+                    "from_col": rel["from_col"],
+                    "to_table": norm_selected[t_norm],
+                    "to_col": rel["to_col"]
+                })
+
+        return self.format_join_path_hints(subgraph_paths)
 
 relationship_mapper = RelationshipMapper()
