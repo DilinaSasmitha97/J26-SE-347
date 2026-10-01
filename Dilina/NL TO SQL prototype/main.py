@@ -8,7 +8,7 @@ if sys.platform == "win32":
     platform.win32_ver = lambda *args, **kwargs: ('10', '10.0.19045', 'SP0', 'Multiprocessor Free')
     platform.platform = lambda *args, **kwargs: 'Windows-10-10.0.19045-SP0'
     platform.system = lambda *args, **kwargs: 'Windows'
-    platform.uname = lambda *args, **kwargs: platform.uname_result(('Windows', 'PC', '10', '10.0.19045', 'AMD64', 'Intel64'))
+    platform.uname = lambda *args, **kwargs: platform.uname_result('Windows', 'PC', '10', '10.0.19045', 'AMD64')
 
 from dotenv import load_dotenv
 
@@ -19,6 +19,7 @@ import schema_extractor
 import refinement_loop
 from entity_resolver import entity_resolver
 from relationship_mapper import relationship_mapper
+from exemplar_selector import exemplar_selector
 from profiler import CycleProfiler, time_block, log_step
 
 # Load environment variables
@@ -41,11 +42,14 @@ def translate(
     full_schema_meta: str = None,
     dialect: str = None,
     use_entity_resolution: bool = True,
-    use_relationship_mapping: bool = True
+    use_relationship_mapping: bool = True,
+    use_exemplars: bool = True,
+    num_exemplars: int = 2
 ) -> tuple[str, dict]:
     """
     Standard contract function for Member 1 translator engine with self-correction,
-    contextual entity value grounding (Task 4A), and multi-hop relationship mapping (Task 4B).
+    contextual entity value grounding (Task 4A), multi-hop relationship mapping (Task 4B),
+    and DAIL-style dynamic few-shot exemplar selection (Task 2.5).
     """
     full_schema_context = full_schema_meta or schema_meta
 
@@ -106,6 +110,13 @@ def translate(
         )
         schema_meta = pruned_schema
 
+    # 0D. Dynamic Exemplar Selection (Task 2.5 - DAIL-SQL In-Context Learning)
+    exemplars_str = ""
+    if use_exemplars:
+        with time_block("Dynamic Exemplar Selection (Task 2.5)", parent_summary=profiler.categories if profiler else None, category="Exemplar Retrieval"):
+            retrieved_ex = exemplar_selector.retrieve(nl_query, k=num_exemplars)
+            exemplars_str = exemplar_selector.format_exemplars(retrieved_ex)
+
     # 1. Build Prompt with CRP v2 (including Value Groundings, Join Paths & Strict Projection Rules)
     with time_block("Build Code Representation Prompt (CRP v2)", parent_summary=profiler.categories if profiler else None, category="Prompt Construction"):
         prompt_string = prompts.generate_crp_prompt(
@@ -114,7 +125,8 @@ def translate(
             injected_rules=injected_rules, 
             dialect=active_dialect,
             value_groundings=value_groundings_str,
-            join_paths=join_paths_str
+            join_paths=join_paths_str,
+            exemplars=exemplars_str
         )
         
     # 2. Call LLM via wrapper with retries & token tracking

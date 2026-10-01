@@ -7,12 +7,15 @@ if sys.platform == "win32":
     platform.win32_ver = lambda *args, **kwargs: ('10', '10.0.19045', 'SP0', 'Multiprocessor Free')
     platform.platform = lambda *args, **kwargs: 'Windows-10-10.0.19045-SP0'
     platform.system = lambda *args, **kwargs: 'Windows'
-    platform.uname = lambda *args, **kwargs: platform.uname_result(('Windows', 'PC', '10', '10.0.19045', 'AMD64', 'Intel64'))
+    platform.uname = lambda *args, **kwargs: platform.uname_result('Windows', 'PC', '10', '10.0.19045', 'AMD64')
 
 import json
 import sqlite3
 import argparse
 import time
+import itertools
+import random
+from collections import defaultdict
 from database import get_sqlite_connection, extract_sqlite_schema_as_create_statements
 from main import translate
 from profiler import CycleProfiler, time_block, log_step
@@ -74,6 +77,89 @@ def categorize_failure(predicted_sql: str, gold_sql: str, pred_exec_error: str =
     return "RESULT_MISMATCH"
 
 
+def permute_tuple(element: tuple, perm: tuple) -> tuple:
+    assert len(element) == len(perm)
+    return tuple([element[i] for i in perm])
+
+
+def unorder_row(row: tuple) -> tuple:
+    return tuple(sorted(row, key=lambda x: str(x) + str(type(x))))
+
+
+def quick_rej(result1: list, result2: list, order_matters: bool) -> bool:
+    s1 = [unorder_row(row) for row in result1]
+    s2 = [unorder_row(row) for row in result2]
+    if order_matters:
+        return s1 == s2
+    else:
+        return set(s1) == set(s2)
+
+
+def multiset_eq(l1: list, l2: list) -> bool:
+    if len(l1) != len(l2):
+        return False
+    d = defaultdict(int)
+    for e in l1:
+        d[e] += 1
+    for e in l2:
+        d[e] -= 1
+        if d[e] < 0:
+            return False
+    return True
+
+
+def get_constraint_permutation(tab1_sets_by_columns: list, result2: list):
+    num_cols = len(result2[0])
+    perm_constraints = [{i for i in range(num_cols)} for _ in range(num_cols)]
+    if num_cols <= 3:
+        return itertools.product(*perm_constraints)
+
+    # Sample up to 20 rows and constrain the space of permutations
+    sample_size = min(20, len(result2))
+    for row in (random.sample(result2, sample_size) if len(result2) > 0 else []):
+        for tab1_col in range(num_cols):
+            for tab2_col in set(perm_constraints[tab1_col]):
+                if row[tab2_col] not in tab1_sets_by_columns[tab1_col]:
+                    perm_constraints[tab1_col].remove(tab2_col)
+    return itertools.product(*perm_constraints)
+
+
+def yale_result_eq(result1: list, result2: list, order_matters: bool) -> bool:
+    """
+    Evaluates execution equivalence according to the official Yale test-suite-sql-eval standard
+    (Zhong et al., EMNLP 2020 / taoyds/test-suite-sql-eval).
+    
+    result1: gold query execution results (list of tuples)
+    result2: predicted query execution results (list of tuples)
+    order_matters: True if gold query specified ORDER BY, False otherwise
+    """
+    if len(result1) == 0 and len(result2) == 0:
+        return True
+    if len(result1) != len(result2):
+        return False
+    num_cols = len(result1[0])
+    if len(result2[0]) != num_cols:
+        return False
+    if not quick_rej(result1, result2, order_matters):
+        return False
+
+    tab1_sets_by_columns = [{row[i] for row in result1} for i in range(num_cols)]
+    for perm in get_constraint_permutation(tab1_sets_by_columns, result2):
+        if len(perm) != len(set(perm)):
+            continue
+        if num_cols == 1:
+            result2_perm = result2
+        else:
+            result2_perm = [permute_tuple(element, perm) for element in result2]
+        if order_matters:
+            if result1 == result2_perm:
+                return True
+        else:
+            if set(result1) == set(result2_perm) and multiset_eq(result1, result2_perm):
+                return True
+    return False
+
+
 def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str = "all", delay: float = 0.0, enable_refinement: bool = True) -> dict:
     diff_filter = difficulty.lower().strip() if difficulty else "all"
     log_step(f"Loading Spider dataset from {dataset_path} (Filter: difficulty='{diff_filter}', Refinement={'ENABLED' if enable_refinement else 'DISABLED'})...")
@@ -105,11 +191,13 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
         data = filtered_data
         
     total = len(data)
-    correct = 0
+    strict_correct = 0
+    yale_correct = 0
     errors = 0
     healed_total = 0
     refinement_attempts_total = 0
     refinement_tokens_total = 0
+    predictions_log = []
     
     total_tokens_all = 0
     total_prompt_tokens_all = 0
@@ -124,10 +212,10 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
     }
     
     diff_stats = {
-        "easy": {"total": 0, "correct": 0},
-        "medium": {"total": 0, "correct": 0},
-        "hard": {"total": 0, "correct": 0},
-        "extra": {"total": 0, "correct": 0},
+        "easy": {"total": 0, "strict_correct": 0, "yale_correct": 0},
+        "medium": {"total": 0, "strict_correct": 0, "yale_correct": 0},
+        "hard": {"total": 0, "strict_correct": 0, "yale_correct": 0},
+        "extra": {"total": 0, "strict_correct": 0, "yale_correct": 0},
     }
     
     base_dir = os.path.dirname(dataset_path)
@@ -214,15 +302,32 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
                     
             # 4. Compare datasets (Execution Accuracy) & failure categorization
             with time_block("Results Comparison & Failure Taxonomy", parent_summary=sample_profiler.categories, category="Result Set Comparison"):
+                order_matters = 'order by' in gold_sql.lower()
+                is_strict = False
+                is_yale = False
+
                 if pred_results is not None and gold_results is not None:
+                    # Legacy strict set match (for historical cross-stage comparability)
                     pred_set = set([str(r) for r in pred_results])
                     gold_set = set([str(r) for r in gold_results])
-                    
-                    if pred_set == gold_set:
-                        log_step("    [MATCH] Results are identical", level="SUCCESS")
-                        correct += 1
+                    is_strict = (pred_set == gold_set)
+
+                    # Official Yale test-suite-sql-eval match (multiset + order_matters + column permutation)
+                    is_yale = yale_result_eq(gold_results, pred_results, order_matters=order_matters)
+
+                    if is_strict:
+                        strict_correct += 1
                         if sample_diff in diff_stats:
-                            diff_stats[sample_diff]["correct"] += 1
+                            diff_stats[sample_diff]["strict_correct"] += 1
+
+                    if is_yale:
+                        yale_correct += 1
+                        if sample_diff in diff_stats:
+                            diff_stats[sample_diff]["yale_correct"] += 1
+                        if is_strict:
+                            log_step("    [YALE & STRICT MATCH] Results strictly identical", level="SUCCESS")
+                        else:
+                            log_step("    [YALE EQUIVALENT] Permutation / semantic match (Yale EX Passed)", level="SUCCESS")
                     else:
                         cat = categorize_failure(predicted_sql, gold_sql, pred_exec_error)
                         taxonomy_counts[cat] = taxonomy_counts.get(cat, 0) + 1
@@ -231,6 +336,19 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
                     cat = categorize_failure(predicted_sql, gold_sql, pred_exec_error)
                     taxonomy_counts[cat] = taxonomy_counts.get(cat, 0) + 1
                     log_step(f"    [MISMATCH] Execution Error | Category: {cat}", level="WARN")
+
+                predictions_log.append({
+                    "index": idx + 1,
+                    "db_id": db_id,
+                    "difficulty": sample_diff,
+                    "question": question,
+                    "gold_sql": gold_sql,
+                    "predicted_sql": predicted_sql,
+                    "strict_match": is_strict,
+                    "yale_match": is_yale,
+                    "tokens": t_tok,
+                    "healed": token_stats.get("healed", False)
+                })
                 
             conn.close()
             
@@ -246,7 +364,8 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
         if delay > 0 and idx < total - 1:
             time.sleep(delay)
         
-    accuracy = (correct / total) * 100 if total > 0 else 0
+    strict_accuracy = (strict_correct / total) * 100 if total > 0 else 0
+    yale_accuracy = (yale_correct / total) * 100 if total > 0 else 0
     avg_tokens = (total_tokens_all / total) if total > 0 else 0
     avg_prompt_tokens = (total_prompt_tokens_all / total) if total > 0 else 0
     avg_completion_tokens = (total_completion_tokens_all / total) if total > 0 else 0
@@ -259,12 +378,14 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
         "available_matching_count": total_available_matching,
         "total_evaluated": total,
         "boundary_notice": boundary_notice,
-        "correct": correct,
+        "yale_execution_accuracy_pct": round(yale_accuracy, 2),
+        "yale_correct": yale_correct,
+        "strict_execution_accuracy_pct": round(strict_accuracy, 2),
+        "strict_correct": strict_correct,
         "errors": errors,
         "healed_queries": healed_total,
         "refinement_attempts_total": refinement_attempts_total,
         "refinement_tokens_total": refinement_tokens_total,
-        "execution_accuracy_pct": round(accuracy, 2),
         "total_tokens": total_tokens_all,
         "avg_tokens_per_query": round(avg_tokens, 1),
         "avg_prompt_tokens": round(avg_prompt_tokens, 1),
@@ -272,8 +393,10 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
         "difficulty_breakdown": {
             d: {
                 "total": s["total"],
-                "correct": s["correct"],
-                "accuracy_pct": round((s["correct"] / s["total"] * 100) if s["total"] > 0 else 0, 2)
+                "yale_correct": s["yale_correct"],
+                "yale_accuracy_pct": round((s["yale_correct"] / s["total"] * 100) if s["total"] > 0 else 0, 2),
+                "strict_correct": s["strict_correct"],
+                "strict_accuracy_pct": round((s["strict_correct"] / s["total"] * 100) if s["total"] > 0 else 0, 2)
             } for d, s in diff_stats.items() if s["total"] > 0
         },
         "failure_taxonomy": taxonomy_counts
@@ -285,25 +408,39 @@ def evaluate_spider(dataset_path: str, max_samples: int = None, difficulty: str 
         json.dump(summary_report, rf, indent=2)
     log_step(f"Exported failure taxonomy report to {report_file}")
 
-    print(f"\n=== Evaluation Complete ===")
-    print(f"Model                  : {summary_report['model_name']}")
-    print(f"Difficulty Filter      : {diff_filter.upper()}")
-    print(f"Refinement Loop        : {'ENABLED' if enable_refinement else 'DISABLED'}")
-    print(f"Total Available Matching: {total_available_matching}")
-    print(f"Total Evaluated        : {total}")
+    # Export Yale-format predictions file (for official taoyds/test-suite-sql-eval verification)
+    pred_sql_file = os.path.join(os.path.dirname(__file__), "predictions_eval.sql")
+    with open(pred_sql_file, "w", encoding="utf-8") as pf:
+        for p in predictions_log:
+            single_line_sql = " ".join(p["predicted_sql"].split()) if p["predicted_sql"] else "SELECT 1"
+            pf.write(f"{single_line_sql}\t{p['db_id']}\n")
+    log_step(f"Exported Yale-format predictions to {pred_sql_file}")
+
+    # Export detailed predictions JSON
+    pred_log_file = os.path.join(os.path.dirname(__file__), "predictions_detailed.json")
+    with open(pred_log_file, "w", encoding="utf-8") as plf:
+        json.dump(predictions_log, plf, indent=2)
+    log_step(f"Exported detailed predictions log to {pred_log_file}")
+
+    print(f"\n=== Evaluation Complete (100% Yale test-suite-sql-eval Standard) ===")
+    print(f"Model                                      : {summary_report['model_name']}")
+    print(f"Difficulty Filter                          : {diff_filter.upper()}")
+    print(f"Refinement Loop                            : {'ENABLED' if enable_refinement else 'DISABLED'}")
+    print(f"Total Available Matching                   : {total_available_matching}")
+    print(f"Total Evaluated                            : {total}")
     if boundary_notice:
-        print(f" Notice                : {boundary_notice}")
-    print(f"Correct (Match)        : {correct}")
-    print(f"Evaluation Errors      : {errors}")
-    print(f"Healed by Refinement   : {healed_total}")
-    print(f"Execution Accuracy     : {accuracy:.2f}%")
-    print(f"Avg Tokens per Query   : {avg_tokens:.1f} ({avg_prompt_tokens:.1f} in / {avg_completion_tokens:.1f} out)")
+        print(f" Notice                                    : {boundary_notice}")
+    print(f"Yale Execution Accuracy (Official Primary) : {yale_accuracy:.2f}% ({yale_correct}/{total})")
+    print(f"Strict Set Accuracy (Legacy Baseline)      : {strict_accuracy:.2f}% ({strict_correct}/{total})")
+    print(f"Evaluation Errors                          : {errors}")
+    print(f"Healed by Refinement                       : {healed_total}")
+    print(f"Avg Tokens per Query                       : {avg_tokens:.1f} ({avg_prompt_tokens:.1f} in / {avg_completion_tokens:.1f} out)")
     if enable_refinement and healed_total > 0:
-        print(f"Refinement Tokens Total: {refinement_tokens_total} ({refinement_attempts_total} total attempts)")
+        print(f"Refinement Tokens Total                    : {refinement_tokens_total} ({refinement_attempts_total} total attempts)")
     print("-" * 50)
-    print("Difficulty Tier Breakdown:")
+    print("Difficulty Tier Breakdown (Yale EX / Strict EX):")
     for d_name, d_data in summary_report.get("difficulty_breakdown", {}).items():
-        print(f"  • {d_name.capitalize():<8}: {d_data['correct']}/{d_data['total']} ({d_data['accuracy_pct']}%)")
+        print(f"  • {d_name.capitalize():<8}: Yale={d_data['yale_correct']}/{d_data['total']} ({d_data['yale_accuracy_pct']}%) | Strict={d_data['strict_correct']}/{d_data['total']} ({d_data['strict_accuracy_pct']}%)")
     print("-" * 50)
     print("Failure Taxonomy Breakdown:")
     for f_cat, f_count in taxonomy_counts.items():

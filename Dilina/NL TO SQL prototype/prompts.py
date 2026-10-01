@@ -21,13 +21,14 @@ def generate_crp_prompt(
     injected_rules: str = None, 
     dialect: str = "sqlite",
     value_groundings: str = None,
-    join_paths: str = None
+    join_paths: str = None,
+    exemplars: str = None
 ) -> str:
     """
     Constructs the exact string representation for the LLM based on Phase 1-4 rules.
     Combines strict formatting, SQL schema context in comment blocks, optional authorization/security 
     rules placeholder (reserved for Member 3 integration), dialect hint, entity value groundings,
-    multi-hop join paths, and the natural language request.
+    multi-hop join paths, dynamic few-shot exemplars, and the natural language request.
     """
     dialect_name = get_dialect_display_name(dialect)
     rules_block = ""
@@ -42,12 +43,16 @@ def generate_crp_prompt(
     if join_paths and str(join_paths).strip():
         join_block = f"\n{join_paths.strip()}\n"
 
+    exemplars_block = ""
+    if exemplars and str(exemplars).strip():
+        exemplars_block = f"\n{exemplars.strip()}\n"
+
     prompt = f"""Complete {dialect_name} query only and with no explanation.
 -- Rule 1: Project ONLY the exact columns requested in the question. Do not include unrequested auxiliary counts or metrics in SELECT.
 
 /* Given the following database schema:
 {schema_context}
-*/{rules_block}{grounding_block}{join_block}
+*/{rules_block}{grounding_block}{join_block}{exemplars_block}
 
 /* Answer the following: {user_request} */
 SELECT"""
