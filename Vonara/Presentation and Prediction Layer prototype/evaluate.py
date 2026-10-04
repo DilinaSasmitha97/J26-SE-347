@@ -175,6 +175,7 @@ def evaluate_prediction(holdout: int = 3) -> dict:
             scenario["rows"], profile.temporal_column, profile.measure_columns[0]
         )
         selection = prediction_mod.select_model(analysis, readiness, values)
+        rule_choice = prediction_mod.select_model(analysis, readiness, values, guard=False).model
         period = selection.seasonal_period
 
         chosen = prediction_mod.backtest(values, selection.model, holdout, period)
@@ -184,7 +185,12 @@ def evaluate_prediction(holdout: int = 3) -> dict:
             "n_points": len(values),
             "selected_model": selection.model,
             "expected_model": scenario["expected_model"],
-            "selection_match": selection.model == scenario["expected_model"],
+            # The rules are judged against the generating process; the guard may
+            # then overrule a correct rule on a short noisy history, which is
+            # measured in evaluate_forecasting.py rather than counted as a miss.
+            "rule_model": rule_choice,
+            "selection_match": rule_choice == scenario["expected_model"],
+            "guard_override": selection.model != rule_choice,
             "selected": chosen,
             "baselines": {},
         }
@@ -241,6 +247,7 @@ def evaluate_prediction(holdout: int = 3) -> dict:
         "model_selection_agreement": (
             round(matches / len(evaluated), 4) if evaluated else 0.0
         ),
+        "guard_overrides": sum(1 for r in evaluated if r["guard_override"]),
         "selected_model_mean": mean_of(selected_totals),
         "fixed_baseline_means": {m: mean_of(t) for m, t in baseline_totals.items()},
         "per_scenario": rows_out,
@@ -434,7 +441,12 @@ def print_prediction(report: dict) -> None:
     print(f"\n{SEPARATOR}\n2. PREDICTION ACCURACY  (out-of-sample, {report['holdout_periods']}-period holdout)\n{SEPARATOR}")
     print(f"  Scenarios forecast        : {report['scenarios_forecast']} / {report['scenarios_total']} "
           f"({report['scenarios_skipped']} correctly skipped by the readiness gate)")
-    print(f"  Model-selection agreement : {report['model_selection_agreement']:.1%}")
+    print(f"  Rule-selection agreement  : {report['model_selection_agreement']:.1%}  "
+          f"(rules vs generating process; benchmark guard overrode "
+          f"{report['guard_overrides']} of {report['scenarios_forecast']})")
+    print("  NOTE: superseded as the source of forecasting claims by the rolling-origin")
+    print("        benchmark in evaluate_forecasting.py "
+          "(see data_and_reports/forecast_benchmark.md).")
 
     sel = report["selected_model_mean"]
     if sel:

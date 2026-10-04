@@ -203,6 +203,11 @@ class ForecastModel(str, Enum):
     LINEAR_REGRESSION = "LINEAR_REGRESSION"
     EXPONENTIAL_SMOOTHING = "EXPONENTIAL_SMOOTHING"
     WEIGHTED_MOVING_AVERAGE = "WEIGHTED_MOVING_AVERAGE"
+    # Benchmarks. Every accuracy claim is stated relative to these, and the
+    # selection guard falls back to one when the chosen model cannot beat it
+    # on the series' own history.
+    NAIVE = "NAIVE"                        # next value = last value
+    SEASONAL_NAIVE = "SEASONAL_NAIVE"      # next value = same period last cycle
     NONE = "NONE"
 
 
@@ -218,6 +223,9 @@ class ReadinessVerdict(str, Enum):
     INSUFFICIENT_POINTS = "INSUFFICIENT_POINTS"  # too few observations
     LOW_SIGNAL = "LOW_SIGNAL"                    # noise dominates
     DEGENERATE = "DEGENERATE"                    # constant / all-null series
+    MULTI_SERIES = "MULTI_SERIES"                # one series per category: forecast each
+    NOT_AGGREGATED = "NOT_AGGREGATED"            # several raw rows per period
+    INCOMPLETE = "INCOMPLETE"                    # too many missing values / periods
 
 
 # ==========================================================================

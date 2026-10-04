@@ -12,3 +12,7 @@ __pycache__/
 outputs/
 *.log
 evaluation_results.json
+test_db/output/
+
+# Raw M4 download (about 100 MB); only the sampled subset is committed
+benchmark_data/m4_raw/

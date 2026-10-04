@@ -55,6 +55,12 @@ class ResultProfile:
     is_time_series: bool = False
     is_regular_interval: bool = False
     has_gaps: bool = False
+    # How rows relate to periods (see `infer_layout`). Single-series stages -
+    # Stage 4 forecasting, Stage 5 anomalies, per-period summary claims - are
+    # only valid on SINGLE; GROUPED is one series per `group_column`.
+    layout: str = "NONE"             # SINGLE | GROUPED | EVENTS | CROSS_SECTIONAL | NONE
+    group_column: str = ""
+    period_count: int = 0
     warnings: list = field(default_factory=list)
 
     def column(self, name: str):
@@ -75,6 +81,9 @@ class ResultProfile:
             "is_time_series": self.is_time_series,
             "is_regular_interval": self.is_regular_interval,
             "has_gaps": self.has_gaps,
+            "layout": self.layout,
+            "group_column": self.group_column,
+            "period_count": self.period_count,
             "warnings": self.warnings,
         }
 
@@ -284,7 +293,10 @@ def infer_granularity(dates: list) -> tuple:
         return Granularity.NONE.value, False, False
 
     gaps.sort()
-    median = gaps[len(gaps) // 2]
+    # The base period is read from the SHORTER gaps (lower quartile), not the
+    # median: in a monthly series with many missing months the median gap is
+    # two or three months and would misread the data as quarterly.
+    median = gaps[len(gaps) // 4]
 
     granularity = Granularity.NONE
     for low, high, g in _GRANULARITY_BANDS:
@@ -375,7 +387,105 @@ def profile_results(rows: list, schema_types: dict = None, analysis=None) -> Res
     if not profile.measure_columns:
         profile.warnings.append("NO_MEASURE_COLUMN")
 
+    infer_layout(profile, rows)
+    if profile.layout in ("GROUPED", "EVENTS"):
+        profile.warnings.append(f"{profile.layout}_TIME_SERIES")
     return profile
+
+
+def _period_key(value):
+    parsed = parse_date(value)
+    return parsed if parsed is not None else str(value)
+
+
+def infer_layout(profile: ResultProfile, rows: list) -> None:
+    """
+    Classify how rows map onto periods.
+
+      SINGLE          one row per period: one series
+      GROUPED         several rows per period, made unique by one dimension
+                      column (month x region): one series per category
+      EVENTS          several rows per period with no such column (raw
+                      transactions): needs per-period aggregation first
+      CROSS_SECTIONAL no time axis at all
+      NONE            nothing to classify (empty, or no measure)
+
+    Treating a GROUPED result as one series interleaves the categories - the
+    "series" then jumps between regions every row, and every per-period
+    statistic computed on it is wrong.
+    """
+    if not rows or not profile.measure_columns:
+        profile.layout = "NONE"
+        return
+    if not profile.temporal_column:
+        profile.layout = "CROSS_SECTIONAL"
+        return
+
+    periods = {}
+    for row in rows:
+        periods.setdefault(_period_key(row.get(profile.temporal_column)), []).append(row)
+    profile.period_count = len(periods)
+    if all(len(group) == 1 for group in periods.values()):
+        profile.layout = "SINGLE"
+        return
+
+    for column in profile.dimension_columns:
+        if column == profile.temporal_column:
+            continue
+        if all(len({str(r.get(column)) for r in group}) == len(group)
+               for group in periods.values()):
+            profile.layout = "GROUPED"
+            profile.group_column = column
+            return
+    profile.layout = "EVENTS"
+
+
+def extract_grouped_series(rows: list, time_column: str, group_column: str,
+                           value_column: str) -> dict:
+    """{category: (dates, values)} for a GROUPED result, each chronologically sorted."""
+    out = {}
+    for row in rows:
+        d = parse_date(row.get(time_column))
+        v = parse_number(row.get(value_column))
+        if d is None or v is None:
+            continue
+        out.setdefault(str(row.get(group_column)), []).append((d, v))
+    return {
+        cat: ([p[0] for p in sorted(pairs)], [p[1] for p in sorted(pairs)])
+        for cat, pairs in out.items()
+    }
+
+
+def coerce_measures(rows: list, profile: ResultProfile) -> list:
+    """
+    Return rows with every MEASURE column converted to a Python number.
+
+    Member 2's driver delivers DECIMAL - which is every SUM or AVG over money -
+    as a string ("48250.50"). Profiling already parses those, but the renderer
+    and the Vega-Lite data block work on raw cell values: left as strings, a
+    total is displayed unformatted and labelled as text, and a quantitative
+    axis receives strings. Integers stay integers; unparseable cells become
+    None rather than keeping a string inside a numeric column.
+    """
+    if not rows or not profile.measure_columns:
+        return rows
+    measures = set(profile.measure_columns)
+    out = []
+    for row in rows:
+        if not isinstance(row, dict):
+            out.append(row)
+            continue
+        new_row = dict(row)
+        for column in measures & new_row.keys():
+            value = new_row[column]
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                continue
+            number = parse_number(value)
+            if number is not None and number.is_integer() and "." not in str(value):
+                number = int(number)
+            new_row[column] = number
+        out.append(new_row)
+    return out
 
 
 def extract_series(rows: list, time_column: str, value_column: str) -> tuple:

@@ -9,6 +9,7 @@ monotonicity, security flags, and the claim verifier. Runnable with plain
 
 import json
 import sys
+from types import SimpleNamespace
 
 import anomaly as anomaly_mod
 import pipeline
@@ -229,23 +230,78 @@ def test_readiness_refuses_constant_series():
 
 
 def test_model_selection_matches_generating_process():
-    """Stage 3 must recover the process that generated each benchmark series."""
+    """
+    Stage 3 RULES must recover the process that generated each benchmark series.
+
+    Tested with the benchmark guard off: the guard may legitimately overrule a
+    correct rule when, on a short noisy history, the naive benchmark forecasts
+    better - that trade-off is measured in evaluate_forecasting.py, not here.
+    """
+    from result_profiler import extract_series
+
     mismatches = []
     for scenario in synthetic_data.benchmark_suite():
         a = query_analyzer.analyze(scenario["query"], scenario["schema"], use_llm=False)
         profile = profile_results(scenario["rows"], analysis=a)
         r = prediction_mod.assess_readiness(profile, scenario["rows"])
-        if not r.is_ready:
-            continue
-        from result_profiler import extract_series
-
         _, values = extract_series(
             scenario["rows"], profile.temporal_column, profile.measure_columns[0]
         )
-        s = prediction_mod.select_model(a, r, values)
+        # Rules are judged on every series; readiness only decides whether a
+        # forecast is shown, which is tested separately below.
+        r.is_ready = True
+        s = prediction_mod.select_model(a, r, values, guard=False)
         if s.model != scenario["expected_model"]:
             mismatches.append(f"{scenario['name']}: {s.model} != {scenario['expected_model']}")
-    check(not mismatches, f"model selection matches ground truth ({mismatches})")
+    check(not mismatches, f"rule-based model selection matches ground truth ({mismatches})")
+
+
+def test_benchmark_guard():
+    """The guard only ever swaps in a benchmark, and always says why."""
+    print("[Stage 3] Benchmark guard")
+    import random as _random
+
+    rng = _random.Random(5)
+    walk = [1000.0]
+    for _ in range(29):  # a pure random walk: naive is the optimal forecast
+        walk.append(walk[-1] + rng.gauss(0, 60))
+    analysis = SimpleNamespace(primary_intent="TREND_ANALYSIS")
+    ready = prediction_mod.ReadinessReport(is_ready=True, granularity="MONTH")
+    guarded = prediction_mod.select_model(analysis, ready, walk)
+    unguarded = prediction_mod.select_model(analysis, ready, walk, guard=False)
+    info = guarded.signals.get("guard", {})
+    check(info.get("rule_choice") == unguarded.model, "guard records the rule's choice")
+    if info.get("overridden"):
+        check(guarded.model in ("NAIVE", "SEASONAL_NAIVE") and "did not beat" in guarded.reason,
+              "an override switches to a benchmark and explains it")
+    else:
+        check(guarded.model == unguarded.model, "no override leaves the rule's choice intact")
+    tiny = prediction_mod.select_model(analysis, ready, walk[:5])
+    check(tiny.model == "WEIGHTED_MOVING_AVERAGE" and "guard" not in tiny.signals,
+          "under 6 points: weighted moving average, unguarded")
+    short = prediction_mod.select_model(analysis, ready, walk[:7])
+    check("guard" not in short.signals,
+          "under 8 points: too short for the in-history test, so not guarded")
+
+
+def test_forecastability_gate():
+    """Gate 3 refuses noise and passes structure, judged on history alone."""
+    print("[Stage 2] Forecastability gate")
+    import random as _random
+
+    rng = _random.Random(9)
+    smooth = [5000 + 80 * t + rng.gauss(0, 50) for t in range(24)]
+    noise = [max(50.0, 5000 + rng.gauss(0, 2500)) for _ in range(24)]
+    ok = prediction_mod.forecastability(smooth)
+    bad = prediction_mod.forecastability(noise)
+    check(ok["assessed"] and ok["expected_relative_error"] < prediction_mod.MAX_EXPECTED_ERROR,
+          "trending low-noise series passes")
+    check(bad["expected_relative_error"] > prediction_mod.MAX_EXPECTED_ERROR,
+          "noise-dominated series is refused")
+    check(not prediction_mod.forecastability(smooth[:7])["assessed"],
+          "fewer than 8 points is not assessed rather than guessed")
+    check(prediction_mod.legacy_signal_adequate(noise),
+          "the old CV/R² rule passes this pure-noise series (the reason it was replaced)")
 
 
 def test_confidence_intervals_widen_with_horizon():

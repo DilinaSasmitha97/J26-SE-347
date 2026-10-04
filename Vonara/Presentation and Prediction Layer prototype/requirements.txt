@@ -16,3 +16,6 @@ python-dotenv
 fastapi
 uvicorn
 pydantic
+
+# --- Synthetic MySQL integration fixtures (test_db/ only) ---
+pymysql

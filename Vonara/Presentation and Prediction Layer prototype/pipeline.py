@@ -21,15 +21,17 @@ import hashlib
 import json
 
 import anomaly as anomaly_mod
+import input_adapter
 import prediction as prediction_mod
 import query_analyzer
 import response_intent as response_intent_mod
 import response_renderer
+import strategies
 import summarization
 import visualization
 import whatif as whatif_mod
 from profiler import Profiler, log_step
-from result_profiler import extract_series, profile_results
+from result_profiler import coerce_measures, extract_series, profile_results
 from schemas import PredictionStrategy, ReadinessVerdict, ResponseIntentResult
 
 PIPELINE_VERSION = "1.0"
@@ -103,7 +105,9 @@ def run(
 
     Args:
         user_query:       the original natural-language question.
-        rows:             masked result set from Member 2 (list of dicts).
+        rows:             masked result set from Member 2 - either its
+                          columnar {columns, rows, masking} result or a list
+                          of row dicts; see input_adapter.py.
         schema_meta:      DDL or dict schema, for Part 1 binding.
         schema_types:     optional {column: sql_type} hints for the result set.
         security_context: tenant/role context from Member 3.
@@ -117,7 +121,8 @@ def run(
     Returns:
         The comprehensive response envelope (JSON-serialisable).
     """
-    rows = rows or []
+    adapted = input_adapter.adapt_result(rows)
+    rows = adapted.rows
     security_context = security_context or {}
     options = {
         "use_llm": use_llm,
@@ -136,7 +141,7 @@ def run(
         return cached
 
     profiler = Profiler("component4")
-    warnings = []
+    warnings = list(adapted.warnings)
 
     # ---- Part 1: Query Understanding ----------------------------------
     with profiler.stage("Query Understanding", "Part 1: Query Understanding"):
@@ -147,6 +152,7 @@ def run(
     # ---- Result profiling ---------------------------------------------
     with profiler.stage("Result Profiling", "Result Profiling"):
         profile = profile_results(rows, schema_types, analysis)
+        rows = coerce_measures(rows, profile)
     warnings.extend(profile.warnings)
 
     # ---- Part 4 Stage 1: intent -> strategy ----------------------------
@@ -184,12 +190,21 @@ def run(
 
     series_values = []
     series_labels = []
-    if profile.temporal_column and target_measure:
-        dates, series_values = extract_series(rows, profile.temporal_column, target_measure)
+    # Single-series stages only run on a SINGLE layout: a grouped or raw-row
+    # result interleaves several series, and anything computed on the mixture
+    # (a forecast, an anomaly band) describes no real quantity.
+    filled_indices = set()
+    if profile.layout == "SINGLE" and target_measure:
+        # The same regular series the forecast sees (small gaps interpolated),
+        # so model selection, forecast and anomaly bands share one time axis.
+        prepared = prediction_mod.prepare_series(
+            rows, profile.temporal_column, target_measure, profile.granularity)
+        dates, series_values = prepared["dates"], prepared["values"]
+        filled_indices = set(prepared["filled_indices"])
         series_labels = [
             prediction_mod._format_label(d, profile.granularity) for d in dates
         ]
-    elif target_measure:
+    elif profile.layout == "CROSS_SECTIONAL" and target_measure:
         from result_profiler import extract_ordinal_series
 
         axis = profile.dimension_columns[0] if profile.dimension_columns else ""
@@ -215,8 +230,39 @@ def run(
             anomaly_report = anomaly_mod.detect_anomalies(
                 series_values, series_labels, forecast=forecast
             )
+            # An interpolated point is not an observation and can never be
+            # reported as an anomaly.
+            anomaly_report.historical_anomalies = [
+                a for a in anomaly_report.historical_anomalies
+                if a.index not in filled_indices
+            ]
+        elif profile.layout in ("GROUPED", "EVENTS"):
+            anomaly_report.skipped_reason = (
+                f"The result holds several series ({profile.layout.lower()} rows); "
+                "anomaly bands are only computed on a single series."
+            )
         else:
             anomaly_report.skipped_reason = "No numeric series available."
+
+    # ---- Part 4 Stage 1 (execution): the strategy-specific prediction ----
+    with profiler.stage("Stage 1 Strategy Execution", "Part 4: Prediction"):
+        if should_predict:
+            strategy_result = strategies.execute(
+                strategy["strategy"], analysis, profile, rows, forecast=forecast,
+                anomaly_report=anomaly_report, horizon=horizon or analysis.horizon.value or 3,
+                confidence=confidence_level,
+            )
+        else:
+            strategy_result = strategies.StrategyResult(
+                requested=strategy["strategy"], skipped_reason=readiness.reason)
+        if not forecast.generated:
+            if strategy_result.executed:
+                # The strategy delivered the prediction (e.g. one forecast per
+                # region); a "no forecast was produced" claim would contradict it.
+                forecast.skipped_reason = ""
+            elif should_predict and strategy_result.skipped_reason:
+                # The strategy's reason is the more specific one for the user.
+                forecast.skipped_reason = strategy_result.skipped_reason
 
     # ---- Part 4 Stage 6: what-if simulation -----------------------------
     with profiler.stage("Stage 6 What-If", "Part 4: Prediction"):
@@ -275,6 +321,7 @@ def run(
                 forecast=forecast if forecast.generated else None,
                 anomaly_report=anomaly_report if anomaly_report.evaluated else None,
                 scenario=scenario if scenario.simulated else None,
+                strategy_result=strategy_result,
             )
         else:
             # The key stays in the envelope so the contract does not change
@@ -302,6 +349,8 @@ def run(
             forecast=forecast if forecast.generated else forecast,
             anomaly_report=anomaly_report,
             scenario=scenario if scenario.simulated else None,
+            strategy_result=strategy_result,
+            readiness=readiness,
             # Claims are always computed - they are cheap, deterministic, and
             # the envelope's `summary` key is part of the existing contract.
             # Only the paid LLM narration is gated, and only when no SUMMARY
@@ -319,6 +368,10 @@ def run(
             rows=rows,
             chart_spec=chart_spec,
             summary=summary,
+            forecast=forecast,
+            readiness=readiness,
+            scenario=scenario if scenario.simulated else None,
+            strategy_result=strategy_result,
         )
 
     warnings.extend(summary.warnings)
@@ -332,12 +385,14 @@ def run(
     response = {
         "status": "SUCCESS",
         "pipeline_version": PIPELINE_VERSION,
+        "input": adapted.to_dict(),
         "analysis": analysis.to_dict(),
         "result_profile": profile.to_dict(),
         "response": response_payload,
         "visualization": chart_spec,
         "prediction": {
             "stage_1_strategy": strategy,
+            "stage_1_strategy_result": strategy_result.to_dict(),
             "stage_2_readiness": readiness.to_dict(),
             "stage_3_model_selection": selection.to_dict(),
             "stage_4_forecast": forecast.to_dict(),

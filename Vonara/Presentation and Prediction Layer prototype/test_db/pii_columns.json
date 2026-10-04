@@ -1,0 +1,23 @@
+{
+  "_comment": "Declared PII per database, in the same format as Member 2's security_validation_layer_js/config/pii_columns.json: database -> table -> column -> PII type. NONE marks text reviewed as not personal data.",
+  "c4_synthetic": {
+    "employees": {
+      "full_name": "PERSON",
+      "email": "EMAIL",
+      "department": "NONE"
+    },
+    "expenses": {
+      "approved_by_email": "EMAIL",
+      "category": "NONE",
+      "vendor": "NONE"
+    },
+    "support_tickets": {
+      "customer_phone": "PHONE",
+      "priority": "NONE"
+    },
+    "sales": {
+      "region": "NONE",
+      "product": "NONE"
+    }
+  }
+}

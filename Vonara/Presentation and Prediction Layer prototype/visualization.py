@@ -373,6 +373,7 @@ EXTENSION_RULES = [
     "R2_CONFIDENCE_BAND    - area mark between lower and upper bounds",
     "R3_ANOMALY_MARKERS    - point + rule marks at breaching observations",
     "R4_SCENARIO_OVERLAY   - second dashed line for the simulated path",
+    "R5_CATEGORY_FORECASTS - one dashed line + band per category, coloured like its series",
 ]
 
 # Charts whose grammar admits a forecast continuation. A pie has no time axis,
@@ -386,6 +387,7 @@ def extend_with_forecast(
     forecast=None,
     anomaly_report=None,
     scenario=None,
+    strategy_result=None,
 ) -> dict:
     """
     Apply the grammar extension rules to a base chart.
@@ -401,8 +403,15 @@ def extend_with_forecast(
     has_forecast = forecast is not None and getattr(forecast, "generated", False)
     has_anomalies = anomaly_report is not None and getattr(anomaly_report, "evaluated", False)
     has_scenario = scenario is not None and getattr(scenario, "simulated", False)
+    details = getattr(strategy_result, "details", None) or {}
+    categories = details.get("categories") or details.get("categories_forecast") or []
+    color_field = spec.get("_meta", {}).get("color_field", "")
+    has_categories = (
+        bool(categories) and getattr(strategy_result, "executed", False)
+        and color_field and color_field == details.get("group_column")
+    )
 
-    if not (has_forecast or has_anomalies or has_scenario):
+    if not (has_forecast or has_anomalies or has_scenario or has_categories):
         spec.setdefault("_meta", {})["forecast_layered"] = False
         spec["_meta"]["extension_skipped_reason"] = "No prediction artefacts to layer."
         return spec
@@ -563,6 +572,35 @@ def extend_with_forecast(
         )
         applied.append("R4_SCENARIO_OVERLAY")
 
+    if has_categories:
+        # One band + one dashed line per category, coloured by the same field
+        # as the historical series so each forecast reads as its continuation.
+        category_rows = []
+        for c in categories:
+            for p in c["points"]:
+                category_rows.append({
+                    x_field: p["timestamp"] or p["label"], color_field: c["category"],
+                    "forecast": p["predicted"], "lower_bound": p["lower"],
+                    "upper_bound": p["upper"], "label": p["label"],
+                })
+        x_enc = dict(base_encoding.get("x", {}), field=x_field)
+        color_enc = {"field": color_field, "type": "nominal"}
+        layers.append({
+            "data": {"values": category_rows},
+            "mark": {"type": "area", "opacity": 0.12, "tooltip": True},
+            "encoding": {"x": x_enc, "color": color_enc,
+                         "y": {"field": "lower_bound", "type": "quantitative"},
+                         "y2": {"field": "upper_bound"}},
+        })
+        layers.append({
+            "data": {"values": category_rows},
+            "mark": {"type": "line", "strokeDash": [6, 4], "point": True, "tooltip": True},
+            "encoding": {"x": x_enc, "color": color_enc,
+                         "y": {"field": "forecast", "type": "quantitative",
+                               "title": _humanize(y_field)}},
+        })
+        applied.append("R5_CATEGORY_FORECASTS")
+
     extended = {
         "$schema": VEGA_SCHEMA,
         "title": spec.get("title", ""),
@@ -576,6 +614,7 @@ def extend_with_forecast(
     extended["_meta"].update(
         {
             "forecast_layered": has_forecast,
+            "category_forecasts_layered": bool(has_categories),
             "extension_rules_applied": applied,
             "layer_count": len(layers),
         }

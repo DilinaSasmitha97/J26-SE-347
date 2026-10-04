@@ -34,6 +34,42 @@ the chain works even if only call 2 is wired.
 
 ### 2.1 From Member 2 — masked result rows
 
+Member 2's `/api/query` response is forwarded **unchanged** as `member2_result`.
+This is the format `query-executor.js` + `pii-masker.js` actually produce
+(mysql2 with `rowsAsArray` and `dateStrings: true`):
+
+```json
+{
+  "user_query": "Show my monthly software expenses and predict the next 3 months",
+  "member2_result": {
+    "statementType": "SELECT",
+    "columns": [
+      {"name": "month", "sourceTable": null, "sourceColumn": null},
+      {"name": "total_amount", "sourceTable": null, "sourceColumn": null}
+    ],
+    "rows": [["2024-01-01", "3419.57"], ["2024-02-01", "3502.11"]],
+    "rowCount": 2,
+    "truncated": false,
+    "masking": {"mode": "partial", "columns": [], "maskedCells": 0}
+  }
+}
+```
+
+`input_adapter.py` converts this to row dicts before any other stage runs.
+What it handles, so Member 2 does not have to change anything:
+
+| Property of Member 2's output | Handling in Component 4 |
+|---|---|
+| Rows are arrays aligned to `columns` | Converted to dicts in column order |
+| Duplicate names (`a.id`, `b.id` both arrive as `id`) | Second copy renamed (`id_3` if `id_2` exists), warning `DUPLICATE_COLUMN_NAMES_RENAMED` |
+| DECIMAL (every `SUM`/`AVG` over money) arrives as a string | Measure columns converted to numbers after profiling |
+| Dates arrive as `YYYY-MM-DD` strings | Parsed by the profiler as before |
+| `truncated: true` (row cap hit) | Warning `INPUT_TRUNCATED`; totals and forecasts describe the cap, not the data |
+| `masking.columns` | Recorded in the envelope's `input.masked_columns`, warning `MASKED_COLUMNS_PRESENT` |
+
+The legacy shape below is still accepted as `raw_results`, for tests and
+callers that already hold row dicts:
+
 ```json
 {
   "user_query": "Show my monthly software expenses and predict the next 3 months",
@@ -45,7 +81,7 @@ the chain works even if only call 2 is wired.
 }
 ```
 
-**Requirements on `raw_results`:**
+**Requirements on the rows (either format):**
 
 | Requirement | Why | If violated |
 |---|---|---|
@@ -232,8 +268,62 @@ raises `ORDERING_DIRECTION_AMBIGUOUS`; resolve it with schema knowledge.
   outputs; otherwise render the spec as a chart.
 - `summary.text` is display-ready. `summary.claims` backs a "show the working"
   panel — every number links to its derivation.
-- When `stage_4_forecast.generated` is `false`, show
-  `stage_2_readiness.reason` — the user is told *why* there is no forecast.
+- **Stage 2 additions to the envelope:**
+  - `result_profile.layout` is `SINGLE`, `GROUPED`, `EVENTS`,
+    `CROSS_SECTIONAL` or `NONE`; `result_profile.group_column` names the
+    category column of a `GROUPED` result.
+  - `prediction.stage_1_strategy_result` holds the strategy-specific answer:
+    `requested`, `executed_as` (`CATEGORY_TRAJECTORY`, `SHARE_SHIFT`,
+    `QUARTILE_SHIFT`, `PERCENTILE_POSITION`, `ANOMALY_PERSISTENCE`),
+    `executed`, `skipped_reason` and `details` (per-category forecasts,
+    projected leader, shares, persistence verdict).
+  - `stage_2_readiness.decision` is `READY`, `READY_WITH_WARNING`,
+    `NOT_READY` or `NOT_EVALUATED` (no forecast requested), with
+    `reason_codes` (e.g. `MISSING_PERIODS_INTERPOLATED`, `LOW_SIGNAL`,
+    `STATIONARITY_CONFLICT`) and `warnings` (`[{code, message}]`, the
+    human-readable cautions). `stationarity` holds the ADF and KPSS p-values
+    and verdict; `missing_value_ratio`, `missing_period_ratio` and
+    `filled_periods` report completeness.
+  - `stage_2_readiness.verdict` can also be `MULTI_SERIES` (forecast per
+    category instead), `NOT_AGGREGATED` (raw rows, no value per period) or
+    `INCOMPLETE` (too many unreadable values or empty periods);
+    `expected_relative_error`, `skill_vs_naive` and `signal_test` report the
+    forecastability test.
+  - `stage_4_forecast.diagnostics.interpolated_periods` lists the history
+    positions that were filled for the model; they are never shown as
+    observations or flagged as anomalies.
+  - `stage_3_model_selection.model` can also be `NAIVE` or `SEASONAL_NAIVE`
+    when the benchmark guard overrides the rules; `signals.guard` says why.
+  - A grouped chart gains rule `R5_CATEGORY_FORECASTS` (one dashed line and
+    band per category); `_meta.category_forecasts_layered` reports it.
+- **`response.forecast_notice` is present whenever the user explicitly asked for
+  a prediction**, in every response shape, and absent otherwise:
+  ```json
+  "forecast_notice": {
+    "requested": true,
+    "status": "SHOWN",            // or "REFUSED"
+    "message": "Amount is projected at 6,862, 7,003 and 7,143 for Jan 2026, Feb 2026 and Mar 2026 respectively.",
+    "reason": "",                 // the readiness gate's reason when REFUSED
+    "readiness_decision": "READY_WITH_WARNING",
+    "warnings": [{"code": "MISSING_PERIODS_INTERPOLATED",
+                  "message": "2 of 24 periods had no data and were filled ..."}],
+    "reason_codes": ["MISSING_PERIODS_INTERPOLATED"],
+    "model": "LINEAR_REGRESSION",
+    "horizon": 3,
+    "shown_in": ["TABLE"]         // blocks that already display the forecast
+  }
+  ```
+  Render `message` as a caption when `shown_in` is empty (a donut, a KPI card,
+  or a refusal); it may be hidden when the chart or table already carries the
+  forecast. `message` is a verified claim, never free text.
+- When a forecast was requested, the blocks carry it themselves:
+  `table.rows` gain rows with `row_type: "FORECAST"` plus `lower_bound` /
+  `upper_bound` columns (historical rows are `row_type: "ACTUAL"`;
+  `table.forecast_rows` counts them, `row_count` still counts real rows only);
+  a `SINGLE_ANSWER` answers with the forecast (`answer.is_forecast: true`,
+  `answer.interval` for a single period, the projected total for an explicit
+  multi-period horizon); a summary is built forecast-first
+  (`summary.sentence_selection: "FORECAST_PRIORITY"`).
 
 ### 3.3 `POST /api/v4/simulate` — interactive what-if
 

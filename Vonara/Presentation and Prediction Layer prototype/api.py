@@ -56,6 +56,9 @@ class AnalyzeRequest(BaseModel):
 class PresentRequest(BaseModel):
     user_query: str
     raw_results: List[Dict[str, Any]] = Field(default_factory=list)
+    # Member 2's /api/query response, forwarded unchanged. Takes precedence
+    # over `raw_results` when both are sent.
+    member2_result: Optional[Dict[str, Any]] = None
     schema_meta: Optional[Any] = None
     schema_types: Optional[Dict[str, str]] = None
     security_context: Optional[SecurityContext] = None
@@ -70,6 +73,7 @@ class PresentRequest(BaseModel):
 class SimulateRequest(BaseModel):
     user_query: str
     raw_results: List[Dict[str, Any]] = Field(default_factory=list)
+    member2_result: Optional[Dict[str, Any]] = None
     scenario_text: str
     schema_meta: Optional[Any] = None
     security_context: Optional[SecurityContext] = None
@@ -139,7 +143,7 @@ def present(request: PresentRequest) -> dict:
     try:
         return pipeline.run(
             request.user_query,
-            rows=request.raw_results,
+            rows=request.member2_result or request.raw_results,
             schema_meta=request.schema_meta,
             schema_types=request.schema_types,
             security_context=_ctx(request.security_context),
@@ -170,7 +174,7 @@ def simulate(request: SimulateRequest) -> dict:
     try:
         envelope = pipeline.run(
             request.user_query,
-            rows=request.raw_results,
+            rows=request.member2_result or request.raw_results,
             schema_meta=request.schema_meta,
             security_context=_ctx(request.security_context),
             use_llm=False,

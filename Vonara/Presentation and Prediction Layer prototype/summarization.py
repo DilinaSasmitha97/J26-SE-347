@@ -89,6 +89,14 @@ def _pct(value: float) -> str:
     return f"{value:,.1f}%"
 
 
+def _join(items: list) -> str:
+    """'a', 'a and b', 'a, b and c'."""
+    items = [str(i) for i in items]
+    if len(items) <= 1:
+        return "".join(items)
+    return f"{', '.join(items[:-1])} and {items[-1]}"
+
+
 # ==========================================================================
 # Claim construction
 # ==========================================================================
@@ -120,21 +128,38 @@ def build_historical_claims(profile, rows: list, analysis, forecast=None) -> lis
     if not measure:
         return claims
 
+    layout = getattr(profile, "layout", "SINGLE")
+    if layout == "GROUPED":
+        return claims + build_grouped_claims(profile, rows, measure)
+
     values = []
     labels = []
     axis = profile.temporal_column or (
         profile.dimension_columns[0] if profile.dimension_columns else ""
     )
-    from result_profiler import parse_number
+    from result_profiler import extract_series, parse_number
 
-    for row in rows:
-        v = parse_number(row.get(measure))
-        if v is not None:
-            values.append(v)
-            labels.append(str(row.get(axis, "")) if axis else "")
+    if layout == "SINGLE":
+        # Chronological, whatever ORDER BY the query used: "changed from X to Y"
+        # must read from the earliest period to the latest.
+        dates, values = extract_series(rows, profile.temporal_column, measure)
+        labels = [str(d.date()) for d in dates]
+    else:
+        for row in rows:
+            v = parse_number(row.get(measure))
+            if v is not None:
+                values.append(v)
+                labels.append(str(row.get(axis, "")) if axis else "")
 
     if not values:
         return claims
+    # What one value stands for: a period only when there is one row per period.
+    if layout == "SINGLE":
+        unit = "period"
+    elif layout == "CROSS_SECTIONAL" and profile.dimension_columns:
+        unit = profile.dimension_columns[0].replace("_", " ")
+    else:
+        unit = "row"
 
     total = sum(values)
     mean = total / len(values)
@@ -145,13 +170,14 @@ def build_historical_claims(profile, rows: list, analysis, forecast=None) -> lis
 
     claims.append(
         Claim("H1", "HISTORICAL", "TOTAL",
-              f"Total {label} across the returned period is {fmt(total)}.",
+              f"Total {label} across the returned "
+              f"{'period' if layout == 'SINGLE' else 'rows'} is {fmt(total)}.",
               total, "", f"column '{measure}'", f"sum of {len(values)} values",
               values[:50])
     )
     claims.append(
         Claim("H2", "HISTORICAL", "MEAN",
-              f"The average {label} per period is {fmt(mean)}.",
+              f"The average {label} per {unit} is {fmt(mean)}.",
               mean, "", f"column '{measure}'", f"{fmt(total)} / {len(values)}")
     )
 
@@ -170,7 +196,7 @@ def build_historical_claims(profile, rows: list, analysis, forecast=None) -> lis
               trough, "", f"column '{measure}'", "min of the series")
     )
 
-    if len(values) >= 2 and values[0] != 0:
+    if layout == "SINGLE" and len(values) >= 2 and values[0] != 0:
         change = values[-1] - values[0]
         change_pct = change / abs(values[0]) * 100.0
         direction = "increased" if change > 0 else ("decreased" if change < 0 else "held flat")
@@ -192,6 +218,185 @@ def build_historical_claims(profile, rows: list, analysis, forecast=None) -> lis
         )
     return claims
 
+
+def _ordinal(n: int) -> str:
+    if 10 <= n % 100 <= 20:
+        return f"{n}th"
+    return f"{n}{ {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th') }"
+
+
+def build_grouped_claims(profile, rows: list, measure: str) -> list:
+    """Facts about a GROUPED result: per-category totals and movement, never mixed."""
+    from result_profiler import extract_grouped_series
+
+    group = profile.group_column
+    label = measure.replace("_", " ")
+    series = extract_grouped_series(rows, profile.temporal_column, group, measure)
+    if not series:
+        return []
+    totals = {cat: sum(vals) for cat, (_, vals) in series.items()}
+    grand = sum(totals.values())
+    ranked = sorted(totals, key=lambda c: -totals[c])
+    claims = [
+        Claim("HG0", "HISTORICAL", "GROUP_COUNT",
+              f"The result holds {len(series)} {group} series over "
+              f"{profile.period_count} periods.",
+              float(len(series)), "", "result set", f"distinct values of '{group}'"),
+        Claim("H1", "HISTORICAL", "TOTAL",
+              f"Total {label} across all {group} values and periods is {fmt(grand)}.",
+              grand, "", f"column '{measure}'", "sum over every row"),
+    ]
+    top = ranked[0]
+    share = 100.0 * totals[top] / grand if grand else 0.0
+    claims.append(
+        Claim("HG1", "HISTORICAL", "GROUP_LEADER",
+              f"{top} has the largest total {label}, {fmt(totals[top])} "
+              f"({_pct(share)} of the total).",
+              totals[top], "", f"column '{measure}' by '{group}'",
+              f"max of per-{group} sums", [share]))
+    if len(ranked) > 1:
+        last = ranked[-1]
+        claims.append(
+            Claim("HG2", "HISTORICAL", "GROUP_TRAILER",
+                  f"{last} has the smallest total {label}, {fmt(totals[last])}.",
+                  totals[last], "", f"column '{measure}' by '{group}'",
+                  f"min of per-{group} sums"))
+    for i, cat in enumerate(ranked[:3], start=1):
+        _, vals = series[cat]
+        if len(vals) >= 2 and vals[0]:
+            change = (vals[-1] - vals[0]) / abs(vals[0]) * 100.0
+            claims.append(
+                Claim(f"HG3.{i}", "HISTORICAL", "GROUP_CHANGE",
+                      f"{cat} moved from {fmt(vals[0])} to {fmt(vals[-1])} over the "
+                      f"period, a change of {_pct(change)}.",
+                      change, "%", f"'{cat}' series", "(last - first) / |first| * 100",
+                      [vals[0], vals[-1]]))
+    return claims
+
+
+# ==========================================================================
+# Strategy claims (Prediction Stage 1 execution)
+# ==========================================================================
+
+
+def build_strategy_claims(strategy_result, confidence: float = 0.95) -> list:
+    """Verified statements about the strategy-specific prediction."""
+    if strategy_result is None or not getattr(strategy_result, "executed", False):
+        return []
+    d = strategy_result.details or {}
+    kind = strategy_result.executed_as
+    conf = int(confidence * 100)
+    claims = []
+
+    if kind == "CATEGORY_TRAJECTORY":
+        group = d["group_column"]
+        label = d["measure"].replace("_", " ")
+        lead, now, runner = d["projected_leader"], d["current_leader"], d["runner_up"]
+        text = (f"{lead['category']} is projected to be the highest {group} in {lead['label']} at "
+                f"{fmt(lead['value'])}, ahead of {runner['category']} at {fmt(runner['value'])}")
+        if d["leader_changes"]:
+            text += f", taking over from {now['category']}, which leads in {now['label']}"
+        if d["clear_lead"]:
+            text += "."
+        else:
+            text += ", though the two are within each other's forecast range."
+        claims.append(Claim("T1", "PREDICTIVE", "STRATEGY_HEADLINE", text, lead["value"], "",
+                            "per-category forecasts", "max of first-period forecasts",
+                            [runner["value"], now["value"]]))
+        for i, c in enumerate(d["categories"], start=1):
+            p = c["points"][0]
+            claims.append(Claim(
+                f"T2.{i}", "PREDICTIVE", "TRAJECTORY_CATEGORY",
+                f"{c['category']} {label} is projected at {fmt(p['predicted'])} for "
+                f"{p['label']} ({conf}% range {fmt(p['lower'])} to {fmt(p['upper'])}), "
+                f"from {fmt(c['last_actual'])} in {c['last_label']}.",
+                p["predicted"], "", f"{c['model']} on '{c['category']}'",
+                "first-period point forecast", [p["lower"], p["upper"], c["last_actual"]]))
+        if d["rank_changes"]:
+            moves = ", ".join(f"{r['category']} from {_ordinal(r['rank_now'])} to "
+                              f"{_ordinal(r['rank_next'])}" for r in d["rank_changes"])
+            claims.append(Claim("T3", "PREDICTIVE", "RANK_CHANGE",
+                                f"Projected ranking changes: {moves}.",
+                                float(len(d["rank_changes"])), "", "per-category forecasts",
+                                "rank by last actual vs rank by first forecast"))
+        if d["low_signal_categories"]:
+            claims.append(Claim("T4", "PREDICTIVE", "LOW_SIGNAL_NOTE",
+                                f"Forecasts for {_join(d['low_signal_categories'])} are "
+                                "dominated by noise and less reliable.",
+                                0.0, "", "Gate 3 per category", "forecastability test"))
+
+    elif kind == "SHARE_SHIFT":
+        label = d["measure"].replace("_", " ")
+        g, lo = d["largest_gain"], d["largest_loss"]
+        claims.append(Claim(
+            "D1", "PREDICTIVE", "STRATEGY_HEADLINE",
+            f"Between {d['from_label']} and {d['to_label']}, {g['category']} is projected "
+            f"to gain the most share of {label}, from {_pct(g['share_now_pct'])} to "
+            f"{_pct(g['share_next_pct'])}, while {lo['category']} moves from "
+            f"{_pct(lo['share_now_pct'])} to {_pct(lo['share_next_pct'])}.",
+            g["change_pp"], "pp", "per-category forecasts", "forecast share - current share",
+            [g["share_now_pct"], g["share_next_pct"], lo["share_now_pct"], lo["share_next_pct"]]))
+        for i, sh in enumerate(d["shares"], start=1):
+            claims.append(Claim(
+                f"D2.{i}", "PREDICTIVE", "SHARE_CATEGORY",
+                f"{sh['category']}: {_pct(sh['share_now_pct'])} of {label} now, "
+                f"{_pct(sh['share_next_pct'])} projected.",
+                sh["share_next_pct"], "%", "per-category forecasts", "forecast / total forecast",
+                [sh["share_now_pct"]]))
+
+    elif kind == "QUARTILE_SHIFT":
+        label = d["measure"].replace("_", " ")
+        last, proj = d["last"], d["projected"]
+        if "median" in proj:
+            text = (f"The median {label} per row is projected to move from "
+                    f"{fmt(last['median'])} in {d['last_label']} to {fmt(proj['median'])} "
+                    f"in {d['next_label']}")
+            if "p25" in proj and "p75" in proj:
+                text += (f", with the middle half of values spanning {fmt(proj['p25'])} to "
+                         f"{fmt(proj['p75'])} (now {fmt(last['p25'])} to {fmt(last['p75'])})")
+            claims.append(Claim("D1", "PREDICTIVE", "STRATEGY_HEADLINE", text + ".",
+                                proj["median"], "", "per-month quartile forecasts",
+                                f"{d['periods']} monthly quartile series",
+                                list(last.values()) + list(proj.values())))
+
+    elif kind == "PERCENTILE_POSITION":
+        pcts = [p["percentile"] for p in d["positions"]]
+        low, high = min(pcts), max(pcts)
+        span = _ordinal(round(low)) if round(low) == round(high) else \
+            f"{_ordinal(round(low))} to {_ordinal(round(high))}"
+        claims.append(Claim(
+            "D1", "PREDICTIVE", "STRATEGY_HEADLINE",
+            f"The projected values sit at the {span} percentile of the historical values "
+            f"(historical median {fmt(d['historical_median'])}).",
+            high, "", "forecast vs historical distribution", "share of history below forecast",
+            pcts + [d["historical_median"]]))
+
+    elif kind == "ANOMALY_PERSISTENCE":
+        verdict = d["verdict"]
+        if verdict == "NO_RECENT_ANOMALY":
+            text = f"No anomaly occurred in the last {d['recent_window']} periods"
+            latest = d.get("latest_anomaly")
+            if latest:
+                text += f"; the most recent was at {latest['label']} ({fmt(latest['value'])})."
+            else:
+                text += "."
+            value = 0.0
+        else:
+            a = d["anomaly"]
+            head = (f"The {a['direction'].lower()} anomaly at {a['label']} "
+                    f"({fmt(a['value'])}) is projected to")
+            if verdict == "RECOVERING":
+                text = f"{head} recover: no forecast period stays beyond the threshold."
+            elif verdict == "WORSENING":
+                text = (f"{head} worsen: all {d['horizon']} forecast periods breach the "
+                        "threshold, each further beyond it than the last.")
+            else:
+                text = (f"{head} persist: {d['projected_breaches']} of {d['horizon']} "
+                        "forecast periods stay beyond the threshold.")
+            value = float(d["projected_breaches"])
+        claims.append(Claim("P1", "PREDICTIVE", "STRATEGY_HEADLINE", text, value, "",
+                            "anomaly engine + forecast", verdict))
+    return claims
 
 def build_forecast_claims(forecast) -> list:
     """Compute verified statements about the model's projections."""
@@ -231,6 +436,31 @@ def build_forecast_claims(forecast) -> list:
         )
 
     if forecast.points:
+        # The whole projection in one sentence. Short responses have room for
+        # three sentences, so they cannot afford one per forecast period; this
+        # condensed claim is what they use. It is excluded from the full
+        # deterministic text, which already states every point individually.
+        points = forecast.points
+        if len(points) == 1:
+            p = points[0]
+            path_text = (
+                f"{label.title()} for {p.label} is projected at {fmt(p.predicted)}, "
+                f"within a {int(forecast.confidence_level * 100)}% confidence range of "
+                f"{fmt(p.lower_bound)} to {fmt(p.upper_bound)}."
+            )
+        else:
+            path_text = (
+                f"{label.title()} is projected at {_join([fmt(p.predicted) for p in points])} "
+                f"for {_join([p.label for p in points])} respectively."
+            )
+        claims.append(
+            Claim("F7", "PREDICTIVE", "FORECAST_PATH", path_text,
+                  points[0].predicted, "", f"{forecast.model} output",
+                  f"point forecasts h=1..{len(points)}",
+                  [p.predicted for p in points]
+                  + [b for p in points for b in (p.lower_bound, p.upper_bound)])
+        )
+
         projected_total = sum(p.predicted for p in forecast.points)
         claims.append(
             Claim("F3", "PREDICTIVE", "FORECAST_TOTAL",
@@ -274,6 +504,19 @@ def build_forecast_claims(forecast) -> list:
                   forecast.in_sample_mape, "%", "in-sample residuals", "MAPE")
         )
     return claims
+
+
+def build_readiness_claims(readiness, forecast) -> list:
+    """A forecast shown with cautions says so, in the same verified summary."""
+    if readiness is None or forecast is None or not getattr(forecast, "generated", False):
+        return []
+    if getattr(readiness, "decision", "") != "READY_WITH_WARNING":
+        return []
+    messages = [w["message"] for w in readiness.warnings]
+    return [Claim("F8", "PREDICTIVE", "READINESS_CAUTION",
+                  "This forecast carries a caution: " + " ".join(messages),
+                  float(len(messages)), "", "readiness classifier",
+                  "warnings: " + ", ".join(w["code"] for w in readiness.warnings))]
 
 
 def build_anomaly_claims(report) -> list:
@@ -441,6 +684,12 @@ def verify_summary(text: str, claims: list, tolerance: float = 0.02) -> dict:
 # ==========================================================================
 
 
+# Claims that restate other claims in condensed form. They exist for size-bounded
+# renderings (short summaries, notices) and are left out of the full text so it
+# never says the same thing twice.
+CONDENSED_KINDS = {"FORECAST_PATH"}
+
+
 def render_deterministic(claims: list) -> str:
     """
     Concatenate claim texts into paragraphs grouped by temporal dimension.
@@ -451,7 +700,8 @@ def render_deterministic(claims: list) -> str:
     order = ["HISTORICAL", "ANOMALY", "PREDICTIVE", "SCENARIO"]
     paragraphs = []
     for dimension in order:
-        sentences = [c.text for c in claims if c.dimension == dimension]
+        sentences = [c.text for c in claims
+                     if c.dimension == dimension and c.kind not in CONDENSED_KINDS]
         if sentences:
             paragraphs.append(" ".join(sentences))
     return "\n\n".join(paragraphs)
@@ -466,7 +716,8 @@ def render_with_llm(claims: list, max_sentences: int = 8, profiler=None) -> tupl
     90% trustworthy, it is untrustworthy.
     """
     claim_block = "\n".join(
-        f"[{c.claim_id}] ({c.dimension}/{c.kind}) {c.text}" for c in claims
+        f"[{c.claim_id}] ({c.dimension}/{c.kind}) {c.text}"
+        for c in claims if c.kind not in CONDENSED_KINDS
     )
     prompt = build_summary_prompt(claim_block, max_sentences)
 
@@ -496,6 +747,8 @@ def summarize(
     use_llm: bool = False,
     max_sentences: int = 8,
     profiler=None,
+    strategy_result=None,
+    readiness=None,
 ) -> SummaryResult:
     """
     Build the unified temporal summary.
@@ -508,6 +761,9 @@ def summarize(
     claims += build_historical_claims(profile, rows, analysis, forecast)
     claims += build_anomaly_claims(anomaly_report)
     claims += build_forecast_claims(forecast)
+    claims += build_readiness_claims(readiness, forecast)
+    claims += build_strategy_claims(
+        strategy_result, getattr(forecast, "confidence_level", 0.95) if forecast else 0.95)
     claims += build_scenario_claims(scenario)
 
     result = SummaryResult(claims=claims)

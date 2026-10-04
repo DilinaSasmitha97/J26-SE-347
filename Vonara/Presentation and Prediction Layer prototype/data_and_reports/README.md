@@ -182,9 +182,17 @@ nonsensical layer.
 | Stage | Module | Contribution |
 |---|---|---|
 | 1 Intent → strategy | `prediction.INTENT_STRATEGY_MAP` | model family becomes a function of query semantics, not a default |
-| 2 Data readiness | `assess_readiness` | three gates — temporal validity, statistical sufficiency, signal quality |
-| 3 Model selection | `select_model` | **dual-signal**: semantic intent × statistical structure (ADF, seasonal ACF, trend R², CV) |
-| 4 Forecasting | `generate_forecast` | intervals widen as `z·σ·√h·small_sample_penalty` |
+| 1 Strategy execution | `strategies.py` | each strategy answered for real: per-category **trajectory** (who leads next), **distribution shift** (shares / quartiles / percentile position), **anomaly persistence** (recovering / persisting / worsening) |
+| 2 Data readiness | `assess_readiness` | **READY / READY_WITH_WARNING / NOT_READY** with reason codes: temporal validity, unreadable values (> 20 % refuses), empty periods (≤ 25 % interpolated and disclosed, more refuses), sufficiency, near-constant and constant series, ADF + KPSS stationarity evidence, and a **forecastability test** on the series' own history (best one-step error ≤ 20 % of level) replacing the CV/R² rule that refused nothing |
+| 3 Model selection | `select_model` | **dual-signal** rules (intent × ADF, seasonal ACF, trend R², CV), then a **benchmark guard**: the choice must beat naive / seasonal naive on the series' own history or the benchmark is used |
+| 4 Forecasting | `project_series` / `generate_forecast` | one code path for live requests and backtests; residual-based intervals widening as `z·σ·√h·small_sample_penalty` for every model (94.5 % coverage on held-out M4); damped-trend Holt; airline-order SARIMA, only with two full cycles |
+
+Single-series stages run only when the result is one row per period. The
+profiler classifies every result's **layout** — `SINGLE`, `GROUPED` (month ×
+region: one series per category, forecast separately), `EVENTS` (raw rows) or
+`CROSS_SECTIONAL` — because treating a grouped result as one series
+interleaves the categories and every per-period statistic computed on it is
+wrong.
 | 5 Anomaly detection | `anomaly.detect_anomalies` | adaptive IQR/Z thresholds, applied to past **and** forecast |
 | 6 What-if | `whatif.simulate` | NL scenario → bounded parametric perturbation, all outputs regenerate |
 
@@ -299,25 +307,80 @@ Reproduce with `python evaluate_response_intent.py` and
 > failure mode across 175 inputs", not as an expected field accuracy.
 > Full method and limits: `response_intent_design.md`.
 
+The stress corpus (`response_intent_stress.csv`, 45 deliberately hard
+inputs) scores **57.8 %** (26/45) — the realistic floor until a blind test set
+exists.
+
 Both runs write `<dataset>_predictions.csv` — every input with its expected
 label, the engine's actual verdict, `CORRECT`/`WRONG`, confidence and rationale.
 That file is the record of the current state; diff it after any lexicon change.
 
-**2. Prediction accuracy** — 3-period holdout, 10 backtestable scenarios
+**2. Prediction accuracy** — rolling origin, `python evaluate_forecasting.py`
 
-| strategy | RMSE | MAE | mean MAPE | median MAPE |
+266 series. Development: 66 synthetic series (factorial grid of length × noise ×
+seasonality × trend, plus 6 near-constant) and **M4_DEV, 100 monthly series
+randomly sampled (seed 2026) from the M4 competition dataset** (100,000 series
+in total, 48,000 monthly). Held-out test: **M4_TEST, 100 further monthly series
+(seed 2027) drawn from the 47,900 not in M4_DEV**. All truncated to their last
+36 observations; 4 origins × 3-step horizon per series; every forecast uses only
+data before its origin. Design changes were checked on development data only;
+M4_TEST was evaluated once with the frozen code. Full tables, per horizon and
+per data regime: `forecast_benchmark.md`.
+
+| | MASE (mean / median) | sMAPE | rel. RMSE vs naive | 95 % coverage |
 |---|---|---|---|---|
-| **Adaptive (dual-signal)** | 3,881 | 3,281 | 23.20 % | **7.42 %** |
-| fixed Weighted MA | **3,459** | **3,053** | 23.58 % | 8.07 % |
-| fixed Linear Regression | 4,356 | 3,759 | 26.23 % | 10.69 % |
-| fixed Exp. Smoothing | 4,320 | 3,439 | 24.04 % | 9.64 % |
+| M4_TEST — naive | 1.491 / 1.231 | 10.8 % | 1.000 | 95.0 % |
+| M4_TEST — SARIMA (airline) | 1.521 / 1.295 | 11.1 % | 0.965 | 95.0 % |
+| M4_TEST — adaptive, unguarded | 1.897 / 1.356 | 11.2 % | 1.070 | 92.7 % |
+| M4_TEST — **adaptive + guard** | **1.443 / 1.234** | **9.5 %** | **0.938** | **94.5 %** |
 
-Model-selection agreement with the generating process: **100 % (12/12)**.
+> On held-out data the guarded selector is the most accurate approach on every
+> summary measure and its 95 % bands hold 94.5 % of outcomes (95 / 95 / 94 % at
+> h = 1 / 2 / 3). It is significantly better than the unguarded rules
+> (Wilcoxon p < 0.0001) but **not significantly better than naive** (p = 0.81):
+> the honest claim is "matches the benchmark and is calibrated", not "beats it".
+> The unguarded dual-signal rules are significantly *worse* than naive
+> (p = 0.001), which is why the guard is part of the method.
 
-> The adaptive selector wins on median MAPE but **loses to fixed WMA on mean
-> RMSE**. This is a real, unresolved finding, not a presentation artefact — one
-> near-unforecastable series (154 % MAPE) that the readiness gate should have
-> rejected dominates the mean. Documented as open issue #1.
+SARIMA now uses the airline order (0,1,1)(0,1,1)₁₂ — chosen over per-series AICc
+selection (mean MASE 2.03) and the Stage 1 order (1,1,1)(1,1,1)₁₂ (7.04, 12
+blow-ups) by backtest on development data — and residual-based bands instead of
+statsmodels' parameter-exact intervals (which covered 67–75 %).
+
+**2b. Readiness** — `python evaluate_forecasting.py`, `python evaluate_readiness.py`
+
+| Gate 3 (UNRELIABLE = window sMAPE > 20 %) | Refusal rate | sMAPE accepted | sMAPE refused | Precision | Recall |
+|---|---|---|---|---|---|
+| Old CV/R² rule (all groups) | 0 % | — | — | — | 0.00 |
+| Forecastability, M4_DEV | 6.2 % | 8.4 % | 40.9 % | 0.68 | 0.29 |
+| Forecastability, **M4_TEST (held out)** | 5.0 % | 7.1 % | 53.7 % | **0.90** | 0.35 |
+
+The threshold (20 % of level) is chosen on development data as the best F1 among
+thresholds whose refusals are right ≥ 80 % of the time; on the held-out sample
+90 % of refusals were right. The full decision is three-level — READY,
+READY_WITH_WARNING, NOT_READY — with reason codes, ADF + KPSS stationarity
+evidence, unreadable-value and empty-period checks (gaps ≤ 25 % are filled by
+linear interpolation and disclosed; business-day calendars are recognised). On
+85 labelled result sets (17 case types × 5 seeds) it gives the defined decision
+in 85/85 cases with 0 false-ready decisions (`readiness_benchmark.md`); the cases
+are clear-cut by construction, so this checks the policy is implemented, while
+the gate's precision on M4 is the evidence on borderline data. When ADF and KPSS
+disagree on M4_TEST, 29.0 % of forecasts are unreliable against 7.5–15.5 % for
+the other verdicts, which is why disagreement is shown as a caution.
+
+**2c. Strategies** — `python evaluate_strategies.py` (synthetic, known truth)
+
+| Strategy question | Result | Naive answer |
+|---|---|---|
+| Leader next period (200 sets × 4 categories) | 90.0 % | 88.0 % (current leader stays) |
+| …in the 24 sets where the leader changes | 29.2 % | 0 % |
+| …when the strategy calls the lead "clear" (88 sets) | **100 %** | — |
+| Share error next period | **1.62 pp** (p = 0.003) | 1.74 pp (shares persist) |
+| Anomaly persistence verdict (169 detected events) | **71.6 %** | 52.7 % (best constant answer) |
+| …one-off spikes / level shifts | 59.8 % / 84.1 % | — |
+
+Spikes are the weak case: when the guard picks the naive model, a spike in the
+last period is carried forward and called persistent. Open issue for Stage 3.
 
 **3. Anomaly detection** — 6 labelled processes, 12 injected anomalies
 
@@ -371,7 +434,16 @@ this layer depends on.
 | `llm.py` | provider transport, JSON-mode + repair parsing |
 | `api.py` | FastAPI gateway |
 | `main.py` | CLI demo harness |
-| `evaluate.py` | research metrics |
+| `evaluate.py` | research metrics (intent, single-holdout forecast, anomaly, grounding) |
+| `evaluate_forecasting.py` | rolling-origin forecasting benchmark, synthetic + M4, gate evaluation |
+| `evaluate_strategies.py` | Stage 1 strategy benchmark vs naive answers |
+| `evaluate_readiness.py` | readiness-decision benchmark on 85 labelled result sets |
+| `test_readiness.py` | readiness decision, calendar handling, ADF + KPSS, SARIMA bands, caution delivery |
+| `strategies.py` | **Part 4** — Stage 1 strategy execution |
+| `input_adapter.py` | Member 2 columnar result → row dicts |
+| `benchmark_data/` | M4 development sample (seed 2026), held-out test sample (seed 2027) + `prepare_m4_sample.py` |
+| `test_db/` | synthetic MySQL database + 77 integration fixtures |
+| `forecast_benchmark.md`, `strategy_benchmark.md`, `readiness_benchmark.md` | generated benchmark reports |
 | `synthetic_data.py` | labelled generators + 12-scenario benchmark |
 | `intent_testset.json` | 48 labelled intent cases |
 | `response_intent_dataset.csv` | 125-input response-intent development corpus |
