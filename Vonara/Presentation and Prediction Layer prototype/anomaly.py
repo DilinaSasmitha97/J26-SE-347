@@ -73,6 +73,12 @@ MIN_POINTS_FOR_ANOMALY = 5
 # the threshold genuinely adaptive rather than merely rescaled.
 DETREND_R2_THRESHOLD = 0.50
 
+# Which rule flags a point. COMBINED (the default) flags a breach of either the
+# IQR fence or the Z-score threshold; IQR and ZSCORE apply one rule alone. The
+# single-rule modes exist so the evaluation can measure what each contributes
+# (proposal section 3.7).
+DETECTION_METHODS = ("COMBINED", "IQR", "ZSCORE")
+
 
 def _quantile(sorted_values: list, q: float) -> float:
     """Linear-interpolation quantile (matches numpy's default 'linear' method)."""
@@ -139,6 +145,7 @@ def detect_anomalies(
     forecast=None,
     static_baseline: bool = False,
     allow_detrend: bool = True,
+    method: str = "COMBINED",
 ) -> AnomalyReport:
     """
     Run dual-dimension detection.
@@ -157,7 +164,12 @@ def detect_anomalies(
                   with no detrending. This is the control condition evaluate.py
                   compares the adaptive method against.
         allow_detrend: set False to force raw-level detection.
+        method:   COMBINED (IQR fence or Z-score), IQR (fence only) or ZSCORE
+                  (Z-score only). Ignored by the static baseline, which is
+                  always the textbook combination.
     """
+    if method not in DETECTION_METHODS:
+        raise ValueError(f"method must be one of {DETECTION_METHODS}, got {method!r}")
     report = AnomalyReport()
     labels = labels or [str(i) for i in range(len(values))]
 
@@ -183,6 +195,8 @@ def detect_anomalies(
         report.method = "ADAPTIVE_IQR_ZSCORE_DETRENDED"
     else:
         working = list(values)
+    if method != "COMBINED" and not static_baseline:
+        report.method = report.method.replace("IQR_ZSCORE", method)
 
     ordered = sorted(working)
     q1 = _quantile(ordered, 0.25)
@@ -251,21 +265,27 @@ def detect_anomalies(
         z = abs(value - mean_v) / std if std > 0 else 0.0
 
         breaches_iqr = value > report.upper_threshold or value < report.lower_threshold
+        breaches_z = z > z_threshold
+        if not static_baseline:
+            if method == "IQR" and not breaches_iqr:
+                return None
+            if method == "ZSCORE" and not breaches_z:
+                return None
         if value > report.upper_threshold:
             direction, distance = "HIGH", (value - report.upper_threshold) / effective_iqr
         elif value < report.lower_threshold:
             direction, distance = "LOW", (report.lower_threshold - value) / effective_iqr
         else:
             # Z-score can still catch a point inside a wide IQR fence.
-            if z <= z_threshold:
+            if not breaches_z:
                 return None
             direction = "HIGH" if value > mean_v else "LOW"
             distance = 0.0
 
         detected_by = []
-        if breaches_iqr:
+        if breaches_iqr and (static_baseline or method != "ZSCORE"):
             detected_by.append("IQR")
-        if z > z_threshold:
+        if breaches_z and (static_baseline or method != "IQR"):
             detected_by.append("ZSCORE")
 
         return AnomalyPoint(
