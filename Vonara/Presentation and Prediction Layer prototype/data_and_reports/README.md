@@ -194,7 +194,7 @@ region: one series per category, forecast separately), `EVENTS` (raw rows) or
 interleaves the categories and every per-period statistic computed on it is
 wrong.
 | 5 Anomaly detection | `anomaly.detect_anomalies` | adaptive IQR/Z thresholds, applied to past **and** forecast, in the raw, detrended or **STL seasonal** space; each historical anomaly labelled **SPIKE / SUSTAINED / UNCONFIRMED** |
-| 6 What-if | `whatif.simulate` | NL scenario → bounded parametric perturbation, all outputs regenerate |
+| 6 What-if | `whatif.simulate` + `scenario_language.parse` | NL scenario → bounded parametric perturbation, all outputs regenerate; one parser for the question and the simulate box, refusing negated, ranged, absolute or multi-change scenarios with a reason code |
 
 Two design decisions worth defending in the report:
 
@@ -429,7 +429,37 @@ the IQR fence carries the detection: Z-score alone is weakest, and combining
 the two adds recall but not F1 on held-out data. On the 6-case Stage 1 set
 (`python evaluate.py anomaly`) the seasonal case goes from recall 0 to 0.50.
 
-**4. Summary grounding** — 465 numbers across 12 summaries: **100 % traceable**.
+**4. Summary grounding** — 415 numbers across 12 summaries: **100 % traceable**
+(465 before Stage 4, when each ISO date was read as three numbers).
+
+**5. What-if parsing (Stage 4)** — `python evaluate_whatif.py`, 94 labelled
+phrasings (64 DEV, 30 TEST) including substring traps, negations, two changes,
+ranges, absolute amounts, targets and multipliers. Full table:
+`whatif_benchmark.md`.
+
+| Route | Stage 3 correct | Stage 3 wrong simulations | Stage 4 correct | Stage 4 wrong simulations |
+|---|---|---|---|---|
+| Question, TEST | 15/30 | 12 | **30/30** | **0** |
+| Simulate box, TEST | 14/30 | 7 | **30/30** | **0** |
+| Question, DEV | 29/59 | 22 | 59/59 | 0 |
+| Simulate box, DEV | 33/64 | 18 | 64/64 | 0 |
+
+The cases and the parser's word lists are by the same author, so 100 % shows
+the known phrasing types are covered, not that real users' wording is.
+
+**6. Summary verifier (Stage 4)** — `python evaluate_verifier.py`, fault
+injection on the 12 scenarios' claims. Full table: `verifier_benchmark.md`.
+
+| | Stage 3 (within 2 % of any claim number) | Stage 4 (precision-aware) |
+|---|---|---|
+| Correct rewrites wrongly rejected: "48.3k" / "6,040-6,869" / reworded dates | 92 % / 100 % / 75 % | **0 % / 0 % / 0 %** |
+| Corrupted numbers caught: off by 5 % / 10 % / 25 % | 48 % / 67 % / 68 % | **98 % / 100 % / 100 %** |
+| Digits transposed / invented value / invented word number | 58 % / 97 % / 0 % | **100 % / 97 % / 98 %** |
+| Blind spots: two numbers swapped / "increased" → "decreased" | 8 % / 0 % | 8 % / 0 % |
+
+Live narration (`--live 12`, Groq `openai/gpt-oss-120b`): 12 of 12 verified and
+shown; none rejected. The rejection path is therefore evidenced by fault
+injection, not by an observed LLM error.
 
 ---
 
@@ -477,12 +507,16 @@ this layer depends on.
 | `test_readiness.py` | readiness decision, calendar handling, ADF + KPSS, SARIMA bands, caution delivery |
 | `evaluate_anomalies.py` | Stage 3 labelled anomaly benchmark: rules compared, historical and predictive scored separately |
 | `test_anomaly.py` | detection rules, STL seasonal space, forecast screening space, spike/shift patterns, persistence |
+| `scenario_language.py` | **Part 4** — Stage 6 scenario parser shared by the analyzer and the what-if engine |
+| `evaluate_whatif.py`, `whatif_testset.json` | Stage 4 what-if parser benchmark on 94 labelled phrasings |
+| `evaluate_verifier.py` | Stage 4 summary-verifier benchmark: fault injection + optional live LLM run |
+| `test_whatif.py` | scenario parser, route agreement, precision-aware verifier |
 | `strategies.py` | **Part 4** — Stage 1 strategy execution |
 | `input_adapter.py` | Member 2 columnar result → row dicts |
 | `benchmark_data/` | M4 development sample (seed 2026), held-out test sample (seed 2027) + `prepare_m4_sample.py` |
 | `test_db/` | synthetic MySQL database + 77 integration fixtures |
-| `forecast_benchmark.md`, `strategy_benchmark.md`, `readiness_benchmark.md`, `anomaly_benchmark.md` | generated benchmark reports |
-| `stage2_completion_report.md`, `stage3_completion_report.md` | stage reports |
+| `forecast_benchmark.md`, `strategy_benchmark.md`, `readiness_benchmark.md`, `anomaly_benchmark.md`, `whatif_benchmark.md`, `verifier_benchmark.md` | generated benchmark reports |
+| `stage2_completion_report.md`, `stage3_completion_report.md`, `stage4_completion_report.md` | stage reports |
 | `synthetic_data.py` | labelled generators + 12-scenario benchmark |
 | `intent_testset.json` | 48 labelled intent cases |
 | `response_intent_dataset.csv` | 125-input response-intent development corpus |

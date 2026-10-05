@@ -30,6 +30,7 @@ from difflib import SequenceMatcher
 
 import llm
 import response_intent
+import scenario_language
 from profiler import log_step
 from prompts import SYSTEM_PROMPT, build_analysis_prompt
 from schemas import (
@@ -137,10 +138,6 @@ WHAT_IF_MARKERS = [
     "what if", "what-if", "suppose", "assuming", "if i ", "if we ",
     "scenario", "simulate", "hypothetically", "were to",
 ]
-
-INCREASE_MARKERS = ["increase", "raise", "grow", "boost", "add", "up by", "more"]
-DECREASE_MARKERS = ["reduce", "decrease", "cut", "lower", "drop", "down by",
-                    "less", "shrink", "save"]
 
 AGG_MARKERS = {
     "SUM": ["total", "sum", "combined", "altogether", "overall spend", "revenue"],
@@ -487,21 +484,13 @@ def _detect_what_if(text: str) -> WhatIfSpec:
             clause = text[idx:]
             break
 
-    direction = ""
-    if any(m in clause for m in DECREASE_MARKERS):
-        direction = "DECREASE"
-    elif any(m in clause for m in INCREASE_MARKERS):
-        direction = "INCREASE"
-
-    magnitude = 0.0
-    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:%|percent)", clause)
-    if m:
-        magnitude = float(m.group(1))
-    elif re.search(r"\bby\s+(\d+(?:\.\d+)?)\b", clause):
-        magnitude = float(re.search(r"\bby\s+(\d+(?:\.\d+)?)\b", clause).group(1))
-
-    if not direction and magnitude:
-        direction = "SET"
+    # Shared with the simulate box (scenario_language); whole words only, so
+    # "unless" is not "less" and "supplier" is not "up". A clause that cannot be
+    # read as one percentage change keeps present=True with no direction, and
+    # the what-if engine reports why it was refused.
+    parsed = scenario_language.parse(clause)
+    direction = parsed["direction"] if parsed["valid"] else ""
+    magnitude = parsed["magnitude_pct"] if parsed["valid"] else 0.0
 
     return WhatIfSpec(
         present=True,

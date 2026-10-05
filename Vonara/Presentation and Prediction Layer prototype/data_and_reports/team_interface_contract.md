@@ -312,6 +312,20 @@ raises `ORDERING_DIRECTION_AMBIGUOUS`; resolve it with schema knowledge.
     `FORECAST_WITHOUT_LATEST_POINT` or `FORECAST`). The verdict set is
     unchanged. When `basis` is `FORECAST_WITHOUT_LATEST_POINT`, a
     `RECOVERING` verdict is provisional and the summary says so.
+- **Stage 4 additions (what-if and summary verifier), all additive:**
+  - `prediction.stage_6_scenario.spec.reason_code` says why a scenario was
+    not simulated: `NO_MAGNITUDE`, `NO_DIRECTION`, `NEGATED`,
+    `MULTIPLE_CHANGES`, `RANGE`, `ABSOLUTE_AMOUNT`, `NO_CHANGE` or `EMPTY`
+    (empty when it was simulated). `skipped_reason` carries the readable
+    message. A what-if in the question and the same text sent to
+    `/api/v4/simulate` are now read identically.
+  - Increases are bounded at 300 % (quadruple); decreases at 100 %.
+  - `summary.verification.rule` is `PRECISION_AWARE`: a narrated number must
+    agree with a claim number to the precision it is written at ("48.3k",
+    "6,454", "three").
+  - `summary.rejected_narration` holds an LLM narration the verifier refused,
+    for audit only; `summary.text` is then the deterministic text. Do not
+    display `rejected_narration` as the summary.
 - **`response.forecast_notice` is present whenever the user explicitly asked for
   a prediction**, in every response shape, and absent otherwise:
   ```json

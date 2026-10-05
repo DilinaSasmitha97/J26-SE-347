@@ -15,13 +15,13 @@ what-if scenario simulations.
 |---|---|---|---|---|
 | 1 | Semantic intent classification for visualization driving | `query_analyzer.py` | ✅ working | intent accuracy suite |
 | 2 | Vega-Lite grammar extension for predictive overlays | `visualization.py` | ✅ working | 4 rules, layer audit |
-| 3 | Mathematical claim verification pipeline | `summarization.py` | ✅ working | grounding rate |
+| 3 | Mathematical claim verification pipeline | `summarization.py` | ✅ Stage 4: precision-aware verifier; live LLM narration measured | fault injection: 96.7–100 % of corrupted numbers rejected, 0 % of correct rewrites; live 12/12 verified |
 | 4 | Intent-to-prediction mapping algorithm | `INTENT_STRATEGY_MAP` + `strategies.py` | ✅ Stage 2: all four strategies executed | strategy benchmark |
 | 5 | Data readiness feasibility classifier | `assess_readiness` | ✅ Stage 2: three-level decision, ADF + KPSS, completeness, forecastability | held-out M4 precision 0.90 (target 0.80); 85/85 labelled cases |
 | 6 | Dual-signal model selection algorithm | `select_model` + benchmark guard | ⚠️ best on held-out M4 but not significantly better than naive (p = 0.81); rules alone worse (p = 0.001) | rolling-origin benchmark |
 | 7 | Lightweight confidence-bounded forecasting | `project_series` | ✅ 94.5 % coverage of nominal 95 % on held-out M4 | rolling-origin benchmark |
 | 8 | Dual-dimension adaptive anomaly detection | `anomaly.py` | ⚠️ Stage 3: STL seasonal space, spike/shift patterns; precision falls 0.82 → 0.67 | held-out labelled benchmark: F1 0.545 → 0.576, seasonal F1 0.23 → 0.38; persistence 71.6 % → 88.8 % |
-| 9 | NL-driven what-if simulation engine | `whatif.py` | ✅ working | scenario deltas |
+| 9 | NL-driven what-if simulation engine | `whatif.py` + `scenario_language.py` | ⚠️ Stage 4: one shared parser; refuses what it cannot read | 94 labelled phrasings: ~50 % → 100 % correct, 0 wrong simulations (author-written set) |
 | 10 | Unified temporal summarization framework | `summarization.py` | ✅ working | 100 % grounded |
 
 Legend: ✅ implemented and validated · ⚠️ implemented, known limitation documented
@@ -90,10 +90,29 @@ Carried to later stages:
       needs real-data base rates to choose the trade-off
 - [ ] Validation of the anomaly engine on real (non-synthetic) labelled data
 
+### Phase 2d — Stage 4: what-if parser and summary verifier (branch `vonara-nl-to-sql-prototype-stage-4`)
+
+- [x] One scenario parser for both routes (`scenario_language.py`): whole-word
+      directions ("unless" is no longer "less"), refusals for negated,
+      multi-change, ranged and absolute scenarios; targets ("to 80%"),
+      multipliers, signs; ramp wording kept on the question route
+- [x] A magnitude with no direction is refused, no longer simulated as a cut
+- [x] Labelled what-if benchmark (`evaluate_whatif.py`, 94 phrasings, DEV/TEST)
+- [x] Precision-aware summary verifier: scale words, ranges, dates, numbers
+      written as words; fault-injection benchmark (`evaluate_verifier.py`)
+- [x] Live LLM narration measured (Groq, 12 scenarios)
+
+Carried to later stages:
+
+- [ ] What-if phrasings written by someone other than the author
+- [ ] Verifier blind spots: two correct numbers swapped, a direction word
+      reversed ("increased" → "decreased")
+- [ ] Live narration on more scenarios and a second model; no rejection was
+      observed in 12, so the rejection path is evidenced by fault injection only
+
 ### Phase 2b — remaining hardening
 
 - [ ] **#3** Independent/blind intent test split + relabelled Spider/BIRD subset
-- [ ] Enable LLM narration; measure verifier rejection rate
 
 ### Phase 3 — Integration
 

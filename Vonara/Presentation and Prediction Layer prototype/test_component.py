@@ -430,7 +430,7 @@ def test_uninterpretable_scenario_is_refused():
 
 def test_scenario_magnitude_is_clamped():
     spec = whatif_mod.parse_scenario("what if I increase spending by 500%")
-    check(spec.magnitude_pct <= whatif_mod.MAX_MAGNITUDE_PCT,
+    check(spec.magnitude_pct <= whatif_mod.MAX_INCREASE_PCT,
           "scenario magnitude clamped to the supported range")
 
 

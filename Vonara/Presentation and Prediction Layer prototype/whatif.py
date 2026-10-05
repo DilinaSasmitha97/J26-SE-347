@@ -14,6 +14,7 @@ returned. A scenario cannot widen data access.
 import re
 from dataclasses import dataclass, field, asdict
 
+import scenario_language
 from anomaly import detect_anomalies
 from prediction import ForecastPoint, ForecastResult
 from schemas import SEASONAL_PERIOD, Granularity, WhatIfSpec
@@ -26,14 +27,11 @@ def _period(granularity) -> int:
     except ValueError:
         return 1
 
-# Clamp: a scenario beyond +/-100% of the metric is not a business scenario,
-# it is a different question, and the linear perturbation model would not hold.
-MAX_MAGNITUDE_PCT = 100.0
-
-_DECREASE_WORDS = ["reduce", "decrease", "cut", "lower", "drop", "shrink",
-                   "save", "less", "down"]
-_INCREASE_WORDS = ["increase", "raise", "grow", "boost", "add", "more", "up",
-                   "expand", "double"]
+# Bounds on a scenario (see scenario_language): a fall beyond 100 % would make
+# values negative; a rise beyond 300 % (quadrupling) is a different question and
+# the multiplicative perturbation model would not hold.
+MAX_MAGNITUDE_PCT = scenario_language.MAX_DECREASE_PCT
+MAX_INCREASE_PCT = scenario_language.MAX_INCREASE_PCT
 
 _APPLY_MODES = {
     "IMMEDIATE": "Full effect applied from the first forecast period.",
@@ -50,6 +48,7 @@ class ScenarioSpec:
     magnitude_pct: float = 0.0
     apply_mode: str = "IMMEDIATE"
     parse_note: str = ""
+    reason_code: str = ""            # why an invalid spec was refused (scenario_language)
 
     def multiplier(self) -> float:
         sign = -1.0 if self.direction == "DECREASE" else 1.0
@@ -83,53 +82,19 @@ def parse_scenario(text: str, default_parameter: str = "") -> ScenarioSpec:
     it could not interpret the scenario, rather than simulating a guess.
     """
     spec = ScenarioSpec(raw_clause=(text or "").strip()[:200], parameter=default_parameter)
-    if not text or not text.strip():
-        spec.parse_note = "Empty scenario text."
+    parsed = scenario_language.parse(text)
+    spec.reason_code = parsed["reason_code"]
+    if not parsed["valid"]:
+        spec.parse_note = parsed["note"]
         return spec
-
-    lowered = text.lower()
-
-    if any(w in lowered for w in _DECREASE_WORDS):
-        spec.direction = "DECREASE"
-    elif any(w in lowered for w in _INCREASE_WORDS):
-        spec.direction = "INCREASE"
-    else:
-        spec.parse_note = (
-            "No direction word found (expected e.g. 'reduce', 'increase', 'cut', 'grow')."
-        )
-        return spec
-
-    magnitude = None
-    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:%|percent)", lowered)
-    if m:
-        magnitude = float(m.group(1))
-    else:
-        m = re.search(r"\bby\s+(\d+(?:\.\d+)?)\b", lowered)
-        if m:
-            magnitude = float(m.group(1))
-        elif "double" in lowered:
-            magnitude, spec.direction = 100.0, "INCREASE"
-        elif "half" in lowered or "halve" in lowered:
-            magnitude, spec.direction = 50.0, "DECREASE"
-
-    if magnitude is None:
-        spec.parse_note = "No magnitude found (expected e.g. '20%', 'by 15', 'double')."
-        return spec
-
-    if magnitude > MAX_MAGNITUDE_PCT:
-        spec.parse_note = f"Magnitude clamped from {magnitude}% to {MAX_MAGNITUDE_PCT}%."
-        magnitude = MAX_MAGNITUDE_PCT
-
-    if any(w in lowered for w in ("gradually", "over time", "phase", "ramp", "slowly")):
-        spec.apply_mode = "RAMPED"
-
-    spec.magnitude_pct = magnitude
     spec.valid = True
-    if not spec.parse_note:
-        spec.parse_note = (
-            f"Parsed as {spec.direction} of {magnitude}% "
-            f"({_APPLY_MODES[spec.apply_mode]})"
-        )
+    spec.direction = parsed["direction"]
+    spec.magnitude_pct = parsed["magnitude_pct"]
+    spec.apply_mode = parsed["apply_mode"]
+    spec.parse_note = parsed["note"] or (
+        f"Parsed as {spec.direction} of {spec.magnitude_pct:g}% "
+        f"({_APPLY_MODES[spec.apply_mode]})"
+    )
     return spec
 
 
@@ -227,14 +192,21 @@ def scenario_from_analysis(analysis) -> ScenarioSpec:
     wi: WhatIfSpec = analysis.what_if
     if not wi.present:
         return ScenarioSpec(parse_note="No what-if clause detected in the query.")
-    if wi.direction and wi.magnitude_pct:
-        return ScenarioSpec(
+    # The clause is re-read by the same parser as the simulate box, so both
+    # routes agree. Before Stage 4 a clause with a magnitude but no direction
+    # word ("SET") was simulated as a DECREASE, and ramp wording was dropped.
+    spec = parse_scenario(wi.raw_clause, wi.parameter)
+    if (not spec.valid and spec.reason_code in ("NO_DIRECTION", "NO_MAGNITUDE")
+            and wi.direction in ("INCREASE", "DECREASE") and wi.magnitude_pct > 0):
+        # An LLM analysis supplied what the rules could not find. Refusals for a
+        # negated, ranged, absolute or multi-change clause are never overridden.
+        limit = MAX_INCREASE_PCT if wi.direction == "INCREASE" else MAX_MAGNITUDE_PCT
+        spec = ScenarioSpec(
             valid=True,
             raw_clause=wi.raw_clause,
             parameter=wi.parameter,
-            direction=wi.direction if wi.direction != "SET" else "DECREASE",
-            magnitude_pct=min(wi.magnitude_pct, MAX_MAGNITUDE_PCT),
-            parse_note="Derived from query analysis.",
+            direction=wi.direction,
+            magnitude_pct=min(wi.magnitude_pct, limit),
+            parse_note="Direction and magnitude taken from the LLM query analysis.",
         )
-    # Fall back to a full re-parse of the raw clause.
-    return parse_scenario(wi.raw_clause, wi.parameter)
+    return spec

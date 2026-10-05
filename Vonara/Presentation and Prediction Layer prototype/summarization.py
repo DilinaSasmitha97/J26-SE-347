@@ -46,6 +46,9 @@ class SummaryResult:
     claims: list = field(default_factory=list)
     verification: dict = field(default_factory=dict)
     warnings: list = field(default_factory=list)
+    # The LLM narration the verifier refused, kept for audit only - never shown
+    # to the user as the summary.
+    rejected_narration: str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -55,6 +58,7 @@ class SummaryResult:
             "claims": [c.to_dict() if isinstance(c, Claim) else c for c in self.claims],
             "verification": self.verification,
             "warnings": self.warnings,
+            "rejected_narration": self.rejected_narration,
         }
 
 
@@ -631,53 +635,100 @@ def build_scenario_claims(scenario) -> list:
 # Verification
 # ==========================================================================
 
-_NUMBER_RE = re.compile(r"-?\d[\d,]*\.?\d*")
+# A number as written: optional sign (only where it cannot be a hyphen), digits
+# with thousands separators, decimals, and an optional scale word. ISO dates are
+# removed first (see _numbers_with_precision), so "2025-12-01" is not read as
+# 2025, -12 and -1, and "6,040-6,869" is a range, not 6,040 and -6,869.
+_NUMBER_RE = re.compile(
+    r"(?<![\w.,])(-(?=\d))?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?"
+    r"(?:\s?(k|thousand|m|mn|million|bn|billion)\b)?", re.IGNORECASE)
+_ISO_DATE_RE = re.compile(r"\b(\d{4})-(\d{2})(?:-(\d{2}))?\b")
+_SCALE = {"k": 1e3, "thousand": 1e3, "m": 1e6, "mn": 1e6, "million": 1e6,
+          "bn": 1e9, "billion": 1e9}
+_UNITS = {"two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+          "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+          "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
+          "eighteen": 18, "nineteen": 19}
+_TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60,
+         "seventy": 70, "eighty": 80, "ninety": 90}
+# "one" is left out on purpose: "one of the categories", "a one-off".
+_WORD_NUMBER_RE = re.compile(
+    r"\b(?:(" + "|".join(_TENS) + r")(?:[\s-](" + "|".join(_UNITS) + r"))?|("
+    + "|".join(_UNITS) + r"))\b(?:\s(hundred|thousand|million))?", re.IGNORECASE)
 
 
-def _numbers_in(text: str) -> list:
+def _numbers_with_precision(text: str) -> list:
+    """
+    Every number in `text` as (value, half_unit): the value it states and how
+    far a true value may be from it and still be written that way. "48.3k" is
+    48,300 +/- 50; "6,454" is 6,454 +/- 0.5; "48,300" (trailing zeros, five
+    digits) is 48,300 +/- 50, keeping at least two significant figures.
+    """
+    text = text or ""
     out = []
-    for token in _NUMBER_RE.findall(text or ""):
-        try:
-            out.append(float(token.replace(",", "")))
-        except ValueError:
-            continue
+    # A date is a label, not a measure: check only its year.
+    for m in _ISO_DATE_RE.finditer(text):
+        out.append((float(m.group(1)), 0.5))
+    text = _ISO_DATE_RE.sub(" ", text)
+    for m in _NUMBER_RE.finditer(text):
+        sign, whole, frac, scale = m.group(1), m.group(2), m.group(3), m.group(4)
+        digits = whole.replace(",", "")
+        value = float(digits + (frac or ""))
+        if frac:
+            unit = 10.0 ** -(len(frac) - 1)
+        else:
+            trailing = len(digits) - len(digits.rstrip("0")) if digits.strip("0") else 0
+            unit = 10.0 ** min(trailing, max(len(digits) - 2, 0))
+        factor = _SCALE.get((scale or "").lower(), 1.0)
+        value, unit = value * factor, unit * factor
+        out.append((-value if sign else value, unit / 2.0))
+    for m in _WORD_NUMBER_RE.finditer(text):
+        tens, unit_word, alone, mult = (g.lower() if g else g for g in m.groups())
+        value = float(_TENS.get(tens, 0) + _UNITS.get(unit_word, 0) + _UNITS.get(alone, 0))
+        value *= {"hundred": 100, "thousand": 1e3, "million": 1e6}.get(mult, 1)
+        out.append((value, 0.5 * {"hundred": 100, "thousand": 1e3, "million": 1e6}.get(mult, 1)))
     return out
 
 
-def verify_summary(text: str, claims: list, tolerance: float = 0.02) -> dict:
+def _numbers_in(text: str) -> list:
+    return [v for v, _ in _numbers_with_precision(text)]
+
+
+def verify_summary(text: str, claims: list, tolerance: float = None) -> dict:
     """
     Check that every number in a narrated summary traces to a claim.
 
-    A figure passes if it matches any claim value, any supporting value, or any
-    number appearing in a claim's own deterministic text (which covers derived
-    figures such as multiples and interval bounds), within `tolerance` relative
-    error. Anything else is unverifiable and rejects the narration.
+    The allowed numbers are every claim value, supporting value and number in a
+    claim's own deterministic text (which covers derived figures such as
+    multiples and interval bounds). A number in the summary passes if an
+    allowed number lies within the precision it is written at: "48.3k" passes
+    for 48,251 but "48,300" written in full needs a value within 50 of it, and
+    "6,777" needs 6,776.5 to 6,777.5. Numbers written as words are checked the
+    same way. Anything else is unverifiable and rejects the narration.
+
+    Before Stage 4 a number passed if it was within 2 % of ANY allowed number.
+    On a monthly series the allowed numbers sit close together, so half of all
+    numbers falsified by 5 % passed. Passing `tolerance` restores that relative
+    rule (it is kept for the benchmark's comparison only).
     """
-    allowed = set()
+    allowed = []
     for c in claims:
-        allowed.add(round(float(c.value), 6))
+        allowed.append(float(c.value))
         for sv in c.supporting_values:
             try:
-                allowed.add(round(float(sv), 6))
+                allowed.append(float(sv))
             except (TypeError, ValueError):
                 continue
-        for n in _numbers_in(c.text):
-            allowed.add(round(n, 6))
+        allowed += _numbers_in(c.text)
 
-    allowed_list = sorted(allowed)
-    found = _numbers_in(text)
+    found = _numbers_with_precision(text)
     unverified = []
-
-    for n in found:
-        ok = False
-        for a in allowed_list:
-            if a == 0:
-                if abs(n) < 1e-9:
-                    ok = True
-                    break
-            elif abs(n - a) / max(abs(a), 1e-9) <= tolerance:
-                ok = True
-                break
+    for n, half_unit in found:
+        if tolerance is not None:
+            ok = any(abs(n - a) <= tolerance * abs(a) if a else abs(n) < 1e-9 for a in allowed)
+        else:
+            slack = half_unit + 1e-9 * max(1.0, abs(n))
+            ok = any(abs(n - a) <= slack for a in allowed)
         if not ok:
             unverified.append(n)
 
@@ -686,6 +737,7 @@ def verify_summary(text: str, claims: list, tolerance: float = 0.02) -> dict:
         "verified": len(found) - len(unverified),
         "unverified_values": unverified,
         "passed": not unverified,
+        "rule": "RELATIVE" if tolerance is not None else "PRECISION_AWARE",
         "tolerance": tolerance,
         "claims_available": len(claims),
     }
@@ -791,6 +843,7 @@ def summarize(
             else:
                 result.text = deterministic
                 result.mode = "LLM_REJECTED"
+                result.rejected_narration = text
                 result.warnings.append(
                     "LLM summary contained unverifiable numbers "
                     f"{verification.get('unverified_values')}; fell back to "
