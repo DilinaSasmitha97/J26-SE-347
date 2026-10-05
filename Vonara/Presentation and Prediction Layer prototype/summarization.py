@@ -385,7 +385,16 @@ def build_strategy_claims(strategy_result, confidence: float = 0.95) -> list:
             a = d["anomaly"]
             head = (f"The {a['direction'].lower()} anomaly at {a['label']} "
                     f"({fmt(a['value'])}) is projected to")
-            if verdict == "RECOVERING":
+            basis = d.get("basis", "FORECAST")
+            if basis == "OBSERVED_RETURN":
+                text = (f"The {a['direction'].lower()} anomaly at {a['label']} "
+                        f"({fmt(a['value'])}) was a one-off: the next period was already "
+                        "back inside the threshold.")
+            elif verdict == "RECOVERING" and basis == "FORECAST_WITHOUT_LATEST_POINT":
+                text = (f"{head} recover, if it is a one-off: projected without it, no "
+                        "forecast period goes beyond the threshold. A single period cannot "
+                        "yet show whether it is the start of a lasting shift.")
+            elif verdict == "RECOVERING":
                 text = f"{head} recover: no forecast period stays beyond the threshold."
             elif verdict == "WORSENING":
                 text = (f"{head} worsen: all {d['horizon']} forecast periods breach the "
@@ -393,6 +402,9 @@ def build_strategy_claims(strategy_result, confidence: float = 0.95) -> list:
             else:
                 text = (f"{head} persist: {d['projected_breaches']} of {d['horizon']} "
                         "forecast periods stay beyond the threshold.")
+            if d.get("pattern") == "SUSTAINED" and basis == "FORECAST":
+                text += (f" It has lasted {d['run_length']} consecutive periods, "
+                         "which points to a level shift rather than a one-off spike.")
             value = float(d["projected_breaches"])
         claims.append(Claim("P1", "PREDICTIVE", "STRATEGY_HEADLINE", text, value, "",
                             "anomaly engine + forecast", verdict))

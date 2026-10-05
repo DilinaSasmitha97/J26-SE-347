@@ -228,7 +228,8 @@ def run(
     with profiler.stage("Stage 5 Anomaly Detection", "Part 4: Prediction"):
         if series_values:
             anomaly_report = anomaly_mod.detect_anomalies(
-                series_values, series_labels, forecast=forecast
+                series_values, series_labels, forecast=forecast,
+                period=strategies._period(profile),
             )
             # An interpolated point is not an observation and can never be
             # reported as an anomaly.

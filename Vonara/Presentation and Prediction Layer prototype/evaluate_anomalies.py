@@ -4,10 +4,13 @@ section 3.11 requires, and per detection rule as section 3.7 requires.
 
 Detectors compared, all through anomaly.detect_anomalies:
 
-  STATIC     textbook 1.5 x IQR fence or |z| > 3 on raw levels (the control)
-  IQR        adaptive fence only
-  ZSCORE     adaptive Z-score only
-  COMBINED   adaptive fence or Z-score (the production rule)
+  STATIC           textbook 1.5 x IQR fence or |z| > 3 on raw levels (the control)
+  COMBINED_NO_STL  the Stage 2 rule: adaptive fence or Z-score, raw or
+                   detrended space, no seasonal space (ablation)
+  IQR              adaptive fence only, with the STL seasonal space
+  ZSCORE           adaptive Z-score only, with the STL seasonal space
+  COMBINED         adaptive fence or Z-score, with the STL seasonal space
+                   (the Stage 3 production rule)
 
 HISTORICAL dimension
   A factorial grid of series: length {24, 36, 48} x shape {FLAT, TREND,
@@ -70,9 +73,12 @@ TREND_PER_PERIOD = 0.015
 
 DETECTORS = {
     "STATIC": dict(static_baseline=True),
-    "IQR": dict(method="IQR"),
-    "ZSCORE": dict(method="ZSCORE"),
-    "COMBINED": dict(method="COMBINED"),
+    # The Stage 2 production rule: combined, no seasonal space. Kept as the
+    # ablation that isolates what the STL space adds.
+    "COMBINED_NO_STL": dict(method="COMBINED"),
+    "IQR": dict(method="IQR", period=PERIOD),
+    "ZSCORE": dict(method="ZSCORE", period=PERIOD),
+    "COMBINED": dict(method="COMBINED", period=PERIOD),
 }
 
 

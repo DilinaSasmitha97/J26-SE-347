@@ -25,6 +25,7 @@ they inherit the same benchmark-validated behaviour as Stage 4.
 from dataclasses import asdict, dataclass, field
 from types import SimpleNamespace
 
+import anomaly as anomaly_mod
 import prediction
 from result_profiler import extract_grouped_series, parse_date, parse_number
 from schemas import Granularity, PredictionStrategy, SEASONAL_PERIOD
@@ -307,9 +308,28 @@ def anomaly_persistence(forecast, anomaly_report) -> StrategyResult:
         return result
 
     anomaly = recent[-1]
-    same_side = [w for w in anomaly_report.predictive_warnings
-                 if w.direction == anomaly.direction]
+    pattern = anomaly.pattern or "UNCONFIRMED"
     horizon = len(forecast.points)
+    run = _run_length(anomaly_report.historical_anomalies, anomaly)
+    basis = "FORECAST"
+    warnings = anomaly_report.predictive_warnings
+    if pattern == "SPIKE":
+        # Isolated and already followed by an in-range observation: the data
+        # itself shows the return, no projection needed.
+        warnings, basis = [], "OBSERVED_RETURN"
+    elif pattern == "UNCONFIRMED":
+        # One observation cannot show whether it is a spike or the start of a
+        # shift. Letting it drive the projection is what made a naive model
+        # carry every last-period spike forward (Stage 2: 59.8 % on spikes).
+        # Project from the history before it instead, and screen that.
+        alt = _forecast_without_latest(forecast)
+        if alt is not None:
+            rescreen = anomaly_mod.detect_anomalies(
+                forecast.historical_values, forecast=alt,
+                period=_granularity_period(forecast.granularity))
+            if rescreen.evaluated:
+                warnings, basis = rescreen.predictive_warnings, "FORECAST_WITHOUT_LATEST_POINT"
+    same_side = [w for w in warnings if w.direction == anomaly.direction]
     if not same_side:
         verdict = "RECOVERING"
     else:
@@ -322,14 +342,64 @@ def anomaly_persistence(forecast, anomaly_report) -> StrategyResult:
         "verdict": verdict,
         "anomaly": {"label": anomaly.label, "value": anomaly.value,
                     "direction": anomaly.direction, "severity": anomaly.severity},
+        "pattern": pattern,
+        "run_length": run,
+        "basis": basis,
         "projected_breaches": len(same_side),
         "horizon": horizon,
         "breach_labels": [w.label for w in sorted(same_side, key=lambda w: w.index)],
         "model": forecast.model,
-        "note": "The verdict reflects the selected model's projection; a naive model "
-                "carries the latest level forward and therefore tends to persist it.",
+        "note": {
+            "OBSERVED_RETURN": "The anomaly was a one-off: the following observation "
+                               "was already back inside the threshold.",
+            "FORECAST_WITHOUT_LATEST_POINT": "A single latest anomaly cannot yet be told "
+                                             "apart from the start of a level shift; the "
+                                             "projection is made without it, so a shift "
+                                             "that has only just begun is not yet visible.",
+            "FORECAST": "The anomaly has lasted several consecutive periods (a level "
+                        "shift); the verdict reflects the selected model's projection.",
+        }[basis],
     }
     return result
+
+
+def _run_length(anomalies: list, anomaly) -> int:
+    """Consecutive same-direction anomalies ending at `anomaly`."""
+    flagged = {a.index for a in anomalies if a.direction == anomaly.direction}
+    run, i = 0, anomaly.index
+    while i in flagged:
+        run, i = run + 1, i - 1
+    return run
+
+
+def _granularity_period(granularity) -> int:
+    try:
+        return SEASONAL_PERIOD.get(Granularity(granularity), 1)
+    except ValueError:
+        return 1
+
+
+def _forecast_without_latest(forecast):
+    """The same model's forecast for the same periods, fitted without the last point."""
+    history = list(forecast.historical_values)[:-1]
+    horizon = len(forecast.points)
+    period = _granularity_period(forecast.granularity)
+    if len(history) < 3 or not horizon:
+        return None
+    try:
+        proj = prediction.project_series(history, forecast.model, horizon + 1,
+                                         forecast.confidence_level, period if period > 1 else 12)
+    except (ValueError, ArithmeticError, IndexError):
+        return None
+    # Step 1 of this projection is the period that holds the anomaly; steps
+    # 2..h+1 are the periods the original forecast covers.
+    return prediction.ForecastResult(
+        generated=True, model=proj["model"], granularity=forecast.granularity,
+        historical_values=list(forecast.historical_values),
+        points=[prediction.ForecastPoint(period_index=p.period_index, label=p.label,
+                                         predicted=v, lower_bound=lo, upper_bound=hi)
+                for p, v, lo, hi in zip(forecast.points, proj["forecasts"][1:],
+                                        proj["lower"][1:], proj["upper"][1:])])
 
 
 # ==========================================================================

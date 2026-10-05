@@ -16,7 +16,15 @@ from dataclasses import dataclass, field, asdict
 
 from anomaly import detect_anomalies
 from prediction import ForecastPoint, ForecastResult
-from schemas import WhatIfSpec
+from schemas import SEASONAL_PERIOD, Granularity, WhatIfSpec
+
+
+def _period(granularity) -> int:
+    """Seasonal period for the anomaly screen; same mapping as the pipeline."""
+    try:
+        return SEASONAL_PERIOD.get(Granularity(granularity), 1)
+    except ValueError:
+        return 1
 
 # Clamp: a scenario beyond +/-100% of the metric is not a business scenario,
 # it is a different question, and the linear perturbation model would not hold.
@@ -203,10 +211,11 @@ def simulate(
     if history:
         scenario_forecast = ForecastResult(
             generated=True,
+            model=forecast.model,
             points=[ForecastPoint(**p) for p in result.scenario_points],
         )
         result.anomaly_report = detect_anomalies(
-            history, forecast=scenario_forecast
+            history, forecast=scenario_forecast, period=_period(forecast.granularity)
         ).to_dict()
 
     result.simulated = True

@@ -16,8 +16,13 @@ the answer a user would get by assuming "nothing changes":
                        for the next period, in percentage points. Baseline:
                        today's shares persist.
   ANOMALY_PERSISTENCE  N_ANOMALY single series per event type, each ending in
-                       an event: a one-off SPIKE (future returns to normal) or a
-                       level SHIFT (future stays shifted). Truth = whether the
+                       an event: a one-off SPIKE in the last period (future
+                       returns to normal), a level SHIFT over the last two
+                       periods, or a SHIFT_LAST that starts in the very last
+                       period (both: future stays shifted). SHIFT_LAST is
+                       indistinguishable from SPIKE when it is scored, so it
+                       measures the cost of treating a single latest anomaly as
+                       a one-off. Truth = whether the
                        actual next HORIZON values breach the same adaptive
                        threshold in the same direction. Scored only where the
                        event was detected as a recent anomaly. Baselines:
@@ -59,6 +64,7 @@ K = 4
 N_PERIODS = 24
 HORIZON = 3
 N_ANOMALY = 100
+KINDS = ("SPIKE", "SHIFT", "SHIFT_LAST")
 ANALYSIS = SimpleNamespace(primary_intent="COMPARISON")
 
 
@@ -159,7 +165,8 @@ def anomaly_case(rng: random.Random, kind: str) -> dict:
     if kind == "SPIKE":
         values[n - 1] += jump                       # one period only
     else:
-        for t in range(n - 2, n + HORIZON):         # last 2 observed + the future
+        start = n - 1 if kind == "SHIFT_LAST" else n - 2
+        for t in range(start, n + HORIZON):         # last 1-2 observed + the future
             values[t] += jump
     history, future = values[:n], values[n:]
 
@@ -168,12 +175,13 @@ def anomaly_case(rng: random.Random, kind: str) -> dict:
                                         readiness, history)
     proj = prediction.project_series(history, selection.model, HORIZON, 0.95, 12)
     forecast = prediction.ForecastResult(
-        generated=True, model=proj["model"], historical_values=history,
+        generated=True, model=proj["model"], granularity="MONTH", historical_values=history,
         points=[prediction.ForecastPoint(period_index=h + 1, label=f"t+{h + 1}", predicted=p,
                                          lower_bound=lo, upper_bound=hi)
                 for h, (p, lo, hi) in enumerate(zip(proj["forecasts"], proj["lower"],
                                                     proj["upper"]))])
-    report = anomaly_mod.detect_anomalies(history, [f"t{i}" for i in range(n)], forecast=forecast)
+    report = anomaly_mod.detect_anomalies(history, [f"t{i}" for i in range(n)], forecast=forecast,
+                                          period=12)
     result = strategies.anomaly_persistence(forecast, report)
     verdict = result.details.get("verdict")
     if verdict in (None, "NO_RECENT_ANOMALY"):
@@ -182,18 +190,19 @@ def anomaly_case(rng: random.Random, kind: str) -> dict:
     direction = result.details["anomaly"]["direction"]
     # Truth: do the ACTUAL future values breach the same band, same side?
     actual = anomaly_mod.detect_anomalies(
-        history, forecast=prediction.ForecastResult(
-            generated=True, points=[prediction.ForecastPoint(period_index=h + 1, label=f"t+{h + 1}",
+        history, period=12, forecast=prediction.ForecastResult(
+            generated=True, model=proj["model"], points=[prediction.ForecastPoint(period_index=h + 1, label=f"t+{h + 1}",
                                                              predicted=v)
                                     for h, v in enumerate(future)]))
     truth_persists = any(w.direction == direction for w in actual.predictive_warnings)
     predicted_persists = verdict in ("PERSISTING", "WORSENING")
     return {"kind": kind, "detected": True, "verdict": verdict, "model": proj["model"],
+            "pattern": result.details.get("pattern"),
             "truth_persists": truth_persists, "hit": predicted_persists == truth_persists}
 
 
 def score_anomaly_persistence(rng: random.Random) -> dict:
-    cases = [anomaly_case(rng, kind) for kind in ("SPIKE", "SHIFT") for _ in range(N_ANOMALY)]
+    cases = [anomaly_case(rng, kind) for kind in KINDS for _ in range(N_ANOMALY)]
     detected = [c for c in cases if c["detected"]]
     out = {"cases": len(cases), "detected_as_recent_anomaly": len(detected)}
     if not detected:
@@ -207,7 +216,7 @@ def score_anomaly_persistence(rng: random.Random) -> dict:
         "by_kind": {},
         "models_used": {},
     })
-    for kind in ("SPIKE", "SHIFT"):
+    for kind in KINDS:
         ks = [c for c in detected if c["kind"] == kind]
         if ks:
             out["by_kind"][kind] = {
@@ -216,7 +225,11 @@ def score_anomaly_persistence(rng: random.Random) -> dict:
                 "verdicts": {v: sum(c["verdict"] == v for c in ks)
                              for v in ("RECOVERING", "PERSISTING", "WORSENING")},
                 "truth_persists": sum(c["truth_persists"] for c in ks),
+                "patterns": {p: sum(c["pattern"] == p for c in ks)
+                             for p in ("SPIKE", "SUSTAINED", "UNCONFIRMED")},
             }
+    two = [c for c in detected if c["kind"] in ("SPIKE", "SHIFT")]
+    out["accuracy_spike_and_shift"] = sum(c["hit"] for c in two) / len(two) if two else None
     for c in detected:
         out["models_used"][c["model"]] = out["models_used"].get(c["model"], 0) + 1
     return out
@@ -255,10 +268,14 @@ def main() -> int:
                f"{_p(anom['baseline_always_persists'])}, always-recovers "
                f"{_p(anom['baseline_always_recovers'])}",
                f"- Models used: {anom['models_used']}", "",
-               "| Event | Detected | Accuracy | Verdicts | Truth: persists |", "|---|---|---|---|---|"]
+               "| Event | Detected | Accuracy | Verdicts | Read as pattern | Truth: persists |",
+               "|---|---|---|---|---|---|"]
         for kind, k in anom["by_kind"].items():
             md.append(f"| {kind} | {k['detected']} | {_p(k['accuracy'])} | {k['verdicts']} | "
-                      f"{k['truth_persists']} |")
+                      f"{k['patterns']} | {k['truth_persists']} |")
+        if anom.get("accuracy_spike_and_shift") is not None:
+            md += ["", f"- SPIKE + SHIFT only (the Stage 2 benchmark's two event types): "
+                   f"**{_p(anom['accuracy_spike_and_shift'])}**"]
     text = "\n".join(md) + "\n"
     print(text)
     REPORT_MD.write_text(text, encoding="utf-8")
