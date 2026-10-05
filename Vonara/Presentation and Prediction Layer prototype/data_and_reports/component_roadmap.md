@@ -13,7 +13,7 @@ what-if scenario simulations.
 
 | # | Contribution (TAF) | Implemented in | Status | Validated by |
 |---|---|---|---|---|
-| 1 | Semantic intent classification for visualization driving | `query_analyzer.py` | ✅ working | intent accuracy suite |
+| 1 | Semantic intent classification for visualization driving | `query_analyzer.py` + `response_intent.py` | ✅ Stage 5: tested on questions the author did not write | Spider dev, held-out databases: intent 45.1 % → 88.2 %, shape 85.6 % → 89.0 %, rows lost to LIMIT 1 16.7 % → 5.8 % |
 | 2 | Vega-Lite grammar extension for predictive overlays | `visualization.py` | ✅ working | 4 rules, layer audit |
 | 3 | Mathematical claim verification pipeline | `summarization.py` | ✅ Stage 4: precision-aware verifier; live LLM narration measured | fault injection: 96.7–100 % of corrupted numbers rejected, 0 % of correct rewrites; live 12/12 verified |
 | 4 | Intent-to-prediction mapping algorithm | `INTENT_STRATEGY_MAP` + `strategies.py` | ✅ Stage 2: all four strategies executed | strategy benchmark |
@@ -110,9 +110,26 @@ Carried to later stages:
 - [ ] Live narration on more scenarios and a second model; no rejection was
       observed in 12, so the rejection path is evidenced by fault injection only
 
-### Phase 2b — remaining hardening
+### Phase 2e — Stage 5: intent classification (branch `vonara-nl-to-sql-prototype-stage-5`)
 
-- [ ] **#3** Independent/blind intent test split + relabelled Spider/BIRD subset
+- [x] **#3** Independent test: 1,032 Spider dev questions, labels derived from
+      gold SQL by fixed rules frozen before the classifier ran, split by
+      database (DEV 531 / TEST 501) (`evaluate_spider_intent.py`)
+- [x] Threshold, average-filter and name phrases neutralised in both classifiers
+- [x] Whole-word analyzer markers; retrieval phrasings; extra superlatives
+- [x] LIMIT 1 inferred only where something orders the rows
+- [x] Response shape: negation, two questions in one, yes/no questions,
+      per-row counts (stress set 26/45 → 42/45)
+- [x] Scalar forecast questions answered by the forecast (guardrail G1)
+
+Carried to later stages:
+
+- [ ] Column names that are format words ("summary", "description") read as
+      format requests; needs the bound schema
+- [ ] 5.8 % of held-out multi-row questions still request LIMIT 1
+- [ ] "Next quarter" on monthly data answers with one month
+- [ ] Human-labelled business questions from the team (SQL-derived labels only
+      cover the shapes Spider asks for: no summaries, reports or forecasts)
 
 ### Phase 3 — Integration
 

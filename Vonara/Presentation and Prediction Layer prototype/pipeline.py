@@ -311,7 +311,10 @@ def run(
                          "NO_LEXICAL_EVIDENCE")
             ],
         )
-        decided = response_intent_mod.apply_guardrails(decided, profile, rows)
+        decided = response_intent_mod.apply_guardrails(
+            decided, profile, rows,
+            forecast_requested=analysis.prediction_trigger == "EXPLICIT",
+        )
 
     # ---- Part 2: adaptive visualization + grammar extension -------------
     with profiler.stage("Visualization", "Part 2: Visualization"):

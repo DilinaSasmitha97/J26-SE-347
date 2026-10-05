@@ -81,8 +81,23 @@ RESPONSE_MARKERS = {
             # spend the most" is a ranking, and ranking of many is a table).
             r"\bwhich [a-z]+(?<!s)\b.{0,40}\b(?:the )?"
             r"(?:most|least|highest|lowest|largest|smallest|biggest|best|worst)\b",
+            # "the department that is spending more than the others" is a
+            # superlative without a superlative word (Stage 5, stress set).
+            r"\bthe [a-z]+(?<!s) (?:that|which|who)\b.{0,30}\b(?:more|less) than "
+            r"(?:the |all (?:the )?)?(?:others|rest)\b",
+            r"\bheadline (?:number|figure)\b",
+            # One future period asked for by value: "what will revenue be next
+            # quarter" is answered by one projected figure.
+            r"\bwhat will\b.{0,40}\bbe\b.{0,15}\bnext (?:day|week|month|quarter|year)\b",
             r"\bwho\b.{0,40}\b(?:the )?"
             r"(?:most|least|highest|lowest|largest|smallest|biggest|best|worst)\b",
+            # "the id of the document with the fewest paragraphs", "where is the
+            # youngest teacher from": a singular noun led by a superlative that
+            # the patterns above do not list (Stage 5, Spider DEV).
+            r"\bwhich [a-z]+(?<!s)\b.{0,40}\b(?:the )?"
+            r"(?:fewest|greatest|youngest|oldest|earliest|latest|longest|shortest)\b",
+            r"\bthe (?:fewest|greatest|youngest|oldest|earliest|latest|longest|shortest"
+            r"|most common)\b",
         ],
         3: [
             r"\btop 1\b", r"\bthe (?:very )?(?:highest|lowest|largest|smallest)\b",
@@ -107,6 +122,7 @@ RESPONSE_MARKERS = {
             # Verbs that name prose as the deliverable as plainly as "chart"
             # names a picture. Grouped with the decisive tier for that reason.
             r"\bexplain\b", r"\bdescribe\b", r"\binterpret\b",
+            r"\bwhat does the (?:data|report|numbers?|result) (?:tell|say|show|mean)\b",
         ],
         3: [
             r"\boverview\b", r"\bhigh[- ]level\b",
@@ -116,6 +132,11 @@ RESPONSE_MARKERS = {
             # did the northern region perform" and "how is it going" all put
             # an arbitrary noun phrase between the wh-word and the verb.
             r"\bhow\b.{0,32}\b(?:doing|going|performing|perform|performed)\b",
+            # A yes/no question about direction is answered in a sentence:
+            # "is revenue up or down since Q1", "are we doing better".
+            r"^(?:is|are|was|were|did|do|does|has|have)\b.{0,50}\b(?:up|down|better|worse"
+            r"|higher|lower|improv\w*|declin\w*|grow\w*)\b",
+            r"\banything (?:i|we) (?:should|need to|ought to) (?:worry|know|look)\b",
         ],
         2: [
             r"\binsight(?:s)?\b", r"\bcomment on\b", r"\bwhat happened\b",
@@ -133,6 +154,7 @@ RESPONSE_MARKERS = {
             # fallback, which returns TABLE_CONTENT anyway - the right answer
             # for the wrong reason, and exactly what `evidence_grade` exposes.
             r"\bexcel\b", r"\bxlsx?\b",
+            r"\btabulate\b",
         ],
         3: [
             r"\bevery (?:row|record|entry|transaction|invoice|order|customer|item)\b",
@@ -140,6 +162,8 @@ RESPONSE_MARKERS = {
             r"\bdataset\b", r"\brecords? (?:for|of|where)\b",
             r"\bline items?\b", r"\bwith (?:their|its) (?:name|id|date|details)\b",
             r"\bcolumns?\b", r"\bfields?\b",
+            r"\ball (?:the )?(?:information|info|details|attributes)\b",
+            r"\brun the numbers\b",
         ],
         2: [
             r"\blist\b", r"\brows\b", r"\brecords\b", r"\bentries\b",
@@ -167,9 +191,11 @@ RESPONSE_MARKERS = {
             r"\btrend\b", r"\bcompare\b", r"\bcomparison\b", r"\bversus\b", r"\bvs\b",
             r"\bdistribution\b", r"\bbreak(?:\s+(?:it|this|that|them))?\s*down\b", r"\bshare of\b",
             r"\bproportion\b", r"\bpercentage of total\b", r"\bcorrelation\b",
+            r"\btrending\b",
         ],
         1: [r"\bby (?:month|quarter|year|week|day|region|category|product|department"
-            r"|status|segment|team|branch|channel|customer)\b",
+            r"|status|segment|team|branch|channel|customer|unit|business unit|cohort"
+            r"|country|city|location|supplier|vendor)\b",
             r"\bpattern\b", r"\bshape of\b"],
     },
     ResponseIntent.MIXED_SUMMARY: {
@@ -186,6 +212,7 @@ RESPONSE_MARKERS = {
             r"\bplus (?:a |the )?(?:chart|graph|table|summary|rows|data)\b",
             r"\bboth\b.{0,25}\b(?:chart|table|summary)\b",
             r"\band (?:a |the )?(?:chart|graph|table)\b",
+            r"^everything\W*$",
         ],
         3: [
             r"\breport on\b", r"\bfull\b.{0,20}\breport\b",
@@ -208,10 +235,14 @@ _MODALITY_PROBES = {
     ResponseIntent.SHORT_SUMMARY: r"\bsummar|\boverview\b|\bexplain\b|\binsight",
     ResponseIntent.TABLE_CONTENT: r"\btable\b|\blist\b|\brows\b|\brecords\b|\bdata\b|\bnumbers\b",
     ResponseIntent.CHART: r"\bchart\b|\bgraph\b|\bplot\b|\bvisuali[sz]|\bdiagram\b"
-                          r"|\bbreak(?:\s+(?:it|this|that|them))?\s*down\b|\bvisual\b",
+                          r"|\bbreak(?:\s+(?:it|this|that|them))?\s*down\b|\bvisual\b"
+                          r"|\bforecast\b",
 }
 
-_CONJUNCTION = r"\b(?:and|plus|along with|together with|as well as|with|also|\+|&)\b"
+# "then" sequences two deliverables ("pull the numbers then chart them"); "but"
+# keeps a second one ("summarise but keep the table too").
+_CONJUNCTION = (r"\b(?:and|plus|along with|together with|as well as|with|also|then|but"
+                r"|\+|&)\b")
 
 # When lexical evidence is thin, the analytical intent decides. Each mapping is
 # a claim about the question's natural shape, not a UI preference:
@@ -264,7 +295,10 @@ _ENUMERATION_VETO = re.compile(
     r"\btop\s+(?:[2-9]|\d{2,})\b"
     r"|\bbottom\s+(?:[2-9]|\d{2,})\b"
     r"|\btop\s+(?:two|three|four|five|ten|twenty)\b"
-    r"|\ball (?:the |our |these |those )?[a-z]+s\b"
+    # "all" as a scope ("the total bonus given in all evaluations") is not a
+    # request for every row; only "all X" as the object of the request is.
+    r"|(?<!\bin )(?<!\bof )(?<!\bfor )(?<!\bfrom )(?<!\bover )"
+    r"\ball (?:the |our |these |those )?[a-z]+s\b"
     r"|\bevery\b|\blist\b"
 )
 
@@ -280,6 +314,7 @@ _GROUPING_VETO = re.compile(
 # user has named the row count themselves and it is one.
 _SINGULAR_OVERRIDE = re.compile(
     r"\bsingle\b|\bjust one\b|\bonly one\b|\btop 1\b|\bone (?:number|value|figure|record|row)\b"
+    r"|\b(?:the )?top one\b"
 )
 
 # An entity-identification question: the user named a *thing* they want back,
@@ -317,11 +352,71 @@ _PLURAL_ENTITY_QUESTION = re.compile(
     rf"\bwhich (?!(?:{_SINGULAR_S_NOUNS})\b)[a-z]+s\b"
 )
 
+# Phrases that look like superlatives or KPI requests but are neither (Stage 5,
+# from the Spider DEV failures). "teachers who teach at least two courses" is a
+# filter returning many rows, but "least" read it as a single answer - which
+# asks Member 1 for LIMIT 1 and silently drops rows. "stores with more products
+# than the average" returns stores, not the average. "first name" is a column,
+# not "the first". Both classifiers rewrite these to neutral tokens before any
+# marker is matched; the tokens contain no marker as a substring.
+_NEUTRAL_PHRASES = [
+    (re.compile(r"\bat (?:least|most)\b"), "thresholdfilter"),
+    (re.compile(r"\b(?:no|not) (?:more|less|fewer|greater) than\b"), "thresholdfilter"),
+    (re.compile(r"\b(?:more|less|fewer) than (?:a |one )?single\b"), "thresholdfilter"),
+    # "more staff than the minimum staff number of all museums" compares rows
+    # to an aggregate; it does not ask for the aggregate.
+    (re.compile(r"\bthan\s+(?:the\s+)?(?:overall\s+)?(?:average|mean|minimum|maximum)\b"),
+     "than normfilter"),
+    (re.compile(r"\b(?:above|below|over|under)\s+(?:the\s+)?(?:overall\s+)?(?:average|mean)\b"),
+     "normfilter"),
+    (re.compile(r"\b(first|last|middle|full|given|family|maiden)\s+(names?)\b"), r"\1\2"),
+    (re.compile(r"\bacross all\b"), "overall"),
+]
+
+
+def neutralize(text: str) -> str:
+    """Rewrite threshold, average-filter and name phrases (see _NEUTRAL_PHRASES)."""
+    for pattern, replacement in _NEUTRAL_PHRASES:
+        text = pattern.sub(replacement, text)
+    return text
+
+
+# A format named only to be refused ("don't give me a chart", "I don't need the
+# full list") is evidence against that format, not for it.
+_NEGATION_BEFORE = re.compile(
+    r"\b(?:dont|don't|do not|not|no|without|never|instead of|rather than)\s+"
+    # The negation stops at a word that starts the user's actual request:
+    # "no tables please just explain it" refuses tables, not the explanation.
+    r"(?:(?!just\b|only\b|but\b|please\b|instead\b|rather\b)\w+\s+){0,3}$"
+)
+
+
+def _negated(text: str, start: int) -> bool:
+    return bool(_NEGATION_BEFORE.search(text[max(0, start - 40):start]))
+
+
+# "the names of the teachers and how many courses they teach": a count per row,
+# which is a column of a table, not one figure.
+_PER_ROW_COUNT = re.compile(
+    r"\b(?:names?|ids?)\b.{0,60}\b(?:and|with) (?:the )?(?:number of|count of|how many)\b"
+    r"|\bhow many\b.{0,40}\b(?:they|them|each of them)\b"
+)
+
+# Two questions in one request ("what is our MRR and how is it trending", "how
+# many departments are there and which one spends most") need an answer to
+# each, which only the mixed report gives. A later clause that refers back to
+# the rows ("...and how many courses do THEY teach") is a column of the first
+# answer, not a second question.
+_SECOND_QUESTION = re.compile(r"(?:,|\band\b)\s+(?=(?:how|what|which|who|where|when)\b)")
+_BACK_REFERENCE = re.compile(r"\b(?:they|them|their|each|those|these)\b")
+
 # Two superlatives joined together ("the highest and lowest") is a request for
 # two rows, which is a small table rather than an answer.
 _SUPERLATIVES = re.compile(
     r"\bhighest\b|\blowest\b|\blargest\b|\bsmallest\b|\bbiggest\b|\bmaximum\b"
     r"|\bminimum\b|\bbest\b|\bworst\b|\bmost\b|\bleast\b"
+    r"|\bfewest\b|\bgreatest\b|\byoungest\b|\boldest\b|\bearliest\b|\blatest\b"
+    r"|\blongest\b|\bshortest\b"
 )
 
 # --------------------------------------------------------------------------
@@ -529,7 +624,7 @@ def _score_lexical(text: str) -> tuple:
     for intent, tiers in RESPONSE_MARKERS.items():
         for weight, patterns in tiers.items():
             for pattern in patterns:
-                if re.search(pattern, text):
+                if any(not _negated(text, m.start()) for m in re.finditer(pattern, text)):
                     scores[intent] += float(weight)
                     hits[intent].append(pattern)
     return scores, hits
@@ -553,7 +648,8 @@ def detect_answer_focus(text: str) -> str:
 
 def _named_modalities(text: str) -> list:
     """Which output formats did the user name explicitly, by name?"""
-    return [i for i, probe in _MODALITY_PROBES.items() if re.search(probe, text)]
+    return [i for i, probe in _MODALITY_PROBES.items()
+            if any(not _negated(text, m.start()) for m in re.finditer(probe, text))]
 
 
 def _apply_precedence(text: str, scores: dict, hits: dict) -> tuple:
@@ -619,12 +715,22 @@ def _apply_precedence(text: str, scores: dict, hits: dict) -> tuple:
         )
         notes.append("R3c paired superlatives: two extremes are two rows")
 
+    # R3e - A count per row ("the names of the teachers and how many courses
+    # they teach") is a column of a table, however the count is phrased.
+    if _PER_ROW_COUNT.search(text):
+        scores[ResponseIntent.SINGLE_ANSWER] *= 0.3
+        scores[ResponseIntent.TABLE_CONTENT] = max(
+            scores[ResponseIntent.TABLE_CONTENT],
+            max(s for i, s in scores.items() if i is not ResponseIntent.TABLE_CONTENT) + 1.0,
+        )
+        notes.append("R3e per-row count: a count for each listed row is a table column")
+
     # R4 - "how many / how much" is a counting question and stays scalar even
     # when a dimension is mentioned, unless the dimension is distributed over
     # ("how many orders per region" is a chart; "how many orders in the north
     # region" is one number). Distribution is the stronger signal of the two,
     # because it changes the row count rather than just the filter.
-    if re.search(r"\bhow (?:many|much)\b", text):
+    if re.search(r"\bhow (?:many|much)\b", text) and not _PER_ROW_COUNT.search(text):
         if _GROUPING_VETO.search(text) or re.search(r"\bbreak\s*down\b", text):
             scores[ResponseIntent.CHART] += 3.5
             scores[ResponseIntent.SINGLE_ANSWER] *= 0.4
@@ -651,12 +757,28 @@ def _apply_precedence(text: str, scores: dict, hits: dict) -> tuple:
             + " in one request"
         )
 
+    # R1b - Two separate questions in one request, each with evidence of its
+    # own, are answered together by the mixed report.
+    clauses = [c for c in _SECOND_QUESTION.split(text) if c.strip()]
+    two_questions = False
+    paired_extremes = len(set(_SUPERLATIVES.findall(text))) >= 2
+    if (len(clauses) >= 2 and not paired_extremes
+            and not any(_BACK_REFERENCE.search(c) for c in clauses[1:])):
+        # "who spent the most and who spent the least" is one question about
+        # two extremes (R3c, a two-row table), not two questions.
+        if all(any(v > 0 for v in _score_lexical(c)[0].values()) for c in clauses):
+            others = max(s for i, s in scores.items() if i is not ResponseIntent.MIXED_SUMMARY)
+            scores[ResponseIntent.MIXED_SUMMARY] = max(
+                scores[ResponseIntent.MIXED_SUMMARY], others + 2.0)
+            two_questions = True                            # decisive for R5
+            notes.append(f"R1b two questions in one request ({len(clauses)} clauses)")
+
     # R5 - MIXED must clear a real bar. A single weak "detailed" or "report"
     # is not a request for three blocks; it needs decisive phrasing or the
     # multi-modality rule to have fired.
     mixed_tier4 = RESPONSE_MARKERS[ResponseIntent.MIXED_SUMMARY].get(4, [])
     mixed_decisive = any(h in mixed_tier4 for h in hits[ResponseIntent.MIXED_SUMMARY])
-    if not mixed_decisive and len(named) < 2:
+    if not mixed_decisive and len(named) < 2 and not two_questions:
         scores[ResponseIntent.MIXED_SUMMARY] *= 0.5
         notes.append("R5 mixed damping: no decisive combined-output phrasing")
 
@@ -728,6 +850,7 @@ def derive_bounds(text: str, intent: str, explicit_limit: int = 0,
         consumer can always tell a stated bound from an assumed one.
     """
     out = {"limit": 0, "limit_source": "NONE", "ordering": "", "warnings": []}
+    text = neutralize(text)
 
     # Wider than `_SUPERLATIVES`, which R3c uses to detect *paired* extremes:
     # "top" and "bottom" order a result without being extremes themselves, so
@@ -742,7 +865,13 @@ def derive_bounds(text: str, intent: str, explicit_limit: int = 0,
     if explicit_limit:
         out["limit"] = explicit_limit
         out["limit_source"] = "EXPLICIT"
-    elif intent == ResponseIntent.SINGLE_ANSWER.value:
+    elif intent == ResponseIntent.SINGLE_ANSWER.value and (
+            has_superlative or _SINGULAR_OVERRIDE.search(text)):
+        # LIMIT 1 only where something orders the rows. "the name of the
+        # museum that had no visitor yet" reads as singular but may match
+        # several museums; without an ORDER BY, LIMIT 1 returns an arbitrary
+        # one and hides the rest, whereas no limit lets guardrail G1 see the
+        # extra rows and show them as a table (Stage 5, Spider DEV).
         out["limit"] = IMPLICIT_SINGLE_N
         out["limit_source"] = "INFERRED"
         out["warnings"].append("IMPLICIT_LIMIT_APPLIED")
@@ -804,7 +933,7 @@ def classify(user_query: str, analysis=None) -> ResponseIntentResult:
     Returns:
         `ResponseIntentResult` - always one of the five intents, never UNKNOWN.
     """
-    text = _norm(user_query)
+    text = neutralize(_norm(user_query))
 
     text, repairs = repair_typos(text)
 
@@ -935,13 +1064,18 @@ def classify(user_query: str, analysis=None) -> ResponseIntentResult:
 # ==========================================================================
 
 
-def apply_guardrails(result: ResponseIntentResult, profile=None, rows=None):
+def apply_guardrails(result: ResponseIntentResult, profile=None, rows=None,
+                     forecast_requested: bool = False):
     """
     Re-check the pre-execution verdict against the data that actually came back.
 
     A guardrail fires only on a contradiction the result set proves - never on
     a re-reading of the question - so each repair is defensible and is recorded
     in `guardrails_applied` alongside the intent it replaced.
+
+    `forecast_requested` is True when the user explicitly asked about the
+    future. The rows are then the history the forecast is built from, not the
+    answer, so their count cannot contradict a single-answer reading.
     """
     rows = rows or []
     row_count = len(rows)
@@ -974,8 +1108,15 @@ def apply_guardrails(result: ResponseIntentResult, profile=None, rows=None):
         return result
 
     # G1 - A single answer must be a single value. More than one row, or more
-    # than two columns, means the question was not scalar after all.
-    if current is ResponseIntent.SINGLE_ANSWER and (row_count > 1 or col_count > 2):
+    # than two columns, means the question was not scalar after all - unless
+    # the question is about the future: "how much will I spend next month" is
+    # answered by one projected figure computed FROM the 24 monthly rows. Before
+    # Stage 5 this fired on every such question and the user got the history
+    # table instead of the forecast.
+    if current is ResponseIntent.SINGLE_ANSWER and forecast_requested:
+        result.rationale = (f"{result.rationale} G1 not applied: a scalar question about "
+                            "the future is answered by the forecast, not by a history row.")
+    elif current is ResponseIntent.SINGLE_ANSWER and (row_count > 1 or col_count > 2):
         applied.append(
             f"G1 scalar contradicted: result is {row_count}x{col_count}, "
             "not one value -> TABLE_CONTENT"

@@ -461,6 +461,29 @@ Live narration (`--live 12`, Groq `openai/gpt-oss-120b`): 12 of 12 verified and
 shown; none rejected. The rejection path is therefore evidenced by fault
 injection, not by an observed LLM error.
 
+**7. Intent classification on questions the author did not write (Stage 5)**
+— `python evaluate_spider_intent.py`. The 1,032 Spider dev questions (Yu et
+al., 2018), labelled from their gold SQL by fixed rules frozen before the
+classifier ran, split by database: DEV (531) for changes, TEST (501) reported
+once. Full tables: `spider_intent_benchmark.md`.
+
+| Spider TEST (held out) | Stage 4 | Stage 5 |
+|---|---|---|
+| Analytical intent | 45.1 % (28 % no intent at all) | **88.2 %** (p < 10⁻⁵⁰) |
+| Response shape | 85.6 % | **89.0 %** (p = 0.012) |
+| Multi-row questions read as one value | 16.7 % | 11.2 % |
+| ...with `LIMIT 1` requested, so rows would be lost | 16.7 % | **5.8 %** |
+
+McNemar exact tests on the same 501 questions. The author-written sets stay
+at 100 % (intent 48/48, response shape 125/125 and 50/50); the response-shape
+stress set rises from 26/45 to 42/45. A scalar forecast question ("how much
+will I spend next month") is now answered by the projected figure and its
+range instead of the history table.
+
+SQL-derived labels cover only what Spider asks: there are no requests for
+summaries, reports or forecasts in it, so those shapes are tested only by the
+author-written sets.
+
 ---
 
 ## Integration
@@ -511,12 +534,14 @@ this layer depends on.
 | `evaluate_whatif.py`, `whatif_testset.json` | Stage 4 what-if parser benchmark on 94 labelled phrasings |
 | `evaluate_verifier.py` | Stage 4 summary-verifier benchmark: fault injection + optional live LLM run |
 | `test_whatif.py` | scenario parser, route agreement, precision-aware verifier |
+| `evaluate_spider_intent.py`, `benchmark_data/prepare_spider_intent.py`, `benchmark_data/spider_dev_intent.json` | Stage 5 independent intent benchmark on Spider dev |
+| `test_intent.py` | thresholds and name columns, whole-word markers, LIMIT 1 only with order, negation / two questions, scalar forecast answers |
 | `strategies.py` | **Part 4** — Stage 1 strategy execution |
 | `input_adapter.py` | Member 2 columnar result → row dicts |
 | `benchmark_data/` | M4 development sample (seed 2026), held-out test sample (seed 2027) + `prepare_m4_sample.py` |
 | `test_db/` | synthetic MySQL database + 77 integration fixtures |
-| `forecast_benchmark.md`, `strategy_benchmark.md`, `readiness_benchmark.md`, `anomaly_benchmark.md`, `whatif_benchmark.md`, `verifier_benchmark.md` | generated benchmark reports |
-| `stage2_completion_report.md`, `stage3_completion_report.md`, `stage4_completion_report.md` | stage reports |
+| `forecast_benchmark.md`, `strategy_benchmark.md`, `readiness_benchmark.md`, `anomaly_benchmark.md`, `whatif_benchmark.md`, `verifier_benchmark.md`, `spider_intent_benchmark.md` | generated benchmark reports |
+| `stage2_completion_report.md`, `stage3_completion_report.md`, `stage4_completion_report.md`, `stage5_completion_report.md` | stage reports |
 | `synthetic_data.py` | labelled generators + 12-scenario benchmark |
 | `intent_testset.json` | 48 labelled intent cases |
 | `response_intent_dataset.csv` | 125-input response-intent development corpus |

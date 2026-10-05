@@ -1,0 +1,2945 @@
+{
+ "DEV": {
+  "cases": 531,
+  "shape_accuracy": 0.9001883239171374,
+  "intent_accuracy": 0.9227871939736346,
+  "shape_correct": 478,
+  "intent_correct": 490,
+  "truncation_rate": 0.09583333333333334,
+  "limit_1_rate": 0.008333333333333333,
+  "multi_row_questions": 240,
+  "errors": {
+   "TRUNCATION": 23,
+   "ONE_AS_MANY": 10,
+   "INTENT_UNKNOWN": 4,
+   "PROSE": 8,
+   "LIMIT_1_REQUESTED": 2
+  },
+  "shape_by_rule": {
+   "GROUPED": {
+    "correct": 58,
+    "cases": 61
+   },
+   "LIMIT_1": {
+    "correct": 77,
+    "cases": 92
+   },
+   "LOOKUP": {
+    "correct": 170,
+    "cases": 195
+   },
+   "MIXED_AGG": {
+    "correct": 2,
+    "cases": 2
+   },
+   "ORDERED": {
+    "correct": 24,
+    "cases": 29
+   },
+   "SCALAR": {
+    "correct": 116,
+    "cases": 117
+   },
+   "SET_OP": {
+    "correct": 30,
+    "cases": 33
+   },
+   "TOP_N": {
+    "correct": 1,
+    "cases": 2
+   }
+  },
+  "predicted_shape_by_rule": {
+   "LOOKUP": {
+    "TABLE_CONTENT": 149,
+    "SINGLE_ANSWER": 35,
+    "CHART": 10,
+    "SHORT_SUMMARY": 1
+   },
+   "SCALAR": {
+    "SINGLE_ANSWER": 110,
+    "TABLE_CONTENT": 7
+   },
+   "LIMIT_1": {
+    "SINGLE_ANSWER": 71,
+    "TABLE_CONTENT": 14,
+    "CHART": 1,
+    "SHORT_SUMMARY": 2,
+    "MIXED_SUMMARY": 4
+   },
+   "SET_OP": {
+    "TABLE_CONTENT": 30,
+    "SINGLE_ANSWER": 3
+   },
+   "GROUPED": {
+    "TABLE_CONTENT": 36,
+    "CHART": 23,
+    "SINGLE_ANSWER": 2
+   },
+   "ORDERED": {
+    "TABLE_CONTENT": 24,
+    "SINGLE_ANSWER": 3,
+    "CHART": 1,
+    "SHORT_SUMMARY": 1
+   },
+   "MIXED_AGG": {
+    "SINGLE_ANSWER": 2
+   },
+   "TOP_N": {
+    "TABLE_CONTENT": 1,
+    "SINGLE_ANSWER": 1
+   }
+  },
+  "failures": [
+   {
+    "id": "SP0274",
+    "question": "Return the name, location and district of all shops in descending order of number of products.",
+    "rule": "ORDERED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0275",
+    "question": "Sort all the shops by number products in descending order, and return the name, location and district of each shop.",
+    "rule": "ORDERED",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0276",
+    "question": "Find the names of stores whose number products is more than the average number of products.",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0302",
+    "question": "What is the document name and template id for document with description with the letter 'w' in it?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0304",
+    "question": "What is the document id, template id and description for document named \"Robbin CV\"?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0321",
+    "question": "What are the ids, version numbers, and type codes for each template?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0328",
+    "question": "What is the version number and template type code for the template with version number later than 5?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0378",
+    "question": "What is the document id with 1 to 2 paragraphs?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0396",
+    "question": "List the most common hometown of teachers.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0401",
+    "question": "What is the name of each teacher and what course they teach?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0418",
+    "question": "What are the opening year and staff number of the museum named Plaza Museum?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0419",
+    "question": "find the names of museums which have more staff than the minimum staff number of all museums opened after 2010.",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0423",
+    "question": "What is the name of the museum that had no visitor yet?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0427",
+    "question": "What is the name of the visitor who visited both a museum opened before 2009 and a museum opened after 2011?",
+    "rule": "SET_OP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0509",
+    "question": "What is the first and second line for all addresses?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0512",
+    "question": "How is the math course described?",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "UNKNOWN",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0516",
+    "question": "Which department offers the most number of degrees? List department name and id.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0531",
+    "question": "For each semester, what is the name and id of the one with the most students registered?",
+    "rule": "LIMIT_1",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0532",
+    "question": "What is the description of the department whose name has the substring the computer?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0533",
+    "question": "What is the department description for the one whose name has the word computer?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0539",
+    "question": "What is the degree summary name that has the most number of students enrolled?",
+    "rule": "LIMIT_1",
+    "shape": "SHORT_SUMMARY",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0540",
+    "question": "Find the program which most number of students are enrolled in. List both the id and the summary.",
+    "rule": "LIMIT_1",
+    "shape": "MIXED_SUMMARY",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0541",
+    "question": "What is the program id and the summary of the degree that has the most students enrolled?",
+    "rule": "LIMIT_1",
+    "shape": "SHORT_SUMMARY",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0545",
+    "question": "What is the name of the semester with no students enrolled?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0553",
+    "question": "What is the date and id of the transcript with at least 2 courses listed?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0556",
+    "question": "Who is the first student to register? List the first name, middle name and last name.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER",
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0561",
+    "question": "What is the first name of the student whose permanent address is different from his or her current one?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0566",
+    "question": "When is the first transcript released? List the date and details.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0570",
+    "question": "What is the last transcript release date?",
+    "rule": "LIMIT_1",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0571",
+    "question": "When was the last transcript released?",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "UNKNOWN",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0572",
+    "question": "How many times at most can a course enrollment result show in different transcripts? Also show the course enrollment id.",
+    "rule": "LIMIT_1",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0573",
+    "question": "What is the maximum number of times that a course shows up in different transcripts and what is that course's enrollment id?",
+    "rule": "LIMIT_1",
+    "shape": "MIXED_SUMMARY",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0574",
+    "question": "Show the date of the transcript which shows the least number of results, also list the id.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0577",
+    "question": "What is the id of the semester that had both Masters and Bachelors students enrolled?",
+    "rule": "SET_OP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0579",
+    "question": "What are the different addresses that have students living there?",
+    "rule": "SCALAR",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0581",
+    "question": "What other details can you tell me about students in reverse alphabetical order?",
+    "rule": "ORDERED",
+    "shape": "SHORT_SUMMARY",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0582",
+    "question": "Describe the section h.",
+    "rule": "LOOKUP",
+    "shape": "SHORT_SUMMARY",
+    "shape_ok": false,
+    "intent": "UNKNOWN",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0585",
+    "question": "What are the first names of the students who live in Haiti permanently or have the cell phone number 09700166582 ?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0593",
+    "question": "What is the name and directors of all the cartoons that are ordered by air date?",
+    "rule": "ORDERED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0596",
+    "question": "Which country has the most of TV Channels? List the country and number of TV Channels it has.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0597",
+    "question": "What is the country with the most number of TV Channels and how many does it have?",
+    "rule": "LIMIT_1",
+    "shape": "MIXED_SUMMARY",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0606",
+    "question": "List the language used least number of TV Channel. List language and number of TV Channel.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0607",
+    "question": "What are the languages used by the least number of TV Channels and how many channels use it?",
+    "rule": "LIMIT_1",
+    "shape": "MIXED_SUMMARY",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0611",
+    "question": "What is the series name of the TV Channel that shows the cartoon \"The Rise of the Blue Beetle\"?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0617",
+    "question": "What are 3 most highly rated episodes in the TV series table and what were those ratings?",
+    "rule": "TOP_N",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0618",
+    "question": "What is minimum and maximum share of TV series?",
+    "rule": "SCALAR",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "PROPORTION",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER",
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0621",
+    "question": "When did the episode \"A Love of a Lifetime\" air?",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "UNKNOWN",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0622",
+    "question": "What is Weekly Rank of TV series with Episode \"A Love of a Lifetime\"?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0623",
+    "question": "What is the weekly rank for the episode \"A Love of a Lifetime\"?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0639",
+    "question": "What is the series name and country of all TV channels that are playing cartoons directed by Ben Jones and cartoons directed by Michael Chang?",
+    "rule": "SET_OP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0640",
+    "question": "find the pixel aspect ratio and nation of the tv channels that do not use English.",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "PROPORTION",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0641",
+    "question": "What is the pixel aspect ratio and country of origin for all TV channels that do not use English?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "PROPORTION",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0653",
+    "question": "What are the final tables made and best finishes for all poker players?",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0665",
+    "question": "What are the names of poker players, ordered ascending by the number of final tables they have made?",
+    "rule": "ORDERED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0692",
+    "question": "What is last date created of votes from the state 'CA'?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0930",
+    "question": "Give me the id, role and email of the professionals who did not perform any treatment on dogs.",
+    "rule": "SET_OP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0934",
+    "question": "What are the id, role, and first name of the professionals who have performed two or more treatments?",
+    "rule": "GROUPED",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0937",
+    "question": "Which owner has paid for the most treatments on his or her dogs? List the owner id and last name.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0947",
+    "question": "List the date of each treatment, together with the first name of the professional who operated it.",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0948",
+    "question": "What are the date and the operating professional's first name of each treatment?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0949",
+    "question": "List the cost of each treatment and the corresponding treatment type description.",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0950",
+    "question": "What are the cost and treatment type description of each treatment?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0952",
+    "question": "What are each owner's first name, last name, and the size of their dog?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0954",
+    "question": "What are each owner's first name and their dogs's name?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0961",
+    "question": "List the last name of the owner owning the youngest dog.",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0962",
+    "question": "Who owns the youngest dog? Give me his or her last name.",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0991",
+    "question": "How much does each charge type costs? List both charge type and amount.",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0996",
+    "question": "What are the email, cell phone and home phone of each professional?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP1000",
+    "question": "What are each professional's first name and description of the treatment they have performed?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   }
+  ]
+ },
+ "TEST": {
+  "cases": 501,
+  "shape_accuracy": 0.8902195608782435,
+  "intent_accuracy": 0.8822355289421158,
+  "shape_correct": 446,
+  "intent_correct": 442,
+  "truncation_rate": 0.1125,
+  "limit_1_rate": 0.058333333333333334,
+  "multi_row_questions": 240,
+  "errors": {
+   "TRUNCATION": 27,
+   "PROSE": 5,
+   "LIMIT_1_REQUESTED": 14,
+   "ONE_AS_MANY": 10,
+   "INTENT_UNKNOWN": 1
+  },
+  "shape_by_rule": {
+   "GROUPED": {
+    "correct": 85,
+    "cases": 105
+   },
+   "LIMIT_1": {
+    "correct": 74,
+    "cases": 81
+   },
+   "LOOKUP": {
+    "correct": 99,
+    "cases": 116
+   },
+   "MIXED_AGG": {
+    "correct": 1,
+    "cases": 1
+   },
+   "ORDERED": {
+    "correct": 12,
+    "cases": 13
+   },
+   "SCALAR": {
+    "correct": 128,
+    "cases": 134
+   },
+   "SET_OP": {
+    "correct": 42,
+    "cases": 43
+   },
+   "TOP_N": {
+    "correct": 5,
+    "cases": 8
+   }
+  },
+  "predicted_shape_by_rule": {
+   "SCALAR": {
+    "SINGLE_ANSWER": 123,
+    "TABLE_CONTENT": 6,
+    "CHART": 5
+   },
+   "ORDERED": {
+    "TABLE_CONTENT": 12,
+    "SINGLE_ANSWER": 1
+   },
+   "LIMIT_1": {
+    "SINGLE_ANSWER": 74,
+    "MIXED_SUMMARY": 2,
+    "TABLE_CONTENT": 5
+   },
+   "LOOKUP": {
+    "TABLE_CONTENT": 90,
+    "CHART": 11,
+    "SINGLE_ANSWER": 14,
+    "MIXED_SUMMARY": 1
+   },
+   "GROUPED": {
+    "CHART": 49,
+    "TABLE_CONTENT": 37,
+    "SINGLE_ANSWER": 17,
+    "MIXED_SUMMARY": 2
+   },
+   "MIXED_AGG": {
+    "SINGLE_ANSWER": 1
+   },
+   "SET_OP": {
+    "TABLE_CONTENT": 42,
+    "SINGLE_ANSWER": 1
+   },
+   "TOP_N": {
+    "TABLE_CONTENT": 5,
+    "SINGLE_ANSWER": 3
+   }
+  },
+  "failures": [
+   {
+    "id": "SP0015",
+    "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0016",
+    "question": "What are the locations and names of all stations with capacity between 5000 and 10000?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0039",
+    "question": "What are the names of the singers who performed in a concert in 2014?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0040",
+    "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0044",
+    "question": "Find the number of concerts happened in the stadium with the highest capacity .",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0045",
+    "question": "What are the number of concerts that occurred in the stadium with the largest capacity ?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0069",
+    "question": "What type of pet is the youngest animal, and how much does it weigh?",
+    "rule": "LIMIT_1",
+    "shape": "MIXED_SUMMARY",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0073",
+    "question": "What is the average and maximum age for each pet type?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0091",
+    "question": "For each continent, list its id, name, and how many countries it has?",
+    "rule": "GROUPED",
+    "shape": "MIXED_SUMMARY",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0095",
+    "question": "What is the full name of each car maker, along with its id and how many models it produces?",
+    "rule": "GROUPED",
+    "shape": "MIXED_SUMMARY",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0099",
+    "question": "What is the model for the car with a weight smaller than the average?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0102",
+    "question": "Find the make and production time of the cars that were produced in the earliest year?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0103",
+    "question": "What is the maker of the carr produced in the earliest year and what year was it?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0108",
+    "question": "Which of the countries has the most car makers? List the country name.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0113",
+    "question": "How much does the car accelerate that makes amc hornet sportabout (sw)?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0118",
+    "question": "What is the average miles per gallon(mpg) of the cars with 4 cylinders?",
+    "rule": "SCALAR",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0119",
+    "question": "What is the average miles per gallon of all the cards with 4 cylinders?",
+    "rule": "SCALAR",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0134",
+    "question": "Which model saves the most gasoline? That is to say, have the maximum miles per gallon.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0140",
+    "question": "What is the maximum accelerate for different number of cylinders?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0141",
+    "question": "What is the maximum accelerate for all the different cylinders?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0154",
+    "question": "In which years cars were produced weighing no less than 3000 and no more than 4000 ?",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "UNKNOWN",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0160",
+    "question": "How many cars have a larger accelerate than the car with the largest horsepower?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0161",
+    "question": "What is the number of cars with a greater accelerate than the one with the most horsepower?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0162",
+    "question": "How many countries has more than 2 car makers ?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0163",
+    "question": "What is the number of countries with more than 2 car makers ?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0168",
+    "question": "Among the cars with more than lowest horsepower, which ones do not have more than 3 cylinders? List the car makeid and make name.",
+    "rule": "LOOKUP",
+    "shape": "MIXED_SUMMARY",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0169",
+    "question": "Among the cars that do not have the minimum horsepower , what are the make ids and names of all those with less than 4 cylinders ?",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0170",
+    "question": "What is the maximum miles per gallon of the car with 8 cylinders or produced before 1980 ?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0174",
+    "question": "What are the name of the countries where there is not a single car maker?",
+    "rule": "SET_OP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0437",
+    "question": "What are the average ages of losers and winners across matches?",
+    "rule": "SCALAR",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER",
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0438",
+    "question": "Find the average rank of winners in all matches.",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0450",
+    "question": "List the number of all matches who played in years of 2013 or 2016.",
+    "rule": "SCALAR",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0465",
+    "question": "What is the name of the winner who has won the most matches, and how many rank points does this player have?",
+    "rule": "LIMIT_1",
+    "shape": "MIXED_SUMMARY",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0471",
+    "question": "What are the first names of all players, and their average rankings?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0473",
+    "question": "What are the first names of all players, and their total ranking points?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0494",
+    "question": "List the name, date and result of each battle.",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0495",
+    "question": "What is maximum and minimum death toll caused each time?",
+    "rule": "SCALAR",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER",
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0496",
+    "question": "What is the average number of injuries caused each time?",
+    "rule": "SCALAR",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0500",
+    "question": "What are the ids and names of the battles that led to more than 10 people killed in total.",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0502",
+    "question": "What are the distinct battle names which are between bulgarian commander 'Kaloyan' and latin commander 'Baldwin I'?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0714",
+    "question": "What language is predominantly spoken in Aruba?",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0715",
+    "question": "What are the population and life expectancies in Brazil?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0716",
+    "question": "Give me Brazil\u2019s population and life expectancies.",
+    "rule": "LOOKUP",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0718",
+    "question": "What region does Angola belong to and what is its population?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0719",
+    "question": "What is the average expected life expectancy for countries in the region of Central Africa?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0720",
+    "question": "How long is the people\u2019s average life expectancy in Central Africa?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0724",
+    "question": "How many people live in Asia, and what is the largest GNP among them?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER",
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0725",
+    "question": "What is the average life expectancy in African countries that are republics?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0726",
+    "question": "Give the average life expectancy for countries in Africa which are republics?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0759",
+    "question": "Which languages are spoken by only one country in republic governments?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0760",
+    "question": "What languages are only used by a single country with a republic government?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0765",
+    "question": "What is average life expectancy in the countries where English is not the official language?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0766",
+    "question": "Give the mean life expectancy of countries in which English is not the official language.",
+    "rule": "SCALAR",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "TREND_ANALYSIS",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0804",
+    "question": "Return the names of the 3 most populated countries.",
+    "rule": "TOP_N",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0805",
+    "question": "What are the names of the nations with the 3 lowest populations?",
+    "rule": "TOP_N",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0806",
+    "question": "Return the names of the 3 countries with the fewest people.",
+    "rule": "TOP_N",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0813",
+    "question": "What are the cities whose population is between 160000 and 900000?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0814",
+    "question": "Return the names of cities that have a population between 160000 and 900000 .",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0817",
+    "question": "What is the language spoken by the largest percentage of people in each country?",
+    "rule": "GROUPED",
+    "shape": "CHART",
+    "shape_ok": true,
+    "intent": "PROPORTION",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0818",
+    "question": "What are the country codes of the different countries, and what are the languages spoken by the greatest percentage of people for each?",
+    "rule": "GROUPED",
+    "shape": "CHART",
+    "shape_ok": true,
+    "intent": "PROPORTION",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0819",
+    "question": "What is the total number of countries where Spanish is spoken by the largest percentage of people?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0820",
+    "question": "Count the number of countries for which Spanish is the predominantly spoken language.",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0821",
+    "question": "What are the codes of countries where Spanish is spoken by the largest percentage of people?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "PROPORTION",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0822",
+    "question": "Return the codes of countries for which Spanish is the predominantly spoken language.",
+    "rule": "GROUPED",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0833",
+    "question": "What are the maximum and minimum share of performances whose type is not \"Live final\".",
+    "rule": "SCALAR",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "PROPORTION",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER",
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0838",
+    "question": "What are the names of conductors, sorted descending by the number of years they have worked?",
+    "rule": "ORDERED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0839",
+    "question": "List the name of the conductor with the most years of work.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0849",
+    "question": "Please show the different record companies and the corresponding number of orchestras.",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0851",
+    "question": "Please show the record formats of orchestras in ascending order of count.",
+    "rule": "GROUPED",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0852",
+    "question": "What are the major record formats of orchestras, sorted by their frequency?",
+    "rule": "GROUPED",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0853",
+    "question": "List the record company shared by the most number of orchestras.",
+    "rule": "LIMIT_1",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": false,
+    "intent": "RANKING",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0856",
+    "question": "What are the orchestras that do not have any performances?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0862",
+    "question": "What are years of founding for orchestras that have had more than a single performance?",
+    "rule": "GROUPED",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP",
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP0865",
+    "question": "Show the names and grades of each high schooler.",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0866",
+    "question": "What are the names and grades for each high schooler?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0868",
+    "question": "What is the grade of each high schooler?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0883",
+    "question": "Show the student IDs and numbers of friends corresponding to each.",
+    "rule": "GROUPED",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0885",
+    "question": "Show the names of high school students and their corresponding number of friends.",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0917",
+    "question": "Find the minimum grade of students who have no friends.",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE",
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP1018",
+    "question": "For each citizenship, what is the maximum net worth?",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   },
+   {
+    "id": "SP1025",
+    "question": "Show the names of singers and the total sales of their songs.",
+    "rule": "GROUPED",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   }
+  ]
+ },
+ "TEST_RULES_SAMPLE": {
+  "cases": 60,
+  "shape_accuracy": 0.9333333333333333,
+  "intent_accuracy": 0.9166666666666666,
+  "shape_correct": 56,
+  "intent_correct": 55,
+  "truncation_rate": 0.03333333333333333,
+  "limit_1_rate": 0.0,
+  "multi_row_questions": 30,
+  "errors": {
+   "TRUNCATION": 1
+  },
+  "shape_by_rule": {
+   "GROUPED": {
+    "correct": 10,
+    "cases": 10
+   },
+   "LIMIT_1": {
+    "correct": 10,
+    "cases": 10
+   },
+   "LOOKUP": {
+    "correct": 10,
+    "cases": 14
+   },
+   "MIXED_AGG": {
+    "correct": 1,
+    "cases": 1
+   },
+   "ORDERED": {
+    "correct": 2,
+    "cases": 2
+   },
+   "SCALAR": {
+    "correct": 17,
+    "cases": 17
+   },
+   "SET_OP": {
+    "correct": 6,
+    "cases": 6
+   }
+  },
+  "predicted_shape_by_rule": {
+   "SCALAR": {
+    "SINGLE_ANSWER": 15,
+    "TABLE_CONTENT": 2
+   },
+   "ORDERED": {
+    "TABLE_CONTENT": 2
+   },
+   "LIMIT_1": {
+    "SINGLE_ANSWER": 10
+   },
+   "LOOKUP": {
+    "TABLE_CONTENT": 10,
+    "CHART": 3,
+    "SINGLE_ANSWER": 1
+   },
+   "GROUPED": {
+    "CHART": 6,
+    "TABLE_CONTENT": 4
+   },
+   "MIXED_AGG": {
+    "SINGLE_ANSWER": 1
+   },
+   "SET_OP": {
+    "TABLE_CONTENT": 6
+   }
+  },
+  "failures": [
+   {
+    "id": "SP0015",
+    "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0016",
+    "question": "What are the locations and names of all stations with capacity between 5000 and 10000?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0039",
+    "question": "What are the names of the singers who performed in a concert in 2014?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0040",
+    "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0044",
+    "question": "Find the number of concerts happened in the stadium with the highest capacity .",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   },
+   {
+    "id": "SP0045",
+    "question": "What are the number of concerts that occurred in the stadium with the largest capacity ?",
+    "rule": "SCALAR",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "RANKING",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "KPI_SINGLE_VALUE"
+    ]
+   }
+  ]
+ },
+ "TEST_HYBRID_SAMPLE": {
+  "cases": 60,
+  "shape_accuracy": 0.9833333333333333,
+  "intent_accuracy": 0.8166666666666667,
+  "shape_correct": 59,
+  "intent_correct": 49,
+  "truncation_rate": 0.03333333333333333,
+  "limit_1_rate": 0.0,
+  "multi_row_questions": 30,
+  "errors": {
+   "TRUNCATION": 1
+  },
+  "shape_by_rule": {
+   "GROUPED": {
+    "correct": 10,
+    "cases": 10
+   },
+   "LIMIT_1": {
+    "correct": 10,
+    "cases": 10
+   },
+   "LOOKUP": {
+    "correct": 13,
+    "cases": 14
+   },
+   "MIXED_AGG": {
+    "correct": 1,
+    "cases": 1
+   },
+   "ORDERED": {
+    "correct": 2,
+    "cases": 2
+   },
+   "SCALAR": {
+    "correct": 17,
+    "cases": 17
+   },
+   "SET_OP": {
+    "correct": 6,
+    "cases": 6
+   }
+  },
+  "predicted_shape_by_rule": {
+   "SCALAR": {
+    "SINGLE_ANSWER": 15,
+    "TABLE_CONTENT": 2
+   },
+   "ORDERED": {
+    "TABLE_CONTENT": 2
+   },
+   "LIMIT_1": {
+    "SINGLE_ANSWER": 10
+   },
+   "LOOKUP": {
+    "TABLE_CONTENT": 13,
+    "SINGLE_ANSWER": 1
+   },
+   "GROUPED": {
+    "TABLE_CONTENT": 7,
+    "CHART": 3
+   },
+   "MIXED_AGG": {
+    "SINGLE_ANSWER": 1
+   },
+   "SET_OP": {
+    "TABLE_CONTENT": 6
+   }
+  },
+  "failures": [
+   {
+    "id": "SP0007",
+    "question": "Show the name and the release year of the song by the youngest singer.",
+    "rule": "LIMIT_1",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0008",
+    "question": "What are the names and release years for all the songs of the youngest singer?",
+    "rule": "LIMIT_1",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0024",
+    "question": "For each stadium, how many concerts play there?",
+    "rule": "GROUPED",
+    "shape": "CHART",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0027",
+    "question": "Which year has most number of concerts?",
+    "rule": "LIMIT_1",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0034",
+    "question": "Show the name and theme for all concerts and the number of singers in each concert.",
+    "rule": "GROUPED",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0035",
+    "question": "What are the names , themes , and number of singers for every concert ?",
+    "rule": "GROUPED",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0036",
+    "question": "List singer names and number of concerts for each singer.",
+    "rule": "GROUPED",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0037",
+    "question": "What are the names of the singers and number of concerts for each person?",
+    "rule": "GROUPED",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON",
+     "DISTRIBUTION",
+     "PROPORTION"
+    ]
+   },
+   {
+    "id": "SP0040",
+    "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
+    "rule": "LOOKUP",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0048",
+    "question": "Find the weight of the youngest dog.",
+    "rule": "LIMIT_1",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0049",
+    "question": "How much does the youngest dog weigh?",
+    "rule": "LIMIT_1",
+    "shape": "SINGLE_ANSWER",
+    "shape_ok": true,
+    "intent": "KPI_SINGLE_VALUE",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "SINGLE_ANSWER"
+    ],
+    "acceptable_intent": [
+     "RANKING"
+    ]
+   },
+   {
+    "id": "SP0050",
+    "question": "Find the maximum weight for each type of pet. List the maximum weight and pet type.",
+    "rule": "GROUPED",
+    "shape": "TABLE_CONTENT",
+    "shape_ok": true,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT",
+     "CHART"
+    ],
+    "acceptable_intent": [
+     "COMPARISON"
+    ]
+   }
+  ]
+ }
+}

@@ -161,6 +161,14 @@ comes with `IMPLICIT_LIMIT_APPLIED` in `warnings`, and the client is expected to
 disclose it and offer to widen. Never present an inferred bound to the user as
 something they asked for.
 
+*Stage 5 correction:* before Stage 5 the code inferred `LIMIT 1` for **every**
+single-answer question, including singular lookups with nothing to order by
+("the name of the museum that had no visitor yet"), where `LIMIT 1` returns an
+arbitrary row and hides the rest. The code now matches this note: `LIMIT 1` is
+inferred only with a superlative or an explicit "single / top one". A singular
+question without one comes with `limit_source: NONE`, and if several rows come
+back the response is shown as a table (guardrail G1).
+
 `ordering` is empty when the direction cannot be inferred — `best` and `worst`
 depend on the metric's polarity, which this component does not know. That case
 raises `ORDERING_DIRECTION_AMBIGUOUS`; resolve it with schema knowledge.
@@ -312,6 +320,16 @@ raises `ORDERING_DIRECTION_AMBIGUOUS`; resolve it with schema knowledge.
     `FORECAST_WITHOUT_LATEST_POINT` or `FORECAST`). The verdict set is
     unchanged. When `basis` is `FORECAST_WITHOUT_LATEST_POINT`, a
     `RECOVERING` verdict is provisional and the summary says so.
+- **Stage 5 changes (intent classification):**
+  - A scalar question about the future ("how much will I spend next month")
+    now returns one `answer` block with `is_forecast: true`, the projected
+    figure and its `interval`, instead of the history table. Guardrail G1 no
+    longer overrides a single answer when a forecast was explicitly requested.
+  - `limit` / `limit_source`: see the Stage 5 correction under `limit_source`.
+  - `analysis.primary_intent` is UNKNOWN far less often (retrieval questions
+    such as "what are the names of ..." are `DETAIL_LOOKUP`), and phrases such
+    as "at least two", "more than the average" and "first name" no longer read
+    as superlatives or KPIs. No field names or values were added or removed.
 - **Stage 4 additions (what-if and summary verifier), all additive:**
   - `prediction.stage_6_scenario.spec.reason_code` says why a scenario was
     not simulated: `NO_MAGNITUDE`, `NO_DIRECTION`, `NEGATED`,

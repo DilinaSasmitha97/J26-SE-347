@@ -68,16 +68,26 @@ INTENT_MARKERS = {
     },
     QueryIntent.COMPARISON: {
         3: ["compare", "comparison", "versus", " vs ", "compared to",
-            "difference between", "against each other"],
+            "difference between", "against each other",
+            # One value per member of a group (Stage 5, Spider DEV): "how many
+            # shops are there in each location", "for each template".
+            r"\b(?:for|in|of|by)[ ]each\b", r"\beach (?!other\b)[a-z]+\b.{0,20}\b(?:has|have|had|is|are|was|were)\b"],
         2: ["by region", "by department", "by category", "by product",
             "by team", "by branch", "across", "between"],
-        1: ["each", "per"],
+        1: ["each", "per "],
     },
     QueryIntent.RANKING: {
         3: ["top ", "bottom ", "highest", "lowest", "best performing",
             "worst performing", "rank", "ranked", "leaderboard", "most ",
-            "least ", "largest", "smallest"],
-        2: ["best", "worst", "leading", "order by", "sorted by", "first "],
+            "least ", "largest", "smallest", "biggest",
+            "fewest", "greatest", "youngest", "oldest", "most common", "earliest",
+            "latest", "longest", "shortest"],
+        # "first" ranks only as "the first 10" or "the first student to
+        # register"; as "first and second line" or "first, middle and last
+        # names" it names columns (Stage 5, Spider DEV).
+        2: ["best", "worst", "leading", "order by", "sorted by",
+            r"\bfirst[ ](?:\d+|few|ten|five|three)\b", r"\bthe first [a-z]+ (?:to|who|that)\b",
+            "sort ", "sorted", "ordered by", "ascending", "descending", "alphabetical"],
         1: ["maximum", "minimum"],
     },
     QueryIntent.PROPORTION: {
@@ -109,15 +119,31 @@ INTENT_MARKERS = {
     },
     QueryIntent.KPI_SINGLE_VALUE: {
         3: ["total number of", "how many", "how much", "what is the total",
-            "what is the average", "overall total", "sum of all", "count of"],
-        2: ["total", "average", "mean", "median", "overall"],
+            "what is the average", "overall total", "sum of all", "count of",
+            "count the", "find the number of", "what is the number of",
+            # "the number of flights" is a count; "the phone number of the
+            # student" is a column (Stage 5, Spider DEV).
+            r"\bthe number of (?!the\b|a\b|an\b|this\b|that\b|his\b|her\b)[a-z]",
+            "give the number of", "return the number of",
+            # Several aggregates of one column are still one row of figures.
+            r"\b(?:minimum|maximum|average|mean|total)\b(?:,| and)[ ](?:the )?"
+            r"(?:minimum|maximum|average|mean|total)\b"],
+        2: ["total", "average", "mean", "median", "overall",
+            r"\bnumber of (?!the\b|a\b|an\b|this\b|that\b|his\b|her\b)[a-z]"],
         1: ["value of"],
     },
     QueryIntent.DETAIL_LOOKUP: {
         3: ["list all", "show me all", "give me the records", "which rows",
             "details of", "look up", "find the record", "who is", "what is the name of"],
         2: ["list", "show all", "records", "entries", "rows"],
-        1: ["find", "get", "show"],
+        1: ["find", "get", "show",
+            # A question that names the attributes to return, with no other
+            # cue, is a lookup (Stage 5, Spider DEV: phrasings like these opened
+            # 171 of the questions that got no intent). Deliberately the weakest
+            # tier, and one pattern, so any real marker outranks it.
+            r"^(?:(?:what|which) (?:are|is|was|were) the [a-z]+"
+            r"|(?:return|give|tell me|find|show|list|display|provide) (?:me )?"
+            r"(?:the|all|a|an|each|every)\b|(?:which|what|who|where)[ ])"],
     },
 }
 
@@ -125,6 +151,7 @@ INTENT_MARKERS = {
 PREDICTION_EXPLICIT = [
     "predict", "prediction", "forecast", "forecasting", "project",
     "projection", "projected", "next month", "next quarter", "next year",
+    "next week", "tomorrow", "will we", "will i ", "will our",
     "next 3", "next three", "next few", "coming months", "upcoming",
     "will be", "expect", "expected", "estimate for", "future", "outlook",
     "how much will", "what will",
@@ -380,11 +407,15 @@ def _score_intents(text: str) -> dict:
         for weight, markers in tiers.items():
             for marker in markers:
                 pattern = marker.strip()
-                found = (
-                    re.search(pattern, text) is not None
-                    if any(c in pattern for c in ".*[]")
-                    else pattern in text
-                )
+                if any(c in pattern for c in ".*[]"):
+                    found = re.search(pattern, text) is not None
+                elif pattern[0].isalnum():
+                    # A literal marker must start a word: before Stage 5 "each"
+                    # matched inside "teach" and "per" inside "percent". The end
+                    # stays open so "increase" still matches "increased".
+                    found = re.search(r"(?<![a-z0-9])" + re.escape(pattern), text) is not None
+                else:
+                    found = pattern in text
                 if found:
                     scores[intent] += float(weight)
                     hits[intent].append(pattern)
@@ -408,6 +439,17 @@ def _resolve_intent(text: str, scores: dict, hits: dict) -> tuple:
         return QueryIntent.UNKNOWN, [], 0.2, "No decisive lexical markers found."
 
     # Precedence overrides.
+    grouped = (re.search(r"\b(?:for|in|of|by|to) each\b|\bper\b|\beach (?!other\b)[a-z]+"
+                         r"|\beach\s*[?.!]?$", text)
+               or response_intent._PER_ROW_COUNT.search(text))
+    superlative = re.search(
+        r"\b(?:most|least|highest|lowest|largest|smallest|biggest|greatest|fewest"
+        r"|youngest|oldest|earliest|latest|longest|shortest|top|bottom)\b", text)
+    # KPI evidence that names an aggregate outright, as opposed to "the number
+    # of" inside "the airport with the highest number of flights".
+    kpi_explicit = re.search(
+        r"\bhow (?:many|much)\b|\btotal\b|\baverage\b|\bmean\b|\bcount (?:the|of)\b|\bsum\b",
+        text)
     if scores[QueryIntent.ANOMALY_DETECTION] >= 3:
         best = QueryIntent.ANOMALY_DETECTION
     elif scores[QueryIntent.CORRELATION] >= 3:
@@ -416,6 +458,22 @@ def _resolve_intent(text: str, scores: dict, hits: dict) -> tuple:
         best = QueryIntent.RANKING
     elif scores[QueryIntent.PROPORTION] >= 3 and best is QueryIntent.COMPARISON:
         best = QueryIntent.PROPORTION
+    elif (superlative and scores[QueryIntent.RANKING] >= 3
+          and (best is QueryIntent.DETAIL_LOOKUP
+               or (best is QueryIntent.KPI_SINGLE_VALUE and not kpi_explicit))):
+        # "the code of the airport with the most flights" retrieves the top
+        # entity: a ranking, whatever attribute it returns.
+        best = QueryIntent.RANKING
+    elif (best is QueryIntent.DETAIL_LOOKUP and grouped
+          and re.search(r"\b(?:number|count) of\b|\bhow many\b|\b(?:total|average|sum)\b", text)):
+        # "show all template codes and the number of templates for each":
+        # a value per group, not a list of records.
+        best = QueryIntent.COMPARISON
+    elif (best is QueryIntent.KPI_SINGLE_VALUE and grouped
+          and scores[QueryIntent.TREND_ANALYSIS] < 3):
+        # "how many shops are there in each location" counts per location:
+        # one value per group is a comparison, not one figure.
+        best = QueryIntent.COMPARISON
     elif (
         scores[QueryIntent.TREND_ANALYSIS] >= 3
         and best is QueryIntent.KPI_SINGLE_VALUE
@@ -720,8 +778,11 @@ def _infer_from_fact_table(tables: dict, table_bindings: list, text: str) -> tup
 
 def _rule_analysis(user_query: str, tables: dict) -> QueryAnalysis:
     text = normalize(user_query)
-    scores, hits = _score_intents(text)
-    intent, secondary, confidence, rationale = _resolve_intent(text, scores, hits)
+    # Thresholds ("at least two"), average filters and "first name" are not
+    # superlatives or KPIs; the shared rewrite keeps both classifiers agreed.
+    scored_text = response_intent.neutralize(text)
+    scores, hits = _score_intents(scored_text)
+    intent, secondary, confidence, rationale = _resolve_intent(scored_text, scores, hits)
 
     table_bindings, column_bindings, unresolved = bind_schema(user_query, tables)
     metrics, dimensions, temporal = _derive_roles(text, column_bindings, intent)
