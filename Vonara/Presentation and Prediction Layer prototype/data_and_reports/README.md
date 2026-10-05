@@ -484,6 +484,25 @@ SQL-derived labels cover only what Spider asks: there are no requests for
 summaries, reports or forecasts in it, so those shapes are tested only by the
 author-written sets.
 
+**8. Integration rehearsal (Stage 6)** — `python test_db/seed.py`, then
+`python test_db/run_fixtures.py` and `python test_db/run_api_rehearsal.py`.
+No shared database or team service exists yet, so the chain runs with
+stand-ins built to the teammates' real formats: hand-written SQL (Member 1), a
+SQLite database plus `member2_stub` with Member 2's exact output and masking
+(Member 2), a security context (Member 3), and this component's real HTTP API.
+SQLite needs no server; the MySQL fixture SQL runs unchanged.
+
+| Check | Result |
+|---|---|
+| 77 integration questions fully passing | 64 on the first run → **75** after the fixes it found |
+| Response shape / forecast delivery | 73/73 / 59/59 |
+| Contract fields missing or mistyped (analyze + present) | **0** |
+| Unmasked PII values in any API response (7,647 checked) | **0** |
+| Denied table bound / cache hit across tenants | never / never |
+| Latency, median (p95): analyze / present | 10 ms (16) / 16 ms (85) |
+
+Details: `integration_rehearsal.md`, `stage6_completion_report.md`.
+
 ---
 
 ## Integration
@@ -535,13 +554,15 @@ this layer depends on.
 | `evaluate_verifier.py` | Stage 4 summary-verifier benchmark: fault injection + optional live LLM run |
 | `test_whatif.py` | scenario parser, route agreement, precision-aware verifier |
 | `evaluate_spider_intent.py`, `benchmark_data/prepare_spider_intent.py`, `benchmark_data/spider_dev_intent.json` | Stage 5 independent intent benchmark on Spider dev |
+| `test_db/run_api_rehearsal.py`, `test_db/sqlite_mysql.py` | Stage 6 HTTP integration rehearsal; SQLite backend with MySQL compatibility |
+| `test_integration.py` | Stage 6 checks: SQLite/MySQL compatibility, Member 2 stand-in, forecast opt-out, LLM defaults and policy, charts |
 | `test_intent.py` | thresholds and name columns, whole-word markers, LIMIT 1 only with order, negation / two questions, scalar forecast answers |
 | `strategies.py` | **Part 4** — Stage 1 strategy execution |
 | `input_adapter.py` | Member 2 columnar result → row dicts |
 | `benchmark_data/` | M4 development sample (seed 2026), held-out test sample (seed 2027) + `prepare_m4_sample.py` |
 | `test_db/` | synthetic MySQL database + 77 integration fixtures |
-| `forecast_benchmark.md`, `strategy_benchmark.md`, `readiness_benchmark.md`, `anomaly_benchmark.md`, `whatif_benchmark.md`, `verifier_benchmark.md`, `spider_intent_benchmark.md` | generated benchmark reports |
-| `stage2_completion_report.md`, `stage3_completion_report.md`, `stage4_completion_report.md`, `stage5_completion_report.md` | stage reports |
+| `forecast_benchmark.md`, `strategy_benchmark.md`, `readiness_benchmark.md`, `anomaly_benchmark.md`, `whatif_benchmark.md`, `verifier_benchmark.md`, `spider_intent_benchmark.md`, `integration_rehearsal.md` | generated benchmark reports |
+| `stage2_completion_report.md`, `stage3_completion_report.md`, `stage4_completion_report.md`, `stage5_completion_report.md`, `stage6_completion_report.md` | stage reports |
 | `synthetic_data.py` | labelled generators + 12-scenario benchmark |
 | `intent_testset.json` | 48 labelled intent cases |
 | `response_intent_dataset.csv` | 125-input response-intent development corpus |

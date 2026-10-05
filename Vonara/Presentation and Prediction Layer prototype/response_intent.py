@@ -192,8 +192,13 @@ RESPONSE_MARKERS = {
             r"\bdistribution\b", r"\bbreak(?:\s+(?:it|this|that|them))?\s*down\b", r"\bshare of\b",
             r"\bproportion\b", r"\bpercentage of total\b", r"\bcorrelation\b",
             r"\btrending\b",
+            # A share of a whole is drawn (Stage 6, fixture P04).
+            r"\bpercent(?:age)? of\b",
         ],
-        1: [r"\bby (?:month|quarter|year|week|day|region|category|product|department"
+        1: [# A per-period word is a weak cue only: "list my monthly expenses"
+            # names a table, and the verb outranks it (Stage 6, F09 / T09).
+            r"\b(?:monthly|weekly|daily|quarterly|yearly|annually)\b",
+            r"\bby (?:month|quarter|year|week|day|region|category|product|department"
             r"|status|segment|team|branch|channel|customer|unit|business unit|cohort"
             r"|country|city|location|supplier|vendor)\b",
             r"\bpattern\b", r"\bshape of\b"],
@@ -308,6 +313,16 @@ _GROUPING_VETO = re.compile(
     r"|\bby (?:month|quarter|year|week|day|region|category|product|department"
     r"|status|segment|team|branch|channel|customer|store|type)\b"
 )
+
+# A per-period word as a series ("the monthly count of X" is one value per
+# month), used as a grouping veto only when nothing asks for one extreme: "the
+# all-time high for daily signups" and "the highest monthly revenue" are one
+# figure, and so is "the average monthly spend" (Stage 6).
+_PERIOD_SERIES = re.compile(
+    r"(?<!average )(?<!mean )(?<!median )(?<!typical )"
+    r"\b(?:monthly|weekly|daily|quarterly|yearly)\b(?! (?:average|mean|median|rate)\b)"
+)
+_EXTREME = re.compile(r"\ball[- ]time\b|\bpeak\b|\brecord\b")
 
 # An explicit singular quantifier makes the scalar reading immune to both
 # vetoes: "list the single highest paying customer" contains "list", but the
@@ -681,7 +696,9 @@ def _apply_precedence(text: str, scores: dict, hits: dict) -> tuple:
             scores[ResponseIntent.SINGLE_ANSWER] *= 0.35
             scores[ResponseIntent.TABLE_CONTENT] += 2.0
             notes.append("R3a enumeration veto: an N-row request is a table, not an answer")
-        if _GROUPING_VETO.search(text):
+        period_series = (_PERIOD_SERIES.search(text)
+                         and not _SUPERLATIVES.search(text) and not _EXTREME.search(text))
+        if _GROUPING_VETO.search(text) or period_series:
             scores[ResponseIntent.SINGLE_ANSWER] *= 0.35
             scores[ResponseIntent.CHART] += 2.0
             notes.append("R3b grouping veto: one value per group is a series, not an answer")
@@ -787,9 +804,14 @@ def _apply_precedence(text: str, scores: dict, hits: dict) -> tuple:
     # explicit second *format* (R1) escalates it to MIXED.
     if (
         scores[ResponseIntent.SHORT_SUMMARY] >= 4
-        and re.search(r"\b(?:brief|short|quick|in short|tl;?dr|one paragraph)\b", text)
+        and re.search(r"\b(?:brief(?:ly)?|short|quick(?:ly)?|in short|tl;?dr|one paragraph)\b", text)
     ):
-        scores[ResponseIntent.MIXED_SUMMARY] *= 0.4
+        # Also below the summary itself: R1 can lift the mixed report above
+        # everything ("briefly summarise ... and forecast ..."), and a brevity
+        # marker means the user asked for one short block (Stage 6, F10).
+        scores[ResponseIntent.MIXED_SUMMARY] = min(
+            scores[ResponseIntent.MIXED_SUMMARY] * 0.4,
+            scores[ResponseIntent.SHORT_SUMMARY] - 0.5)
         notes.append("R6 brevity marker: an explicitly short answer cannot be a full report")
 
     return scores, notes
@@ -1065,7 +1087,7 @@ def classify(user_query: str, analysis=None) -> ResponseIntentResult:
 
 
 def apply_guardrails(result: ResponseIntentResult, profile=None, rows=None,
-                     forecast_requested: bool = False):
+                     forecast_requested: bool = False, analytic_intent: str = ""):
     """
     Re-check the pre-execution verdict against the data that actually came back.
 
@@ -1126,6 +1148,14 @@ def apply_guardrails(result: ResponseIntentResult, profile=None, rows=None,
     # G2 - A chart needs something to encode: at least one measure and either a
     # time axis or a categorical axis, over at least two points.
     chartable = bool(measures) and (bool(temporal) or bool(dimensions)) and row_count >= 2
+    # A histogram needs one measure and no axis; a scatter plot needs two
+    # measures. Before Stage 6 every distribution and correlation question was
+    # turned into a table here, although visualization.py draws both (fixtures
+    # D01-D03, K01).
+    if analytic_intent == "DISTRIBUTION" and measures and row_count >= 5:
+        chartable = True
+    if analytic_intent == "CORRELATION" and len(measures) >= 2 and row_count >= 3:
+        chartable = True
     if current is ResponseIntent.CHART and not chartable:
         reason = (
             "no numeric measure" if not measures

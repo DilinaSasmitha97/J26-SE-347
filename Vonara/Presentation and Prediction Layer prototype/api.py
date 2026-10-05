@@ -50,7 +50,9 @@ class AnalyzeRequest(BaseModel):
     user_query: str
     schema_meta: Optional[Any] = None
     security_context: Optional[SecurityContext] = None
-    use_llm: bool = True
+    # Deterministic by default (Stage 6). With an LLM provider configured the
+    # old default sent every question, and the schema, to the provider.
+    use_llm: bool = False
 
 
 class PresentRequest(BaseModel):
@@ -62,7 +64,7 @@ class PresentRequest(BaseModel):
     schema_meta: Optional[Any] = None
     schema_types: Optional[Dict[str, str]] = None
     security_context: Optional[SecurityContext] = None
-    use_llm: bool = True
+    use_llm: bool = False
     use_llm_summary: bool = False
     confidence_level: float = 0.95
     horizon: Optional[int] = None

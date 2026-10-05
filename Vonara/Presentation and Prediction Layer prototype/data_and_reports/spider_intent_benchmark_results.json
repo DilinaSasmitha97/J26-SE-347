@@ -2,9 +2,9 @@
  "DEV": {
   "cases": 531,
   "shape_accuracy": 0.9001883239171374,
-  "intent_accuracy": 0.9227871939736346,
+  "intent_accuracy": 0.928436911487759,
   "shape_correct": 478,
-  "intent_correct": 490,
+  "intent_correct": 493,
   "truncation_rate": 0.09583333333333334,
   "limit_1_rate": 0.008333333333333333,
   "multi_row_questions": 240,
@@ -17,7 +17,7 @@
   },
   "shape_by_rule": {
    "GROUPED": {
-    "correct": 58,
+    "correct": 59,
     "cases": 61
    },
    "LIMIT_1": {
@@ -25,7 +25,7 @@
     "cases": 92
    },
    "LOOKUP": {
-    "correct": 170,
+    "correct": 169,
     "cases": 195
    },
    "MIXED_AGG": {
@@ -51,9 +51,9 @@
   },
   "predicted_shape_by_rule": {
    "LOOKUP": {
-    "TABLE_CONTENT": 149,
-    "SINGLE_ANSWER": 35,
-    "CHART": 10,
+    "TABLE_CONTENT": 150,
+    "SINGLE_ANSWER": 33,
+    "CHART": 11,
     "SHORT_SUMMARY": 1
    },
    "SCALAR": {
@@ -72,8 +72,8 @@
     "SINGLE_ANSWER": 3
    },
    "GROUPED": {
-    "TABLE_CONTENT": 36,
-    "CHART": 23,
+    "TABLE_CONTENT": 37,
+    "CHART": 22,
     "SINGLE_ANSWER": 2
    },
    "ORDERED": {
@@ -493,8 +493,8 @@
     "rule": "LOOKUP",
     "shape": "SINGLE_ANSWER",
     "shape_ok": false,
-    "intent": "COMPARISON",
-    "intent_ok": false,
+    "intent": "DETAIL_LOOKUP",
+    "intent_ok": true,
     "acceptable_shape": [
      "TABLE_CONTENT"
     ],
@@ -655,22 +655,6 @@
     ]
    },
    {
-    "id": "SP0585",
-    "question": "What are the first names of the students who live in Haiti permanently or have the cell phone number 09700166582 ?",
-    "rule": "LOOKUP",
-    "shape": "CHART",
-    "shape_ok": false,
-    "intent": "COMPARISON",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "TABLE_CONTENT",
-     "SINGLE_ANSWER"
-    ],
-    "acceptable_intent": [
-     "DETAIL_LOOKUP"
-    ]
-   },
-   {
     "id": "SP0593",
     "question": "What is the name and directors of all the cartoons that are ordered by air date?",
     "rule": "ORDERED",
@@ -815,8 +799,8 @@
     "id": "SP0622",
     "question": "What is Weekly Rank of TV series with Episode \"A Love of a Lifetime\"?",
     "rule": "LOOKUP",
-    "shape": "SINGLE_ANSWER",
-    "shape_ok": true,
+    "shape": "CHART",
+    "shape_ok": false,
     "intent": "TREND_ANALYSIS",
     "intent_ok": false,
     "acceptable_shape": [
@@ -831,8 +815,8 @@
     "id": "SP0623",
     "question": "What is the weekly rank for the episode \"A Love of a Lifetime\"?",
     "rule": "LOOKUP",
-    "shape": "SINGLE_ANSWER",
-    "shape_ok": true,
+    "shape": "CHART",
+    "shape_ok": false,
     "intent": "TREND_ANALYSIS",
     "intent_ok": false,
     "acceptable_shape": [
@@ -933,37 +917,6 @@
     "acceptable_intent": [
      "KPI_SINGLE_VALUE",
      "RANKING"
-    ]
-   },
-   {
-    "id": "SP0930",
-    "question": "Give me the id, role and email of the professionals who did not perform any treatment on dogs.",
-    "rule": "SET_OP",
-    "shape": "TABLE_CONTENT",
-    "shape_ok": true,
-    "intent": "COMPARISON",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "TABLE_CONTENT"
-    ],
-    "acceptable_intent": [
-     "DETAIL_LOOKUP"
-    ]
-   },
-   {
-    "id": "SP0934",
-    "question": "What are the id, role, and first name of the professionals who have performed two or more treatments?",
-    "rule": "GROUPED",
-    "shape": "CHART",
-    "shape_ok": false,
-    "intent": "COMPARISON",
-    "intent_ok": true,
-    "acceptable_shape": [
-     "TABLE_CONTENT"
-    ],
-    "acceptable_intent": [
-     "DETAIL_LOOKUP",
-     "COMPARISON"
     ]
    },
    {
@@ -1150,23 +1103,23 @@
  },
  "TEST": {
   "cases": 501,
-  "shape_accuracy": 0.8902195608782435,
-  "intent_accuracy": 0.8822355289421158,
-  "shape_correct": 446,
-  "intent_correct": 442,
-  "truncation_rate": 0.1125,
-  "limit_1_rate": 0.058333333333333334,
+  "shape_accuracy": 0.8982035928143712,
+  "intent_accuracy": 0.8862275449101796,
+  "shape_correct": 450,
+  "intent_correct": 444,
+  "truncation_rate": 0.10833333333333334,
+  "limit_1_rate": 0.05416666666666667,
   "multi_row_questions": 240,
   "errors": {
-   "TRUNCATION": 27,
+   "TRUNCATION": 26,
    "PROSE": 5,
-   "LIMIT_1_REQUESTED": 14,
+   "LIMIT_1_REQUESTED": 13,
    "ONE_AS_MANY": 10,
    "INTENT_UNKNOWN": 1
   },
   "shape_by_rule": {
    "GROUPED": {
-    "correct": 85,
+    "correct": 87,
     "cases": 105
    },
    "LIMIT_1": {
@@ -1174,7 +1127,7 @@
     "cases": 81
    },
    "LOOKUP": {
-    "correct": 99,
+    "correct": 101,
     "cases": 116
    },
    "MIXED_AGG": {
@@ -1214,15 +1167,15 @@
     "TABLE_CONTENT": 5
    },
    "LOOKUP": {
-    "TABLE_CONTENT": 90,
-    "CHART": 11,
+    "TABLE_CONTENT": 92,
+    "CHART": 9,
     "SINGLE_ANSWER": 14,
     "MIXED_SUMMARY": 1
    },
    "GROUPED": {
     "CHART": 49,
-    "TABLE_CONTENT": 37,
-    "SINGLE_ANSWER": 17,
+    "TABLE_CONTENT": 38,
+    "SINGLE_ANSWER": 16,
     "MIXED_SUMMARY": 2
    },
    "MIXED_AGG": {
@@ -1256,21 +1209,6 @@
    {
     "id": "SP0016",
     "question": "What are the locations and names of all stations with capacity between 5000 and 10000?",
-    "rule": "LOOKUP",
-    "shape": "CHART",
-    "shape_ok": false,
-    "intent": "COMPARISON",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "TABLE_CONTENT"
-    ],
-    "acceptable_intent": [
-     "DETAIL_LOOKUP"
-    ]
-   },
-   {
-    "id": "SP0039",
-    "question": "What are the names of the singers who performed in a concert in 2014?",
     "rule": "LOOKUP",
     "shape": "CHART",
     "shape_ok": false,
@@ -2210,8 +2148,8 @@
     "id": "SP0821",
     "question": "What are the codes of countries where Spanish is spoken by the largest percentage of people?",
     "rule": "GROUPED",
-    "shape": "SINGLE_ANSWER",
-    "shape_ok": false,
+    "shape": "CHART",
+    "shape_ok": true,
     "intent": "PROPORTION",
     "intent_ok": false,
     "acceptable_shape": [
@@ -2352,37 +2290,6 @@
     ]
    },
    {
-    "id": "SP0856",
-    "question": "What are the orchestras that do not have any performances?",
-    "rule": "LOOKUP",
-    "shape": "CHART",
-    "shape_ok": false,
-    "intent": "COMPARISON",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "TABLE_CONTENT"
-    ],
-    "acceptable_intent": [
-     "DETAIL_LOOKUP"
-    ]
-   },
-   {
-    "id": "SP0862",
-    "question": "What are years of founding for orchestras that have had more than a single performance?",
-    "rule": "GROUPED",
-    "shape": "CHART",
-    "shape_ok": false,
-    "intent": "COMPARISON",
-    "intent_ok": true,
-    "acceptable_shape": [
-     "TABLE_CONTENT"
-    ],
-    "acceptable_intent": [
-     "DETAIL_LOOKUP",
-     "COMPARISON"
-    ]
-   },
-   {
     "id": "SP0865",
     "question": "Show the names and grades of each high schooler.",
     "rule": "LOOKUP",
@@ -2515,10 +2422,10 @@
  },
  "TEST_RULES_SAMPLE": {
   "cases": 60,
-  "shape_accuracy": 0.9333333333333333,
-  "intent_accuracy": 0.9166666666666666,
-  "shape_correct": 56,
-  "intent_correct": 55,
+  "shape_accuracy": 0.95,
+  "intent_accuracy": 0.9333333333333333,
+  "shape_correct": 57,
+  "intent_correct": 56,
   "truncation_rate": 0.03333333333333333,
   "limit_1_rate": 0.0,
   "multi_row_questions": 30,
@@ -2535,7 +2442,7 @@
     "cases": 10
    },
    "LOOKUP": {
-    "correct": 10,
+    "correct": 11,
     "cases": 14
    },
    "MIXED_AGG": {
@@ -2567,8 +2474,8 @@
     "SINGLE_ANSWER": 10
    },
    "LOOKUP": {
-    "TABLE_CONTENT": 10,
-    "CHART": 3,
+    "TABLE_CONTENT": 11,
+    "CHART": 2,
     "SINGLE_ANSWER": 1
    },
    "GROUPED": {
@@ -2601,21 +2508,6 @@
    {
     "id": "SP0016",
     "question": "What are the locations and names of all stations with capacity between 5000 and 10000?",
-    "rule": "LOOKUP",
-    "shape": "CHART",
-    "shape_ok": false,
-    "intent": "COMPARISON",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "TABLE_CONTENT"
-    ],
-    "acceptable_intent": [
-     "DETAIL_LOOKUP"
-    ]
-   },
-   {
-    "id": "SP0039",
-    "question": "What are the names of the singers who performed in a concert in 2014?",
     "rule": "LOOKUP",
     "shape": "CHART",
     "shape_ok": false,
@@ -2677,10 +2569,10 @@
  },
  "TEST_HYBRID_SAMPLE": {
   "cases": 60,
-  "shape_accuracy": 0.9833333333333333,
-  "intent_accuracy": 0.8166666666666667,
-  "shape_correct": 59,
-  "intent_correct": 49,
+  "shape_accuracy": 0.95,
+  "intent_accuracy": 0.8833333333333333,
+  "shape_correct": 57,
+  "intent_correct": 53,
   "truncation_rate": 0.03333333333333333,
   "limit_1_rate": 0.0,
   "multi_row_questions": 30,
@@ -2697,7 +2589,7 @@
     "cases": 10
    },
    "LOOKUP": {
-    "correct": 13,
+    "correct": 11,
     "cases": 14
    },
    "MIXED_AGG": {
@@ -2729,7 +2621,8 @@
     "SINGLE_ANSWER": 10
    },
    "LOOKUP": {
-    "TABLE_CONTENT": 13,
+    "TABLE_CONTENT": 11,
+    "CHART": 2,
     "SINGLE_ANSWER": 1
    },
    "GROUPED": {
@@ -2745,40 +2638,40 @@
   },
   "failures": [
    {
-    "id": "SP0007",
-    "question": "Show the name and the release year of the song by the youngest singer.",
-    "rule": "LIMIT_1",
-    "shape": "SINGLE_ANSWER",
-    "shape_ok": true,
-    "intent": "DETAIL_LOOKUP",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "SINGLE_ANSWER"
-    ],
-    "acceptable_intent": [
-     "RANKING"
-    ]
-   },
-   {
-    "id": "SP0008",
-    "question": "What are the names and release years for all the songs of the youngest singer?",
-    "rule": "LIMIT_1",
-    "shape": "SINGLE_ANSWER",
-    "shape_ok": true,
-    "intent": "DETAIL_LOOKUP",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "SINGLE_ANSWER"
-    ],
-    "acceptable_intent": [
-     "RANKING"
-    ]
-   },
-   {
-    "id": "SP0024",
-    "question": "For each stadium, how many concerts play there?",
-    "rule": "GROUPED",
+    "id": "SP0015",
+    "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+    "rule": "LOOKUP",
     "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0016",
+    "question": "What are the locations and names of all stations with capacity between 5000 and 10000?",
+    "rule": "LOOKUP",
+    "shape": "CHART",
+    "shape_ok": false,
+    "intent": "COMPARISON",
+    "intent_ok": false,
+    "acceptable_shape": [
+     "TABLE_CONTENT"
+    ],
+    "acceptable_intent": [
+     "DETAIL_LOOKUP"
+    ]
+   },
+   {
+    "id": "SP0023",
+    "question": "Show the stadium name and the number of concerts in each stadium.",
+    "rule": "GROUPED",
+    "shape": "TABLE_CONTENT",
     "shape_ok": true,
     "intent": "DETAIL_LOOKUP",
     "intent_ok": false,
@@ -2790,21 +2683,6 @@
      "COMPARISON",
      "DISTRIBUTION",
      "PROPORTION"
-    ]
-   },
-   {
-    "id": "SP0027",
-    "question": "Which year has most number of concerts?",
-    "rule": "LIMIT_1",
-    "shape": "SINGLE_ANSWER",
-    "shape_ok": true,
-    "intent": "KPI_SINGLE_VALUE",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "SINGLE_ANSWER"
-    ],
-    "acceptable_intent": [
-     "RANKING"
     ]
    },
    {
@@ -2844,42 +2722,6 @@
     ]
    },
    {
-    "id": "SP0036",
-    "question": "List singer names and number of concerts for each singer.",
-    "rule": "GROUPED",
-    "shape": "TABLE_CONTENT",
-    "shape_ok": true,
-    "intent": "DETAIL_LOOKUP",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "TABLE_CONTENT",
-     "CHART"
-    ],
-    "acceptable_intent": [
-     "COMPARISON",
-     "DISTRIBUTION",
-     "PROPORTION"
-    ]
-   },
-   {
-    "id": "SP0037",
-    "question": "What are the names of the singers and number of concerts for each person?",
-    "rule": "GROUPED",
-    "shape": "TABLE_CONTENT",
-    "shape_ok": true,
-    "intent": "DETAIL_LOOKUP",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "TABLE_CONTENT",
-     "CHART"
-    ],
-    "acceptable_intent": [
-     "COMPARISON",
-     "DISTRIBUTION",
-     "PROPORTION"
-    ]
-   },
-   {
     "id": "SP0040",
     "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
     "rule": "LOOKUP",
@@ -2892,21 +2734,6 @@
     ],
     "acceptable_intent": [
      "DETAIL_LOOKUP"
-    ]
-   },
-   {
-    "id": "SP0048",
-    "question": "Find the weight of the youngest dog.",
-    "rule": "LIMIT_1",
-    "shape": "SINGLE_ANSWER",
-    "shape_ok": true,
-    "intent": "KPI_SINGLE_VALUE",
-    "intent_ok": false,
-    "acceptable_shape": [
-     "SINGLE_ANSWER"
-    ],
-    "acceptable_intent": [
-     "RANKING"
     ]
    },
    {
@@ -2930,7 +2757,7 @@
     "rule": "GROUPED",
     "shape": "TABLE_CONTENT",
     "shape_ok": true,
-    "intent": "DETAIL_LOOKUP",
+    "intent": "RANKING",
     "intent_ok": false,
     "acceptable_shape": [
      "TABLE_CONTENT",

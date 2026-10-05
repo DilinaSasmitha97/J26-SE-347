@@ -47,7 +47,7 @@ Legend: ✅ implemented and validated · ⚠️ implemented, known limitation do
 ### Phase 2 — Stage 2: prediction core (branch `vonara-nl-to-sql-prototype-stage-2`)
 
 - [x] Member 2 input adapter (real columnar format) + synthetic MySQL fixture harness
-      *(written; not yet run against MySQL — needs `MYSQL_ADMIN_PASSWORD`)*
+      *(first run in Stage 6, on SQLite)*
 - [x] Requested forecasts delivered in every response shape (`forecast_notice`)
 - [x] **#1** Forecastability gate replaces the CV/R² rule
 - [x] Rolling-origin backtesting, naive + seasonal-naive baselines, MASE, sMAPE,
@@ -131,8 +131,28 @@ Carried to later stages:
 - [ ] Human-labelled business questions from the team (SQL-derived labels only
       cover the shapes Spider asks for: no summaries, reports or forecasts)
 
-### Phase 3 — Integration
+### Phase 2f — Stage 6: integration rehearsal (branch `vonara-nl-to-sql-prototype-stage-6`)
 
+No shared database and no running team services exist yet, so the chain is
+rehearsed with stand-ins built to the teammates' real formats.
+
+- [x] SQLite backend for the test harness (no server, no password); MySQL
+      fixture SQL runs unchanged; PII column sources derived from the SQL
+- [x] 77 end-to-end questions: 64 → 75 fully passing after the fixes below
+- [x] HTTP rehearsal of /analyze, /present, /simulate: 0 contract problems,
+      0 unmasked PII values (7,647 checked), denylist and tenant isolation hold
+- [x] Fixes found by the run: histograms / scatter plots blocked by G2; wide
+      grouped results read as keys; "monthly", "yearly", "by month",
+      "percentage of", "briefly"; forecast opt-out ("without a forecast");
+      LLM off by default; LLM may override only a weak rule intent; "per"
+- [x] PARTIAL_EDGE_PERIOD readiness caution (3 % of complete M4 series flagged)
+
+### Phase 3 — Live integration (needs the team)
+
+- [ ] Point `/api/v4/present` at the real masked results instead of the stand-in
+- [ ] Agree the database with the team: Member 2's executor is MySQL, Member
+      1's schema cache is SQL Server (NemsuERPNew)
+- [ ] Agree whether Member 1 uses `/api/v4/analyze` (and its `normalized_query`)
 - [ ] Consume Member 2's real masked result sets (replace synthetic rows)
 - [ ] Consume Member 1's `predicted_sql` to sharpen semantic-role extraction
 - [ ] Honour Member 3's `denied_tables` and role scoping end to end *(already

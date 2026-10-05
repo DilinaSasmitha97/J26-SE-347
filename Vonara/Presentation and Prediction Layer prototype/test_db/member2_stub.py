@@ -74,6 +74,12 @@ def execute(sql: str, conn=None, max_rows: int = MAX_ROWS) -> dict:
 
     own = conn is None
     conn = conn or db_config.reader_connection()
+    if _is_sqlite(conn):
+        try:
+            return _execute_sqlite(body, conn, max_rows)
+        finally:
+            if own:
+                conn.close()
     try:
         with conn.cursor() as cur:
             cur.execute(f"SET SESSION MAX_EXECUTION_TIME = {int(TIMEOUT_MS)}")
@@ -102,6 +108,42 @@ def execute(sql: str, conn=None, max_rows: int = MAX_ROWS) -> dict:
         })
 
     rows = [[_wire(v) for v in row] for row in raw_rows]
+    return {
+        "statementType": "SELECT",
+        "columns": columns,
+        "rows": rows[:max_rows],
+        "rowCount": len(rows),
+        "truncated": len(rows) > max_rows,
+        "elapsedMs": round(elapsed, 1),
+    }
+
+
+def _is_sqlite(conn) -> bool:
+    import sqlite3
+    return isinstance(conn, sqlite3.Connection)
+
+
+def _execute_sqlite(body: str, conn, max_rows: int) -> dict:
+    """
+    The SQLite backend (Stage 6). Same result shape as the MySQL path: the
+    connection is read-only, the statement is time-limited, MySQL's functions
+    are registered (sqlite_mysql), and column sources are worked out from the
+    SQL because SQLite's driver does not report them.
+    """
+    import sqlite_mysql
+
+    deadline = time.perf_counter() + TIMEOUT_MS / 1000.0
+    conn.set_progress_handler(lambda: 1 if time.perf_counter() > deadline else 0, 10_000)
+    started = time.perf_counter()
+    cur = conn.execute(sqlite_mysql.rewrite(body))
+    raw_rows = cur.fetchall()
+    elapsed = (time.perf_counter() - started) * 1000.0
+    conn.set_progress_handler(None, 0)
+    names = [d[0] for d in cur.description or []]
+    sources = sqlite_mysql.column_sources(
+        body, names, sqlite_mysql.schema_columns(db_config.schema_ddl()))
+    columns = [{"name": n, "sourceTable": t, "sourceColumn": c} for n, (t, c) in zip(names, sources)]
+    rows = [[sqlite_mysql.wire(v) for v in row] for row in raw_rows]
     return {
         "statementType": "SELECT",
         "columns": columns,

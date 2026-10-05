@@ -8,7 +8,16 @@ purpose, mirroring the production split:
   reader - SELECT-only account used by member2_stub.py for every fixture query,
            so a fixture can never modify data even by mistake
 
-Required in .env:
+Two backends (Stage 6):
+
+  sqlite (default) - a file in test_db/output/, built into Python, so the full
+                     chain runs with no database server and no password. The
+                     reader connection is opened read-only, and MySQL's date
+                     and string functions used by the fixtures are registered
+                     so the fixture SQL runs unchanged.
+  mysql            - set DB_BACKEND=mysql in .env, plus:
+
+Required in .env for mysql:
     MYSQL_ADMIN_PASSWORD
 Optional (defaults shown):
     MYSQL_HOST=localhost  MYSQL_PORT=3306  MYSQL_ADMIN_USER=root
@@ -74,7 +83,41 @@ def admin_connection(database: str = None):
     return _connect(setting("MYSQL_ADMIN_USER", "root"), password, database)
 
 
+def backend() -> str:
+    """'sqlite' (default, no server needed) or 'mysql'."""
+    value = setting("DB_BACKEND", "sqlite").lower()
+    if value not in ("sqlite", "mysql"):
+        raise DatabaseNotConfigured(f"DB_BACKEND must be 'sqlite' or 'mysql', got {value!r}.")
+    return value
+
+
+def sqlite_path() -> Path:
+    return OUTPUT_DIR / f"{database_name()}.sqlite"
+
+
+def sqlite_connection(read_only: bool = True):
+    """Open the SQLite database with MySQL's functions registered (see sqlite_mysql)."""
+    import sqlite3
+
+    import sqlite_mysql
+
+    path = sqlite_path()
+    if read_only:
+        if not path.exists():
+            raise DatabaseNotConfigured(
+                f"{path} does not exist. Run `python test_db/seed.py` first; it builds "
+                "the SQLite database (no server or password needed).")
+        conn = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)
+    else:
+        OUTPUT_DIR.mkdir(exist_ok=True)
+        conn = sqlite3.connect(path)
+    sqlite_mysql.register(conn)
+    return conn
+
+
 def reader_connection():
+    if backend() == "sqlite":
+        return sqlite_connection(read_only=True)
     password = setting("MYSQL_READER_PASSWORD")
     if not password:
         raise DatabaseNotConfigured(

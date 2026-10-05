@@ -1,5 +1,5 @@
 """
-Seed the synthetic multi-tenant MySQL database.
+Seed the synthetic multi-tenant database (SQLite by default, MySQL optional).
 
 Each tenant's monthly totals come from a KNOWN generating process
 (synthetic_data.generate_timeseries: level + trend + seasonality + noise +
@@ -13,7 +13,8 @@ Money is split in integer cents, so SUM(amount) per month in MySQL equals the
 recorded ground-truth total to the cent.
 
 Usage:
-    python test_db/seed.py           build, load into MySQL, verify
+    python test_db/seed.py           build, load, verify (SQLite file in test_db/output/,
+                                     or MySQL when DB_BACKEND=mysql in .env)
     python test_db/seed.py --check   build in memory and verify only (no DB)
 """
 
@@ -21,6 +22,7 @@ import argparse
 import calendar
 import json
 import random
+import re
 import secrets
 import sys
 from collections import defaultdict
@@ -324,6 +326,62 @@ def verify_database(truth: dict) -> list:
     return problems
 
 
+def verify_sqlite(truth: dict) -> list:
+    """Check the SQLite file through a READ-ONLY connection, and that it cannot write."""
+    import sqlite3
+
+    problems = []
+    conn = db_config.sqlite_connection(read_only=True)
+    try:
+        for tenant, t in truth["tenants"].items():
+            got = [round(float(v), 2) for _, v in conn.execute(
+                "SELECT DATE_FORMAT(invoice_date, '%Y-%m') AS m, SUM(amount) "
+                "FROM expenses WHERE tenant_id = ? GROUP BY m ORDER BY m", (tenant,))]
+            want = [round(v, 2) for v in t["expenses"]["monthly_actual"]]
+            if got != want:
+                problems.append(f"{tenant}: SQLite monthly expense sums differ from ground truth")
+        try:
+            conn.execute("DELETE FROM expenses WHERE expense_id = -1")
+            problems.append("the reader connection was able to run DELETE - it must be read-only")
+        except sqlite3.OperationalError:
+            pass  # expected: attempt to write a readonly database
+    finally:
+        conn.close()
+    return problems
+
+
+def load_sqlite(dataset: dict) -> None:
+    """Rebuild the SQLite file from schema.sql (MySQL INDEX lines become CREATE INDEX)."""
+    path = db_config.sqlite_path()
+    if path.exists():
+        path.unlink()
+    conn = db_config.sqlite_connection(read_only=False)
+    try:
+        for stmt in _statements(schema_ddl()):
+            indexes, kept = [], []
+            for line in stmt.splitlines():
+                m = re.match(r"\s*INDEX\s+(\w+)\s*\(([^)]*)\)", line, re.IGNORECASE)
+                if m:
+                    indexes.append((m.group(1), m.group(2)))
+                else:
+                    kept.append(line)
+            body = re.sub(r",\s*\)\s*$", "\n)", "\n".join(kept).rstrip())
+            conn.execute(body)
+            table = re.search(r"create\s+table\s+(\w+)", body, re.IGNORECASE)
+            for name, cols in indexes:
+                conn.execute(f"CREATE INDEX {name} ON {table.group(1)} ({cols})")
+        for table, rows in dataset["tables"].items():
+            cols = COLUMNS[table]
+            conn.executemany(
+                f"INSERT INTO {table} ({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})",
+                [[v.isoformat() if isinstance(v, date) else v for v in row] for row in rows])
+            print(f"  {table:<16} {len(rows):>6} rows")
+        conn.commit()
+    finally:
+        conn.close()
+    print(f"  written to {path}")
+
+
 # ==========================================================================
 # Loading
 # ==========================================================================
@@ -406,6 +464,13 @@ def main() -> int:
     print(f"  ground truth written to {OUTPUT_DIR / 'ground_truth.json'}")
 
     if args.check:
+        _report(problems)
+        return 1 if problems else 0
+
+    if db_config.backend() == "sqlite":
+        print(f"\nLoading into SQLite ({db_config.sqlite_path().name})...")
+        load_sqlite(dataset)
+        problems += verify_sqlite(dataset["truth"])
         _report(problems)
         return 1 if problems else 0
 

@@ -320,6 +320,28 @@ raises `ORDERING_DIRECTION_AMBIGUOUS`; resolve it with schema knowledge.
     `FORECAST_WITHOUT_LATEST_POINT` or `FORECAST`). The verdict set is
     unchanged. When `basis` is `FORECAST_WITHOUT_LATEST_POINT`, a
     `RECOVERING` verdict is provisional and the summary says so.
+- **Stage 6 changes (integration rehearsal):**
+  - `use_llm` now defaults to **false** on `/api/v4/analyze` and
+    `/api/v4/present` (and in `pipeline.run`). Before, any deployment with an
+    LLM key sent every question and the schema to the provider unless the
+    caller opted out. Send `"use_llm": true` to opt in.
+  - `prediction_request.prediction_trigger` can be **`DECLINED`**: the user
+    turned the forecast down ("without a forecast", "no predictions please").
+    `prediction_required` is then false, no forecast is produced, and the LLM
+    cannot switch it back on. Treat it like `NONE` when deciding whether to
+    show forecast controls.
+  - `stage_2_readiness.reason_codes` / `warnings` can include
+    **`PARTIAL_EDGE_PERIOD`**: the first or last period is under 40 % of the
+    typical one and may be incomplete (e.g. "this month so far"). The forecast
+    is still produced, with the caution.
+  - Distribution and correlation questions now get a histogram or a scatter
+    plot (`visualization._meta.chart_type` = `histogram` / `scatter`) instead
+    of a table; a grouped result of up to 30 text categories (e.g. 15 vendors)
+    is charted by category.
+  - Verified end to end over HTTP with stand-ins for Members 1-3 (77 questions,
+    `test_db/run_api_rehearsal.py`): no contract field missing or mistyped, no
+    unmasked PII value in any response, denied tables never bound, no cache hit
+    across tenants. See `integration_rehearsal.md`.
 - **Stage 5 changes (intent classification):**
   - A scalar question about the future ("how much will I spend next month")
     now returns one `answer` block with `is_forecast: true`, the projected

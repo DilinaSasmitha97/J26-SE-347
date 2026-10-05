@@ -65,7 +65,7 @@ def analyze_only(
     user_query: str,
     schema_meta=None,
     security_context: dict = None,
-    use_llm: bool = True,
+    use_llm: bool = False,
 ) -> dict:
     """
     Part 1 in isolation: understand the request without executing it.
@@ -92,7 +92,7 @@ def run(
     schema_meta=None,
     schema_types: dict = None,
     security_context: dict = None,
-    use_llm: bool = True,
+    use_llm: bool = False,
     use_llm_summary: bool = False,
     confidence_level: float = 0.95,
     horizon: int = None,
@@ -314,6 +314,7 @@ def run(
         decided = response_intent_mod.apply_guardrails(
             decided, profile, rows,
             forecast_requested=analysis.prediction_trigger == "EXPLICIT",
+            analytic_intent=analysis.primary_intent,
         )
 
     # ---- Part 2: adaptive visualization + grammar extension -------------

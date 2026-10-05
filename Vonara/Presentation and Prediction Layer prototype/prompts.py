@@ -78,7 +78,7 @@ aggregation: SUM | AVG | COUNT | MIN | MAX | NONE
 granularity: HOUR | DAY | WEEK | MONTH | QUARTER | YEAR | NONE
 column role:  TEMPORAL | MEASURE | DIMENSION | IDENTIFIER | BOOLEAN | UNSUPPORTED
 table role:   FACT | DIMENSION | BRIDGE
-prediction_trigger: EXPLICIT | IMPLICIT | NONE
+prediction_trigger: EXPLICIT | IMPLICIT | NONE   (DECLINED is set by the rules only)
   - EXPLICIT when the user asks to predict/forecast/project the future.
   - IMPLICIT when they ask a time-trend question that a forecast would extend.
   - NONE otherwise.

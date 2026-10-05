@@ -351,6 +351,23 @@ def profile_results(rows: list, schema_types: dict = None, analysis=None) -> Res
         values = [row.get(name) for row in rows]
         profile.columns.append(_profile_column(name, values, schema_types.get(name)))
 
+    # A result that is exactly one text column beside its measures is the shape
+    # of a GROUP BY: the text column is the grouping, unique by construction.
+    # _LOW_CARDINALITY_FLOOR covers that for up to 12 groups; above it a total
+    # per vendor for 15 vendors was read as a key and had no axis to chart
+    # (Stage 6, integration fixture P04). The 30-category cap and the key-name
+    # test still apply.
+    text_columns = [c for c in profile.columns if c.inferred_type == "string"]
+    if (len(text_columns) == 1 and len(profile.columns) >= 2
+            and text_columns[0].role == ColumnRole.IDENTIFIER.value
+            and text_columns[0].distinct_count <= _MAX_DIMENSION_CARDINALITY
+            and all(c.role == ColumnRole.MEASURE.value
+                    for c in profile.columns if c is not text_columns[0])):
+        name_l = text_columns[0].name.lower()
+        if not (name_l in ("id", "key", "code", "uuid", "guid")
+                or name_l.endswith(("_id", "_key", "_code", "_uuid", "_no", "_num"))):
+            text_columns[0].role = ColumnRole.DIMENSION.value
+
     temporal_candidates = [c.name for c in profile.columns if c.role == ColumnRole.TEMPORAL.value]
     profile.measure_columns = [c.name for c in profile.columns if c.role == ColumnRole.MEASURE.value]
     profile.dimension_columns = [

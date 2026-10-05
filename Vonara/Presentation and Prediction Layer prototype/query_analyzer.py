@@ -60,7 +60,8 @@ INTENT_MARKERS = {
     QueryIntent.TREND_ANALYSIS: {
         3: ["over time", "trend", "month by month", "year over year", "yoy",
             "growth rate", "time series", "monthly", "quarterly", "daily",
-            "weekly", "annually", "per month", "per quarter", "per year",
+            "weekly", "annually", "yearly", "per month", "per quarter", "per year",
+            "by month", "by quarter", "by year", "by week", "by day",
             "per day", "per week", "over the last", "history of", "historical"],
         2: ["growth", "increase", "decrease", "rise", "fall", "change",
             "evolution", "progress", "since", "each month", "each year"],
@@ -74,7 +75,7 @@ INTENT_MARKERS = {
             r"\b(?:for|in|of|by)[ ]each\b", r"\beach (?!other\b)[a-z]+\b.{0,20}\b(?:has|have|had|is|are|was|were)\b"],
         2: ["by region", "by department", "by category", "by product",
             "by team", "by branch", "across", "between"],
-        1: ["each", "per "],
+        1: ["each", r"\bper[ ]"],
     },
     QueryIntent.RANKING: {
         3: ["top ", "bottom ", "highest", "lowest", "best performing",
@@ -146,6 +147,15 @@ INTENT_MARKERS = {
             r"(?:the|all|a|an|each|every)\b|(?:which|what|who|where)[ ])"],
     },
 }
+
+# A forecast the user turned down ("without a forecast", "no predictions
+# please"). Before Stage 6 these words were matched as a REQUEST, so the opt-out
+# produced a forecast; and nothing could turn off the implicit forecast a trend
+# question gets.
+PREDICTION_DECLINED = re.compile(
+    r"\b(?:no|not|without|don'?t|do not|never|skip|exclude|excluding|leave out)\s+"
+    r"(?:\w+\s+){0,2}?(?:forecasts?|forecasting|predictions?|predict|projections?|project)\b"
+)
 
 # Explicit forecast requests.
 PREDICTION_EXPLICIT = [
@@ -789,7 +799,8 @@ def _rule_analysis(user_query: str, tables: dict) -> QueryAnalysis:
 
     horizon = _detect_horizon(text)
     what_if = _detect_what_if(text)
-    explicit_pred = any(m in text for m in PREDICTION_EXPLICIT)
+    declined = PREDICTION_DECLINED.search(text) is not None
+    explicit_pred = not declined and any(m in text for m in PREDICTION_EXPLICIT)
 
     # A forecast request is inherently a question about a series over time, so
     # a scalar or lookup reading cannot be correct. Promote before the chart
@@ -820,7 +831,11 @@ def _rule_analysis(user_query: str, tables: dict) -> QueryAnalysis:
     elif not temporal:
         _, temporal = _infer_from_fact_table(tables, table_bindings, text)
 
-    if explicit_pred or what_if.present:
+    if declined and not what_if.present:
+        # The user said no: no explicit forecast and no implicit one either.
+        trigger = "DECLINED"
+        required = False
+    elif explicit_pred or what_if.present:
         trigger = "EXPLICIT"
         required = True
     elif intent is QueryIntent.TREND_ANALYSIS and temporal:
@@ -1081,6 +1096,13 @@ def _as_list(value) -> list:
 # Below this, the LLM's intent is not trusted over the rule engine's.
 LLM_INTENT_TRUST_THRESHOLD = 0.60
 
+# At or above this the rule engine's intent stands even against a confident
+# LLM (Stage 6). Before, a confident LLM always won; on 60 Spider TEST
+# questions that lowered intent agreement from 91.7 % to 81.7 % while the
+# response shape, which already used this policy, improved. Same value as
+# response_intent.LEXICAL_TRUST_THRESHOLD.
+RULE_INTENT_TRUST_THRESHOLD = 0.55
+
 # Warning tags that carry a security meaning downstream. These may only be
 # raised by the deterministic rule engine, whose decision is reproducible and
 # traceable to an inspectable pattern. If the LLM emits one it is recorded in
@@ -1097,7 +1119,9 @@ def _merge(rule: QueryAnalysis, llm_out: dict) -> QueryAnalysis:
     Combine the two analyses under an explicit, auditable policy.
 
     Policy:
-      * intent          - LLM if confident and in-vocabulary, else rule.
+      * intent          - LLM if confident, in-vocabulary AND the rule verdict
+                          is weak (below RULE_INTENT_TRUST_THRESHOLD or
+                          UNKNOWN); a confident rule verdict stands.
       * schema binding  - union, LLM entries already reality-checked.
       * prediction flag - logical OR (missing a wanted forecast is the worse
                           error; an unwanted one is discarded by readiness).
@@ -1112,7 +1136,10 @@ def _merge(rule: QueryAnalysis, llm_out: dict) -> QueryAnalysis:
     llm_intent = llm_out["primary_intent"]
     llm_conf = llm_out["intent_confidence"]
 
-    if llm_intent != QueryIntent.UNKNOWN.value and llm_conf >= LLM_INTENT_TRUST_THRESHOLD:
+    rule_weak = (rule.primary_intent == QueryIntent.UNKNOWN.value
+                 or rule.intent_confidence < RULE_INTENT_TRUST_THRESHOLD)
+    if (llm_intent != QueryIntent.UNKNOWN.value and llm_conf >= LLM_INTENT_TRUST_THRESHOLD
+            and (rule_weak or llm_intent == rule.primary_intent)):
         if llm_intent != rule.primary_intent:
             decisions.append(
                 f"intent: LLM '{llm_intent}' ({llm_conf:.2f}) overrode rule "
@@ -1178,7 +1205,11 @@ def _merge(rule: QueryAnalysis, llm_out: dict) -> QueryAnalysis:
         merged.limit = llm_out["limit"]
 
     # --- prediction: OR, with the more specific horizon winning ---------
-    merged.prediction_required = rule.prediction_required or llm_out["prediction_required"]
+    # A DECLINED forecast is never switched back on by the model: the logical
+    # OR below would otherwise turn "without a forecast" into a forecast
+    # whenever the LLM read the word "forecast" as a request (Stage 6).
+    merged.prediction_required = (rule.prediction_trigger != "DECLINED"
+                                  and (rule.prediction_required or llm_out["prediction_required"]))
     if rule.prediction_trigger == "NONE" and llm_out["prediction_trigger"] != "NONE":
         merged.prediction_trigger = llm_out["prediction_trigger"]
     if rule.horizon.source != "EXPLICIT" and llm_out["horizon"].source == "EXPLICIT":
@@ -1244,7 +1275,7 @@ def analyze(
     user_query: str,
     schema_meta=None,
     security_context: dict = None,
-    use_llm: bool = True,
+    use_llm: bool = False,
     profiler=None,
 ) -> QueryAnalysis:
     """

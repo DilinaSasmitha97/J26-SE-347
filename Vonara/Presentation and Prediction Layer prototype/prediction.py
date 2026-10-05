@@ -431,6 +431,22 @@ _VERDICT_CODES = {
 }
 
 
+PARTIAL_EDGE_RATIO = 0.40       # an edge period below this share of the median is flagged
+MIN_POINTS_PARTIAL_EDGE = 6
+
+
+def _partial_edge_periods(values: list) -> list:
+    """'first' / 'last' when that period is far below the median of the others."""
+    if len(values) < MIN_POINTS_PARTIAL_EDGE or min(values) < 0:
+        return []
+    inner = sorted(values[1:-1])
+    median = inner[len(inner) // 2]
+    if median <= 0:
+        return []
+    return [name for name, v in (("first", values[0]), ("last", values[-1]))
+            if v < PARTIAL_EDGE_RATIO * median]
+
+
 def _warn(report, code: str, message: str) -> None:
     report.warnings.append({"code": code, "message": message})
     report.reason_codes.append(code)
@@ -590,6 +606,19 @@ def _assess_readiness(profile, rows: list, value_column: str = None) -> Readines
         _warn(report, "NEAR_CONSTANT",
               f"Values vary by under {NEAR_CONSTANT_CV * 100:.0f}% of their level; the "
               "forecast will add little beyond the current value.")
+
+    # A first or last period far below the rest is often incomplete: data that
+    # starts mid-week, or "this month so far". A forecast built on a partial
+    # last period starts from a level that is not real. Rows alone cannot prove
+    # a period is partial - a genuine collapse looks the same - so this only
+    # discloses the risk; nothing is dropped (Stage 6: integration fixture F07,
+    # whose first "week" held 3 tickets against a typical 31).
+    edge = _partial_edge_periods(values)
+    for position in edge:
+        _warn(report, "PARTIAL_EDGE_PERIOD",
+              f"The {position} period is under {PARTIAL_EDGE_RATIO * 100:.0f}% of the typical "
+              "period and may be incomplete (for example a period still in progress); "
+              "check it before relying on the forecast.")
 
     report.stationarity = stationarity_evidence(values)
     if report.stationarity.get("verdict") == "CONFLICT":
