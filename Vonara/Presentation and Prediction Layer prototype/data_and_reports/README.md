@@ -193,7 +193,7 @@ region: one series per category, forecast separately), `EVENTS` (raw rows) or
 `CROSS_SECTIONAL` — because treating a grouped result as one series
 interleaves the categories and every per-period statistic computed on it is
 wrong.
-| 5 Anomaly detection | `anomaly.detect_anomalies` | adaptive IQR/Z thresholds, applied to past **and** forecast |
+| 5 Anomaly detection | `anomaly.detect_anomalies` | adaptive IQR/Z thresholds, applied to past **and** forecast, in the raw, detrended or **STL seasonal** space; each historical anomaly labelled **SPIKE / SUSTAINED / UNCONFIRMED** |
 | 6 What-if | `whatif.simulate` | NL scenario → bounded parametric perturbation, all outputs regenerate |
 
 Two design decisions worth defending in the report:
@@ -206,6 +206,21 @@ entire growth range, so real local spikes sit comfortably inside it. When trend
 R² ≥ 0.50 the detector measures dispersion on residuals instead. This is the
 single change that took anomaly recall from 0.25 to 0.50 (see below), and it is
 why the threshold is genuinely *adaptive* rather than merely rescaled.
+
+**Seasonal anomaly detection (Stage 3).** Linear detrending cannot remove a
+periodic pattern, so on seasonal series the seasonal peaks set the fence. With
+at least three full cycles and an STL seasonal strength ≥ 0.40, points are
+judged against a robust periodic STL expectation (trend + same-phase season)
+and the fence is built from the plain STL remainder, widened by
+√(n / (n − df)). Forecasts from non-seasonal models are screened in the level
+space, so a naive forecast is not flagged for lacking a seasonal shape.
+
+**Spike vs level shift (Stage 3).** A spike and the start of a shift look the
+same when they happen. Each anomaly is labelled from its neighbours — SPIKE,
+SUSTAINED, or UNCONFIRMED when it is isolated in the latest period — and
+anomaly persistence uses the label: an observed return is RECOVERING, a
+sustained run is judged on the forecast, and a single latest anomaly is
+projected without itself (stated as provisional in the summary).
 
 ---
 
@@ -376,22 +391,43 @@ the other verdicts, which is why disagreement is shown as a caution.
 | …in the 24 sets where the leader changes | 29.2 % | 0 % |
 | …when the strategy calls the lead "clear" (88 sets) | **100 %** | — |
 | Share error next period | **1.62 pp** (p = 0.003) | 1.74 pp (shares persist) |
-| Anomaly persistence verdict (169 detected events) | **71.6 %** | 52.7 % (best constant answer) |
-| …one-off spikes / level shifts | 59.8 % / 84.1 % | — |
+| Anomaly persistence, spike + shift (169 events, Stage 2 → Stage 3) | 71.6 % → **88.8 %** | — |
+| …one-off spikes | 59.8 % → **95.4 %** | — |
+| …level shifts over the last two periods | 84.1 % → 81.7 % | — |
+| …shift starting in the very last period (new case, 92 events) | **2.2 %** | — |
 
-Spikes are the weak case: when the guard picks the naive model, a spike in the
-last period is carried forward and called persistent. Open issue for Stage 3.
+Stage 3 stops a latest-period spike being carried forward by a naive model.
+The cost is the new SHIFT_LAST case: a shift that has lasted one period is the
+same single point as a spike, and is now called recovering. Which error is
+cheaper depends on how often one-off spikes outnumber fresh shifts in real
+data — unknown until Member 2's real result sets are available.
 
-**3. Anomaly detection** — 6 labelled processes, 12 injected anomalies
+**3. Anomaly detection** — `python evaluate_anomalies.py` (Stage 3 benchmark)
 
-| method | precision | recall | F1 | FPR |
+144 labelled series per split (length 24/36/48 × flat/trend/seasonal/
+trend+seasonal × noise 3/8/15 % × 4), 0–3 injected spikes or dips of 3/4/6 σ;
+324 predictive series (normal / shift / last-period spike). Designed on DEV
+(seed 2026); TEST (seed 2027) reported with frozen code. Full tables:
+`anomaly_benchmark.md`.
+
+| TEST, historical | Precision | Recall | F1 | Seasonal F1 | Trend+seasonal F1 |
+|---|---|---|---|---|---|
+| Static (textbook) | 0.768 | 0.330 | 0.462 | 0.381 | 0.192 |
+| Stage 2 rule (no STL) | 0.817 | 0.409 | 0.545 | 0.231 | 0.197 |
+| IQR alone (+ STL) | 0.701 | 0.500 | **0.584** | 0.400 | 0.409 |
+| Z-score alone (+ STL) | 0.711 | 0.374 | 0.490 | 0.375 | 0.345 |
+| **Combined (+ STL)** | 0.671 | **0.504** | 0.576 | 0.382 | 0.396 |
+
+| TEST, predictive | Precision | Recall | F1 | Normal series warned |
 |---|---|---|---|---|
-| **Adaptive (detrended IQR/Z)** | 1.00 | **0.50** | **0.67** | 0.000 |
-| Static (textbook 1.5·IQR) | 1.00 | 0.25 | 0.40 | 0.000 |
+| Stage 2 rule (no STL) | 0.630 | 0.358 | 0.457 | 1.9 % |
+| **Combined (+ STL)** | 0.581 | 0.420 | **0.487** | 6.5 % |
 
-The adaptive method **doubles recall at zero false positives**. Remaining
-misses are all on seasonal series, where linear detrending cannot remove a
-periodic component — open issue #2.
+The STL space roughly doubles F1 on seasonal and trend+seasonal series and
+raises recall overall, at a cost in precision (0.82 → 0.67). Of the two rules,
+the IQR fence carries the detection: Z-score alone is weakest, and combining
+the two adds recall but not F1 on held-out data. On the 6-case Stage 1 set
+(`python evaluate.py anomaly`) the seasonal case goes from recall 0 to 0.50.
 
 **4. Summary grounding** — 465 numbers across 12 summaries: **100 % traceable**.
 
@@ -439,11 +475,14 @@ this layer depends on.
 | `evaluate_strategies.py` | Stage 1 strategy benchmark vs naive answers |
 | `evaluate_readiness.py` | readiness-decision benchmark on 85 labelled result sets |
 | `test_readiness.py` | readiness decision, calendar handling, ADF + KPSS, SARIMA bands, caution delivery |
+| `evaluate_anomalies.py` | Stage 3 labelled anomaly benchmark: rules compared, historical and predictive scored separately |
+| `test_anomaly.py` | detection rules, STL seasonal space, forecast screening space, spike/shift patterns, persistence |
 | `strategies.py` | **Part 4** — Stage 1 strategy execution |
 | `input_adapter.py` | Member 2 columnar result → row dicts |
 | `benchmark_data/` | M4 development sample (seed 2026), held-out test sample (seed 2027) + `prepare_m4_sample.py` |
 | `test_db/` | synthetic MySQL database + 77 integration fixtures |
-| `forecast_benchmark.md`, `strategy_benchmark.md`, `readiness_benchmark.md` | generated benchmark reports |
+| `forecast_benchmark.md`, `strategy_benchmark.md`, `readiness_benchmark.md`, `anomaly_benchmark.md` | generated benchmark reports |
+| `stage2_completion_report.md`, `stage3_completion_report.md` | stage reports |
 | `synthetic_data.py` | labelled generators + 12-scenario benchmark |
 | `intent_testset.json` | 48 labelled intent cases |
 | `response_intent_dataset.csv` | 125-input response-intent development corpus |

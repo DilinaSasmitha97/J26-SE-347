@@ -20,7 +20,7 @@ what-if scenario simulations.
 | 5 | Data readiness feasibility classifier | `assess_readiness` | ✅ Stage 2: three-level decision, ADF + KPSS, completeness, forecastability | held-out M4 precision 0.90 (target 0.80); 85/85 labelled cases |
 | 6 | Dual-signal model selection algorithm | `select_model` + benchmark guard | ⚠️ best on held-out M4 but not significantly better than naive (p = 0.81); rules alone worse (p = 0.001) | rolling-origin benchmark |
 | 7 | Lightweight confidence-bounded forecasting | `project_series` | ✅ 94.5 % coverage of nominal 95 % on held-out M4 | rolling-origin benchmark |
-| 8 | Dual-dimension adaptive anomaly detection | `anomaly.py` | ✅ working | recall 0.25 → 0.50 |
+| 8 | Dual-dimension adaptive anomaly detection | `anomaly.py` | ⚠️ Stage 3: STL seasonal space, spike/shift patterns; precision falls 0.82 → 0.67 | held-out labelled benchmark: F1 0.545 → 0.576, seasonal F1 0.23 → 0.38; persistence 71.6 % → 88.8 % |
 | 9 | NL-driven what-if simulation engine | `whatif.py` | ✅ working | scenario deltas |
 | 10 | Unified temporal summarization framework | `summarization.py` | ✅ working | 100 % grounded |
 
@@ -70,11 +70,28 @@ Carried to later stages:
 
 - [ ] Selection that beats naive significantly (Stage 2 shows "matches and is
       calibrated"); in-history validation over all candidates is the candidate
-- [ ] Spike vs level-shift distinction in anomaly persistence (Stage 3)
+- [x] Spike vs level-shift distinction in anomaly persistence (Stage 3)
+
+### Phase 2c — Stage 3: anomaly engine (branch `vonara-nl-to-sql-prototype-stage-3`)
+
+- [x] Labelled anomaly benchmark (`evaluate_anomalies.py`): DEV / TEST seeds,
+      historical and predictive dimensions scored separately (§3.11)
+- [x] IQR alone vs Z-score alone vs combined vs static (§3.7)
+- [x] **#2** STL seasonal detection space (robust location, plain-fit spread,
+      degrees-of-freedom correction; ≥ 3 cycles, strength ≥ 0.40 chosen on DEV)
+- [x] Forecast points screened in the space their model produced them in
+- [x] SPIKE / SUSTAINED / UNCONFIRMED patterns; persistence uses them
+
+Carried to later stages:
+
+- [ ] Anomaly precision on seasonal series (0.40 held out) and the higher
+      false-alarm rate on clean series (14/33 vs 6/33)
+- [ ] A shift that starts in the latest period is called recovering (2.2 %);
+      needs real-data base rates to choose the trade-off
+- [ ] Validation of the anomaly engine on real (non-synthetic) labelled data
 
 ### Phase 2b — remaining hardening
 
-- [ ] **#2** STL decomposition for seasonal anomaly detection (Stage 3)
 - [ ] **#3** Independent/blind intent test split + relabelled Spider/BIRD subset
 - [ ] Enable LLM narration; measure verifier rejection rate
 

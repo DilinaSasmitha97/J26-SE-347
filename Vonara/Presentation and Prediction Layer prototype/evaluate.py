@@ -312,7 +312,7 @@ def evaluate_anomaly() -> dict:
         gold = set(truth["anomaly_indices"])
         n = len(values)
 
-        adaptive = anomaly_mod.detect_anomalies(values, labels)
+        adaptive = anomaly_mod.detect_anomalies(values, labels, period=12)
         static = anomaly_mod.detect_anomalies(values, labels, static_baseline=True)
 
         adaptive_idx = {a.index for a in adaptive.historical_anomalies}
@@ -334,6 +334,7 @@ def evaluate_anomaly() -> dict:
                     **a_score,
                     "detected": sorted(adaptive_idx),
                     "detrended": adaptive.detrended,
+                    "seasonal": adaptive.seasonal,
                     "regime": adaptive.volatility_regime,
                 },
                 "static": {**s_score, "detected": sorted(static_idx)},
@@ -496,7 +497,8 @@ def print_anomaly(report: dict) -> None:
     print(f"\n  {'Case':<26}{'inj':>4}  {'adaptive':<20}{'static':<18}{'space':<10}")
     for c in report["per_case"]:
         injected = len(c["injected"])
-        space = "residual" if c["adaptive"]["detrended"] else "raw level"
+        space = ("STL remainder" if c["adaptive"].get("seasonal")
+                 else "residual" if c["adaptive"]["detrended"] else "raw level")
         print(f"  {c['case']:<26}{injected:>4}  "
               f"{cell(c['adaptive'], injected):<20}"
               f"{cell(c['static'], injected):<18}{space:<10}")

@@ -296,6 +296,22 @@ raises `ORDERING_DIRECTION_AMBIGUOUS`; resolve it with schema knowledge.
     when the benchmark guard overrides the rules; `signals.guard` says why.
   - A grouped chart gains rule `R5_CATEGORY_FORECASTS` (one dashed line and
     band per category); `_meta.category_forecasts_layered` reports it.
+- **Stage 3 additions (anomaly engine), all additive:**
+  - `stage_5_anomaly.method` can be `ADAPTIVE_IQR_ZSCORE_STL`: the series
+    was screened in the STL seasonal space. `seasonal` (bool),
+    `seasonal_strength` (0–1) and `period` say why; `predictive_space`
+    (`SEASONAL`, `DETRENDED` or `RAW`) says which space the forecast points
+    were screened in.
+  - Each entry of `historical_anomalies` carries `pattern`: `SPIKE`
+    (isolated, the next period is back in range), `SUSTAINED` (two or more
+    consecutive same-direction anomalies: a level shift) or `UNCONFIRMED`
+    (isolated, in the latest period). `predictive_warnings` entries have an
+    empty `pattern`.
+  - The `ANOMALY_PERSISTENCE` strategy result adds `details.pattern`,
+    `details.run_length` and `details.basis` (`OBSERVED_RETURN`,
+    `FORECAST_WITHOUT_LATEST_POINT` or `FORECAST`). The verdict set is
+    unchanged. When `basis` is `FORECAST_WITHOUT_LATEST_POINT`, a
+    `RECOVERING` verdict is provisional and the summary says so.
 - **`response.forecast_notice` is present whenever the user explicitly asked for
   a prediction**, in every response shape, and absent otherwise:
   ```json
