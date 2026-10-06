@@ -182,10 +182,34 @@ For our research group's enterprise product:
 * In multi-tenant databases with 100+ tables, users refer to entities by business codes, vendor names, and customer acronyms.
 * Active probing allows the engine to ground un-aliased business terms directly to specific enterprise columns in $< 5\text{ms}$, while strictly scoping queries by `Tenant_ID` to preserve Member 3 multi-tenant isolation.
 
-### 6. Intent-Weighted Canonical Join Routing & Negation Guards (Stage 8A)
-Stage 8A systematically addressed the 23 Join Errors observed in Stage 7, advancing Yale Execution Accuracy to **84.24% (871 / 1,034)** (+7 net queries) and Strict Set Accuracy to **81.24% (840 / 1,034)** (+9 net queries):
+### 6. Intent-Weighted Canonical Join Routing & Negation Guards (Stage 8A SOTA)
+Stage 8A systematically addressed the 23 Join Errors observed in Stage 7, advancing Yale Execution Accuracy to **84.24% (871 / 1,034)** (+7 net queries over Stage 7) and Strict Set Accuracy to **81.24% (840 / 1,034)** (+9 net queries over Stage 7):
 * **Healed Relational Subgraphs:** Resolved multi-table join confusion across 28 queries (including the Extra Hard 4-table join Idx 152 in `car_1` and multi-row entity matching Idx 769 in `world_1`).
 * **Negation Protection Invariant:** The negation intent detector (`detect_negation_intent`) successfully prevented forced `INNER JOIN`s on negative queries, instructing anti-joins (`WHERE ID NOT IN`).
 * **Zero Easy-Tier Prompt Poisoning:** Strict minimal gating (silent when $< 2$ tables are selected) maintained Easy tier accuracy at **89.74% (411 / 458)** with zero degradation.
-* **Next Target for Stage 8B:** Detailed confusion matrix analysis of the 24 regressed queries revealed that the primary remaining failure mode is **row multiplicity and `DISTINCT` polarity** (e.g. Idx 76 omitting `DISTINCT` on 1:N joins), providing direct empirical justification for **Stage 8B: Cardinality & DISTINCT Reform**.
+* **Peak Production Status:** Stage 8A represents our reigning State-of-the-Art benchmark peak and serves as the active production translation core on branch `dilina-nl-to-sql-prototype-stage-8a-join-router`.
+
+---
+
+## Empirical Ablations & Negative Results (Scientific Discovery)
+
+A hallmark of genuine scientific research is the rigorous exploration, documentation, and isolation of architectural hypotheses that produce negative empirical outcomes. Two extensive ablations were conducted to resolve the remaining `DISTINCT` row-multiplicity mismatch ceiling:
+
+### 1. Stage 8B Ablation: Cardinality & DISTINCT Reform (82.98% Yale EX / 79.79% Strict EX)
+* **Hypothesis:** Multi-table 1:N joins naturally duplicate primary entities. Adding a prompt guideline (`-- Cardinality Rule: Multi-table joins often produce duplicate rows; use SELECT DISTINCT unless exact multiset duplicates are requested`) will eliminate row multiplicity mismatches.
+* **Empirical Outcome:** **82.98% (858 / 1,034)** (-13 queries net regression vs Stage 8A). Diff-in-diff: 40 healed vs 53 regressed.
+* **Root Cause:** Unconstrained positive prompting caused pervasive **over-deduplication**. On queries demanding true multiset cardinality (e.g. counting occurrences, aggregate distributions, or natural duplicates in benchmark evaluation), the model stripped valid rows, converting correct queries into false negatives.
+* **Isolation:** Cleanly rejected and isolated on branch `dilina-nl-to-sql-prototype-stage-8b-cardinality-distinct`.
+
+### 2. Stage 8C Ablation: Bidirectional Lexical DISTINCT Contract (81.82% Yale EX / 78.92% Strict EX)
+* **Hypothesis:** Constraining `DISTINCT` symmetrically—demanding explicit lexical triggers (`different`, `distinct`, `unique`) and strictly prohibiting `DISTINCT` otherwise—will prevent Stage 8B over-deduplication while preserving required deduplication.
+* **Empirical Outcome:** **81.82% (846 / 1,034)** (-25 queries net regression vs Stage 8A). Diff-in-diff: 21 healed vs 46 regressed. Aggregation errors exploded from 10 to 24 (+140%).
+* **Root Cause (Cognitive Distortion):** 
+  1. *Aggregate Function Stripping:* Questions with lexical cues like *"How many different types..."* triggered the positive rule literally, causing the LLM to output `SELECT DISTINCT PetType` instead of `SELECT COUNT(DISTINCT PetType)`.
+  2. *Suppression of Implicit Deduplication:* Natural English phrasing implying uniqueness without exact trigger words (*"every student who has a pet"*, *"all makers"*) was blocked by the negative prohibition from emitting necessary `DISTINCT` keywords.
+* **Isolation:** Cleanly rejected and isolated on branch `dilina-nl-to-sql-prototype-stage-8c-lexical-distinct`.
+
+### 3. Core Scientific Conclusion on Prompt-Level DISTINCT Micromanagement
+Natural language meta-rules in system prompts cannot resolve SQL cardinality polarity. Whether phrased positively (Stage 8B) or bidirectionally (Stage 8C), meta-rules create severe cognitive interference with the LLM's semantic reasoning. Relational cardinality alignment cannot be solved via prompt engineering; it requires post-generation execution AST validation or remains best handled by Stage 8A's uninhibited baseline reasoning.
+
 

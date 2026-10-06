@@ -24,6 +24,8 @@ Its primary responsibility is to accept an unconstrained natural language query,
   * **Average Prompt Tokens / Query:** **596.1 tokens** (Economically Pareto-optimal context)
   * **Local Pipeline Latency:** **< 25 ms** (SLA enterprise compliant)
 * **Status of Stage 6:** Multi-Candidate Consistency Decoding regressed to **79.59%** with a 300% token bloat ($>1,600$ tokens/query) and was **cleanly rejected and isolated** on git branch `dilina-nl-to-sql-prototype-stage-6-consistency-engine`. It is **NOT** included in the production pipeline.
+* **Status of Exploratory Stage 8B & 8C Ablations:** Experimental prompt-level `DISTINCT` micromanagement hypotheses regressed (Stage 8B regressed to **82.98%** via over-deduplication on multiset queries; Stage 8C regressed to **81.82%** via aggregate stripping and suppression of natural deduplication). Both were thoroughly evaluated on the full 1,034 benchmark, documented, and **cleanly isolated** on their respective research branches (`dilina-nl-to-sql-prototype-stage-8b-cardinality-distinct` and `dilina-nl-to-sql-prototype-stage-8c-lexical-distinct`). **Stage 8A remains the reigning, production-grade State-of-the-Art.**
+
 
 ---
 

@@ -206,6 +206,21 @@ def create_master_document():
         "4. Downstream Chart Visualization (Member 4 Alignment): Clean, verified relational result sets feed directly into Member 4's "
         "automated Vega-Lite charting and predictive analytics pipeline."
     )
+    p.paragraph_format.space_after = Pt(8)
+
+    # --- SECTION 5: EMPIRICAL ABLATIONS & NEGATIVE RESULTS ---
+    add_heading_1("5. Empirical Ablations & Negative Results (DISTINCT Reforms)")
+    p = doc.add_paragraph(
+        "Rigorous scientific progress requires thoroughly isolating hypotheses that fail under empirical evaluation:\n\n"
+        "1. Stage 8B Ablation (Cardinality & DISTINCT Reform): 82.98% Yale EX (858/1,034), net regression of -13 queries. "
+        "Prompting the model that multi-table joins produce duplicate rows induced pervasive over-deduplication, stripping valid "
+        "multiset rows and regressing 53 queries.\n"
+        "2. Stage 8C Ablation (Bidirectional Lexical Contract): 81.82% Yale EX (846/1,034), net regression of -25 queries. "
+        "Constraining DISTINCT strictly to lexical trigger words caused aggregate function stripping (COUNT(DISTINCT) -> SELECT DISTINCT, "
+        "causing a 140% spike in aggregation errors) and suppressed implicit deduplication for natural phrasing.\n\n"
+        "Conclusion: Natural language prompt-level micromanagement of DISTINCT is an empirical dead end. Stage 8A (Intent Join Routing, "
+        "84.24% Yale EX / 81.24% Strict EX) remains the reigning, uncontested State-of-the-Art baseline."
+    )
 
     # Save document
     output_path = os.path.join(os.path.dirname(__file__), "Master_Research_Comparison_Report.docx")
@@ -214,3 +229,4 @@ def create_master_document():
 
 if __name__ == "__main__":
     create_master_document()
+
