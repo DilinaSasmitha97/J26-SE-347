@@ -76,7 +76,7 @@ class TestRelationshipMapper(unittest.TestCase):
         
         # Hints formatting
         hints = self.mapper.format_join_path_hints(join_paths)
-        self.assertIn("Multi-Hop Relational Join Paths", hints)
+        self.assertIn("Relational Join Paths", hints)
         self.assertIn("car_makers", hints.lower())
 
 if __name__ == "__main__":

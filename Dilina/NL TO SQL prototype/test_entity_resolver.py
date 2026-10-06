@@ -95,9 +95,24 @@ class TestEntityResolver(unittest.TestCase):
             {"term": "houses", "table": "Properties", "column": "property_type_code", "value": "HSE", "match_type": "abbreviation_mapping"}
         ]
         disc_hints = self.resolver.format_grounding_hints(discrepancy_matches)
-        self.assertIn("Domain Discrepancy & Code Translation Hints", disc_hints)
+        self.assertIn("Schema Value Grounding", disc_hints)
         self.assertIn("Properties.property_type_code = 'HSE'", disc_hints)
         self.assertNotIn("COUNTRIES", disc_hints)
+
+    def test_disambiguation_multi_word_entity(self):
+        # Multi-word entity whose column is non-obvious ('amc hornet sportabout (sw)' in column 'Make')
+        matches = [
+            {"term": "amc hornet sportabout (sw)", "table": "CAR_NAMES", "column": "Make", "value": "amc hornet sportabout (sw)", "match_type": "exact_cell_value"}
+        ]
+        hints = self.resolver.format_grounding_hints(matches)
+        self.assertIn("Schema Value Grounding", hints)
+        self.assertIn("CAR_NAMES.Make", hints)
+
+    def test_active_probing_lookup(self):
+        # Insert a record that represents an active lookup
+        val = self.resolver.active_probe_column(self.conn, "CAR_NAMES", "Make", "amc hornet")
+        self.assertIsNotNone(val)
+        self.assertEqual(val, "amc hornet sportabout (sw)")
 
 if __name__ == "__main__":
     unittest.main()
