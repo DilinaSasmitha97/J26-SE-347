@@ -76,8 +76,96 @@ class TestRelationshipMapper(unittest.TestCase):
         
         # Hints formatting
         hints = self.mapper.format_join_path_hints(join_paths)
-        self.assertIn("Relational Join Paths", hints)
+        self.assertIn("Relational Guidance", hints)
         self.assertIn("car_makers", hints.lower())
+
+    def test_negation_intent_detection(self):
+        # Negative queries should be detected
+        self.assertTrue(self.mapper.detect_negation_intent("Show names of students who do not have any friends"))
+        self.assertTrue(self.mapper.detect_negation_intent("Find channels not playing cartoon written by Todd"))
+        self.assertTrue(self.mapper.detect_negation_intent("Students who have no pets"))
+        self.assertTrue(self.mapper.detect_negation_intent("Which departments are without any employees?"))
+        self.assertTrue(self.mapper.detect_negation_intent("List all countries except France"))
+
+        # Neutral queries should NOT trigger negation
+        self.assertFalse(self.mapper.detect_negation_intent("Find all students and their pet names"))
+        self.assertFalse(self.mapper.detect_negation_intent("What is the average salary of employees in IT?"))
+
+    def test_format_canonical_join_skeleton_negation_guard(self):
+        paths = [{
+            "from_table": "students",
+            "from_col": "stuid",
+            "to_table": "has_pet",
+            "to_col": "stuid"
+        }]
+        
+        # Negative query triggers anti-join notice
+        neg_hint = self.mapper.format_canonical_join_skeleton(paths, nl_query="students who have no pets")
+        self.assertIn("Exclusion intent detected", neg_hint)
+        self.assertIn("do NOT force INNER JOIN", neg_hint)
+        self.assertIn("students.stuid = has_pet.stuid", neg_hint)
+
+        # Positive query triggers standard join condition
+        pos_hint = self.mapper.format_canonical_join_skeleton(paths, nl_query="students and their pets")
+        self.assertIn("Prefer explicit JOIN over scalar subqueries", pos_hint)
+        self.assertIn("Join Condition: students.stuid = has_pet.stuid", pos_hint)
+
+    def test_single_table_gating(self):
+        # Queries with fewer than 2 tables must produce zero hints (silent gating)
+        single_table = {"students"}
+        hint = self.mapper.get_subgraph_join_paths(single_table, SAMPLE_CAR_DDL)
+        self.assertEqual(hint, "")
+
+        empty_table = set()
+        hint_empty = self.mapper.get_subgraph_join_paths(empty_table, SAMPLE_CAR_DDL)
+        self.assertEqual(hint_empty, "")
+
+    def test_intent_weighted_disambiguation(self):
+        # Two edges between flights and airports: SourceAirport vs DestAirport
+        mock_graph = {
+            "airports": [
+                {
+                    "neighbor": "flights",
+                    "neighbor_raw": "FLIGHTS",
+                    "from_col": "AirportCode",
+                    "to_col": "SourceAirport",
+                    "direction": "forward"
+                },
+                {
+                    "neighbor": "flights",
+                    "neighbor_raw": "FLIGHTS",
+                    "from_col": "AirportCode",
+                    "to_col": "DestAirport",
+                    "direction": "forward"
+                }
+            ],
+            "flights": [
+                {
+                    "neighbor": "airports",
+                    "neighbor_raw": "AIRPORTS",
+                    "from_col": "SourceAirport",
+                    "to_col": "AirportCode",
+                    "direction": "reverse"
+                },
+                {
+                    "neighbor": "airports",
+                    "neighbor_raw": "AIRPORTS",
+                    "from_col": "DestAirport",
+                    "to_col": "AirportCode",
+                    "direction": "reverse"
+                }
+            ]
+        }
+        
+        # Query asking for destination airport should select DestAirport
+        dest_path = self.mapper.find_shortest_path(mock_graph, "airports", "flights", nl_query="Find the destination airport for flight 101")
+        self.assertIsNotNone(dest_path)
+        self.assertEqual(dest_path[0]["to_col"], "DestAirport")
+
+        # Query asking for departure / source airport should select SourceAirport
+        src_path = self.mapper.find_shortest_path(mock_graph, "airports", "flights", nl_query="What is the source departure airport?")
+        self.assertIsNotNone(src_path)
+        self.assertEqual(src_path[0]["to_col"], "SourceAirport")
 
 if __name__ == "__main__":
     unittest.main()

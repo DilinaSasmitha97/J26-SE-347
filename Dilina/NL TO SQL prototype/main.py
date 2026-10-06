@@ -93,9 +93,10 @@ def translate(
                 bridge_tables, join_paths = relationship_mapper.resolve_multi_hop_bridges(
                     terminal_tables=candidate_terminals,
                     schema_meta=full_schema_context,
-                    db_conn=db_conn
+                    db_conn=db_conn,
+                    nl_query=nl_query
                 )
-                join_paths_str = relationship_mapper.format_join_path_hints(join_paths)
+                join_paths_str = relationship_mapper.format_canonical_join_skeleton(join_paths, nl_query=nl_query)
 
     # Combine protected tables to prevent accidental over-pruning in Task 1
     protected_tables = grounded_tables.union(bridge_tables)
@@ -110,7 +111,7 @@ def translate(
         )
         schema_meta = pruned_schema
 
-    # 0C.2 Subgraph Relational Join Paths (Task 4B Precision Enhancement)
+    # 0C.2 Subgraph Relational Join Paths (Task 4B / Stage 8A Precision Guidance)
     if use_relationship_mapping:
         with time_block("Relational Subgraph Path Resolution (Task 4B)", parent_summary=profiler.categories if profiler else None, category="Relationship Mapping"):
             selected_tables = set()
@@ -121,6 +122,7 @@ def translate(
             subgraph_hints = relationship_mapper.get_subgraph_join_paths(
                 selected_tables=selected_tables,
                 schema_meta=full_schema_context,
+                nl_query=nl_query,
                 db_conn=db_conn
             )
             if subgraph_hints:

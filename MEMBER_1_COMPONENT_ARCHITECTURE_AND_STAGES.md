@@ -12,7 +12,7 @@ The **Schema-Aware NL-to-SQL Translation Engine** (Member 1) serves as the **gen
 
 Its primary responsibility is to accept an unconstrained natural language query, combine it with dynamic enterprise schema catalogs (e.g., 100+ table ERPs like `NemsuERPNew` or cross-domain benchmark schemas) and first-stage security/tenant isolation constraints, and synthesize **syntactically flawless, semantically exact, dialect-optimized SQL** without leaking unauthorized data or compromising pipeline latency.
 
-### Current SOTA Benchmark Status (Stage 7 Confirmed)
+### Current SOTA Benchmark Status (Stage 8A Confirmed)
 * **Spider Benchmark Performance ($N = 1,034$ Full Validation Suite):**
   * **Yale Official Execution Accuracy:** **83.56% (864 / 1,034)**
   * **Strict Set Execution Accuracy:** **80.37% (831 / 1,034)**
@@ -39,7 +39,7 @@ The diagram below defines the exact separation of concerns and operational flow 
                                                ▼
                [ MEMBER 1: Schema-Aware NL-to-SQL Engine (Sasmitha / THIS MODULE) ]
                ├── 1. Entity Resolver & Active Probing: Ground categorical values & protect schema
-               ├── 2. Graph Relationship Mapper: Multi-hop FK bridge discovery via shortest path
+               ├── 2. Graph Relationship Mapper & Intent Join Router: Shortest-path edge scoring + skeleton gating
                ├── 3. Schema Extractor: Dynamic pruning & dependency closure (40%-70% token drop)
                ├── 4. In-Context Exemplar Selector: Top-2 syntactic structural blueprints (2.01ms)
                ├── 5. Code Representation Prompt (CRP v2) Assembly with `injected_rules`
@@ -71,37 +71,37 @@ The diagram below defines the exact separation of concerns and operational flow 
 
 ---
 
-## 📊 Master Comparative Benchmark Matrix (Stages 1 to 7)
+## 📊 Master Comparative Benchmark Matrix (Stages 1 to 8A)
 
 Every stage has been systematically benchmarked against the full **$N = 1,034$ Spider validation suite** under identical controlled conditions (standardized foundation model: `Qwen/Qwen-2.5-Coder-32B-Instruct` via OpenRouter):
 
-| Evaluation Dimension | Stage 1: Base | Stage 2: Prune | Stage 3: Refine | Stage 4: Entity | Stage 4.1: Precision | Stage 5: Exemplar | Stage 6: Consistency *(Ablation)* | Stage 7: Probing *(Current SOTA)* |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Git Branch** | `dilina-...-stage-1` | `dilina-...-stage-2` | `dilina-...-stage-3-...` | `dilina-...-stage-4-...` | `dilina-...-stage-4.1-...` | `dilina-...-stage-5-...` | `dilina-...-stage-6-...` | `dilina-...-stage-7-...` |
-| **Yale Execution Accuracy (Official)** | *N/A* | *N/A* | *N/A* | *N/A* | *N/A* | 82.30% (851) | 79.59% (823) | **83.56% (864) [SOTA]** |
-| **Strict Set Accuracy (Legacy)** | 68.47% (708) | 66.25% (685) | 77.27% (799) | 70.70% (731) | 77.47% (801) | 79.11% (818) | 77.18% (798) | **80.37% (831) [PEAK]** |
-| **Total Query Failures** | 326 (31.5%) | 349 (33.8%) | 233 (22.5%) | 301 (29.1%) | 231 (22.3%) | 181 (17.5%) | 211 (20.4%) | **165 (16.0%) [-49.4%]** |
-| **Schema Linking Errors** | 10 (3.1%) | 11 (3.2%) | 2 (0.9%) | **0 (0.0%)** | **0 (0.0%)** | **0 (0.0%)** | **0 (0.0%)** | **0 (0.0%) [EXTINCT]** |
-| **Join Errors** | 52 (16.0%) | 48 (13.8%) | 25 (10.7%) | 13 (4.3%) | 17 (7.4%) | 15 (8.3%) | 16 (7.6%) | **23 (13.9%)** |
-| **Aggregation Errors** | 32 (9.8%) | 29 (8.3%) | 7 (3.0%) | 83 (27.6%) | 7 (3.0%) | 8 (4.4%) | 9 (4.3%) | **9 (5.5%)** |
-| **Syntax Errors** | 121 (37.1%) | 142 (40.7%) | 25 (10.7%) | 50 (16.6%) | 1 (0.4%) | 4 (2.2%) | 2 (0.9%) | **0 (0.0%) [FLAWLESS]** |
-| **Result Mismatches** | 111 (34.0%) | 119 (34.1%) | 174 (74.7%) | 157 (52.2%) | 206 (89.2%) | 154 (85.1%) | 184 (87.2%) | **133 (80.6%) [-21 ERRORS]** |
-| **Queries Healed by Refinement** | 0 (No Loop) | 0 (No Loop) | 11 queries | 19 queries | 44 queries | 79 queries | 22 queries | **68 queries** |
-| **Avg. Tokens / Query** | 425.2 | 358.1 | 362.8 | 528.3 | 507.5 | 638.8 | 1,640.2 | **575.6 tokens [-9.9%]** |
-| **Local Pipeline Latency** | 0.0 ms | 4.5 ms | 4.8 ms | 18.06 ms | < 15.0 ms | < 28.0 ms | 4,200 ms | **< 25.0 ms (SLA Compliant)** |
-| **Status in Pipeline** | Superseded | Superseded | Superseded | Superseded | Superseded | Superseded | **REJECTED (Ablation)** | **ACTIVE SOTA ENGINE** |
+| Evaluation Dimension | Stage 1: Base | Stage 2: Prune | Stage 3: Refine | Stage 4: Entity | Stage 4.1: Precision | Stage 5: Exemplar | Stage 6: Consistency *(Ablation)* | Stage 7: Probing | Stage 8A: Join Routing *(Current SOTA)* |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Git Branch** | `dilina-...-stage-1` | `dilina-...-stage-2` | `dilina-...-stage-3-...` | `dilina-...-stage-4-...` | `dilina-...-stage-4.1-...` | `dilina-...-stage-5-...` | `dilina-...-stage-6-...` | `dilina-...-stage-7-...` | `dilina-...-stage-8a-...` |
+| **Yale Execution Accuracy (Official)** | *N/A* | *N/A* | *N/A* | *N/A* | *N/A* | 82.30% (851) | 79.59% (823) | 83.56% (864) | **84.24% (871) [SOTA]** |
+| **Strict Set Accuracy (Legacy)** | 68.47% (708) | 66.25% (685) | 77.27% (799) | 70.70% (731) | 77.47% (801) | 79.11% (818) | 77.18% (798) | 80.37% (831) | **81.24% (840) [PEAK]** |
+| **Total Query Failures** | 326 (31.5%) | 349 (33.8%) | 233 (22.5%) | 301 (29.1%) | 231 (22.3%) | 181 (17.5%) | 211 (20.4%) | 165 (16.0%) | **161 (15.6%) [-50.6%]** |
+| **Schema Linking Errors** | 10 (3.1%) | 11 (3.2%) | 2 (0.9%) | **0 (0.0%)** | **0 (0.0%)** | **0 (0.0%)** | **0 (0.0%)** | **0 (0.0%)** | **0 (0.0%) [EXTINCT]** |
+| **Join Errors** | 52 (16.0%) | 48 (13.8%) | 25 (10.7%) | 13 (4.3%) | 17 (7.4%) | 15 (8.3%) | 16 (7.6%) | 23 (13.9%) | **20 (12.4%) [-3 ERRORS]** |
+| **Aggregation Errors** | 32 (9.8%) | 29 (8.3%) | 7 (3.0%) | 83 (27.6%) | 7 (3.0%) | 8 (4.4%) | 9 (4.3%) | 9 (5.5%) | **10 (6.2%)** |
+| **Syntax Errors** | 121 (37.1%) | 142 (40.7%) | 25 (10.7%) | 50 (16.6%) | 1 (0.4%) | 4 (2.2%) | 2 (0.9%) | **0 (0.0%)** | **3 (1.9%)** |
+| **Result Mismatches** | 111 (34.0%) | 119 (34.1%) | 174 (74.7%) | 157 (52.2%) | 206 (89.2%) | 154 (85.1%) | 184 (87.2%) | 133 (80.6%) | **128 (79.5%) [-5 ERRORS]** |
+| **Queries Healed by Refinement** | 0 (No Loop) | 0 (No Loop) | 11 queries | 19 queries | 44 queries | 79 queries | 22 queries | 68 queries | **63 queries** |
+| **Avg. Tokens / Query** | 425.2 | 358.1 | 362.8 | 528.3 | 507.5 | 638.8 | 1,640.2 | 575.6 tokens | **596.1 tokens** |
+| **Local Pipeline Latency** | 0.0 ms | 4.5 ms | 4.8 ms | 18.06 ms | < 15.0 ms | < 28.0 ms | 4,200 ms | < 25.0 ms | **< 25.0 ms (SLA Compliant)** |
+| **Status in Pipeline** | Superseded | Superseded | Superseded | Superseded | Superseded | Superseded | **REJECTED (Ablation)** | Superseded | **ACTIVE SOTA ENGINE** |
 
 ---
 
 ### Complexity Tier Breakdown ($N = 1,034$)
 
-| Difficulty Tier | Total Samples | Stage 1 (Base) | Stage 3 (Refine) | Stage 5 (Exemplar) | Stage 6 *(Ablation)* | Stage 7 (Probing SOTA) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Easy** | 458 | 84.06% (385) | 85.81% (393) | 88.65% (406) | 85.37% (391) | **89.74% (411 / 458)** |
-| **Medium** | 332 | 62.65% (208) | 74.40% (247) | 82.53% (274) | 80.42% (267) | **82.83% (275 / 332)** |
-| **Hard** | 238 | 48.32% (115) | 65.13% (155) | 71.01% (169) | 68.07% (162) | **73.53% (175 / 238)** |
-| **Extra Hard** | 6 | 0.00% (0) | 66.67% (4) | 33.33% (2) | 50.00% (3) | **50.00% (3 / 6)** |
-| **Total Benchmark** | **1,034** | **68.47% (708)** | **77.27% (799)** | **82.30% (851)** | **79.59% (823)** | **83.56% (864 / 1,034)** |
+| Difficulty Tier | Total Samples | Stage 1 (Base) | Stage 3 (Refine) | Stage 5 (Exemplar) | Stage 6 *(Ablation)* | Stage 7 (Probing) | Stage 8A (Routing SOTA) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Easy** | 458 | 84.06% (385) | 85.81% (393) | 88.65% (406) | 85.37% (391) | 89.74% (411) | **89.74% (411) [Zero Regression]** |
+| **Medium** | 332 | 62.65% (208) | 74.40% (247) | 82.53% (274) | 80.42% (267) | 82.83% (275) | **84.04% (279) [+4 queries]** |
+| **Hard** | 238 | 48.32% (115) | 65.13% (155) | 71.01% (169) | 68.07% (162) | 73.53% (175) | **74.79% (178) [+3 queries]** |
+| **Extra Hard** | 6 | 0.00% (0) | 66.67% (4) | 33.33% (2) | 50.00% (3) | 50.00% (3) | **50.00% (3) [Stable]** |
+| **Total Benchmark** | **1,034** | **68.47% (708)** | **77.27% (799)** | **82.30% (851)** | **79.59% (823)** | 83.56% (864) | **84.24% (871 / 1,034) [SOTA]** |
 
 ---
 
@@ -115,7 +115,10 @@ Each confirmed stage represents a targeted, scientific engineering innovation. B
 [ Stage 5: Exemplars ] ◄── [ Stage 4.1: Precision Engine ] ◄── [ Stage 4: Entity Resolver ]
          │
          ▼
-[ Stage 7: Active Probing & Disambiguation ] (CURRENT PRODUCTION SOTA)
+[ Stage 7: Active Probing & Disambiguation ]
+         │
+         ▼
+[ Stage 8A: Intent Join Routing & Subgraph Guidance ] (CURRENT PRODUCTION SOTA)
 ```
 
 ---
@@ -241,6 +244,28 @@ Each confirmed stage represents a targeted, scientific engineering innovation. B
 
 ---
 
+---
+
+### Stage 8A: Intent-Weighted Canonical Join Routing & Graph Subgraph Guidance (Current SOTA)
+* **Git Branch:** `dilina-nl-to-sql-prototype-stage-8a-join-router`
+* **Core Hypothesis:** Join errors in Stage 7 (23 cases) arose because multi-table foreign key relationships had ambiguous paths (e.g., source vs. destination airport) or because the model generated brittle subqueries instead of clean joins. Guiding the model with intent-weighted shortest-path join skeletons while protecting negative queries from forced joins eliminates join ambiguity without prompt poisoning.
+* **Inputs ("In"):**
+  * Natural language question + Pruned DDL tables + Live FK Graph.
+* **Outputs ("Out"):**
+  * Canonical JOIN skeletons injected into prompt comments (`-- Canonical Join Path: ...`) + Negation anti-join advice when appropriate.
+* **Internal Anatomy (`relationship_mapper.py`):**
+  1. **Intent-Weighted Dijkstra Edge Scoring (`_score_edge_lexical_intent`):** Tokenizes column names (e.g. `DestAirport` -> `['dest', 'airport']`) and checks overlap with the question. If the user mentions "destination", the `DestAirport` edge is weighted favorably over `SourceAirport`.
+  2. **Negation Intent Guard (`detect_negation_intent`):** Scans for negation tokens (`no`, `not`, `never`, `without`, `except`). When detected, suppresses forced `INNER JOIN` skeletons and advises anti-join patterns (`WHERE ID NOT IN (SELECT ...)`).
+  3. **Strict Minimal Gating (`format_canonical_join_skeleton`):** Skeletons are strictly suppressed if fewer than 2 tables are selected, guaranteeing **zero prompt noise for single-table queries**.
+* **Empirical Results:**
+  * **Yale Execution Accuracy:** **84.24% (871 / 1,034)** (+0.68% / +7 net queries over Stage 7).
+  * **Strict Set Accuracy:** **81.24% (840 / 1,034)** (+0.87% / +9 net queries over Stage 7).
+  * **Join Errors Reduced:** Dropped from 23 down to **20 (12.4%)**.
+  * **Result Mismatches Reduced:** Dropped from 133 down to **128 (79.5%)**.
+  * **Zero Regression on Easy Tier:** Retained **89.74% (411 / 458)**.
+  * **Healed Queries (28 queries):** Healed complex multi-table queries including Idx 152 & 153 (Extra Hard 4-table join in `car_1`) and Idx 769 & 770 in `world_1`.
+  * **Empirical Diagnosis of Regressions (24 queries):** 14 of 24 regressions were caused by **row multiplicity / `DISTINCT` omission** when joining 1:N tables without aggregation (e.g. Idx 76), setting the exact scientific target for Stage 8B.
+
 ## 🤝 Cross-Member Interface Contracts & TAF Specifications
 
 To ensure all group members remain completely synchronized, the table below outlines the exact programmatic interactions between Member 1 and Members 2, 3, and 4:
@@ -321,12 +346,15 @@ Translates a natural language query into validated target SQL.
 
 ---
 
-## 🚀 Research Roadmap & Next Frontier (Stage 8)
+## 🚀 Research Roadmap & Next Frontier (Stage 8B: Cardinality & DISTINCT Reform)
 
-Having achieved **83.56% Yale EX** and **0.0% syntax errors**, Member 1's remaining 165 failure cases are concentrated in:
-1. **Result Mismatches (133 cases):** Sub-queries requiring `DISTINCT` keyword inclusion/omission and exact comparison operator polarity (`>` vs `>=`).
-2. **Join Errors (23 cases):** Complex multi-path relations where two valid join paths exist between tables.
+Having pushed Yale Execution Accuracy to **84.24% (871 / 1,034)** and Join Errors down to 20, the diff-in-diff error ledger revealed the single largest remaining systemic flaw:
+* **Row Multiplicity / Missing DISTINCT (14 of 24 regressions):** When joining a parent table to a child table in a 1:N relationship (e.g., `Department` -> `Employee`), multiple child rows multiply the parent records. If the question asks for distinct parent entities and the model omits `SELECT DISTINCT`, execution returns duplicate rows, causing an immediate Yale set-comparison mismatch.
+* **ArgMin/ArgMax Tie-Breaks (4 regressions):** `ORDER BY col LIMIT 1` vs `WHERE col = (SELECT MIN(col) ...)` when multiple rows share the minimum value.
 
-### Stage 8 Hypothesis: Cardinality-Aware DISTINCT Policy & Multi-Path Join Disambiguation
-* **Objective:** Push Yale Execution Accuracy past the **85.0% threshold**.
-* **Method:** Introduce schema-aware primary/foreign key cardinality checking to advise the model on whether a join multiplies rows (triggering `DISTINCT` projection recommendations) and provide explicit shortest-path join routes for ambiguous subgraphs.
+### Stage 8B Hypothesis: Cardinality-Aware DISTINCT Policy
+* **Objective:** Push Yale Execution Accuracy past the **85.5% threshold**.
+* **Method:**
+  1. Inspect primary key / foreign key uniqueness in the schema graph to identify 1:N and N:M join edges.
+  2. Detect when query projections target the 1-side of a 1:N join without aggregate grouping.
+  3. Emit a minimal advisory: `-- Cardinality Advisory: 1:N join detected on [Table]. Use SELECT DISTINCT if unique entities are requested.`

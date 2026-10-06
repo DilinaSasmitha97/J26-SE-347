@@ -11,3 +11,4 @@ __pycache__/
 # Data outputs & logs
 failure_taxonomy.json
 *.log
+scratch/
