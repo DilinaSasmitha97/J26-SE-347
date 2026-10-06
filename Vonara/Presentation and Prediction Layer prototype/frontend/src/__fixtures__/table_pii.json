@@ -1,0 +1,637 @@
+{
+ "status": "SUCCESS",
+ "pipeline_version": "1.0",
+ "input": {
+  "source_format": "MEMBER2_COLUMNAR",
+  "columns": [
+   "full_name",
+   "email",
+   "department",
+   "hire_date",
+   "salary"
+  ],
+  "row_count": 4,
+  "rows_received": 4,
+  "truncated": false,
+  "masked_columns": {
+   "full_name": "PERSON",
+   "email": "EMAIL"
+  },
+  "renamed_columns": {},
+  "warnings": [
+   "MASKED_COLUMNS_PRESENT"
+  ]
+ },
+ "analysis": {
+  "analysis_schema_version": "1.0",
+  "query_understanding": {
+   "user_query": "List all employees in the Finance department",
+   "normalized_query": "list all employees in the finance department"
+  },
+  "intent": {
+   "primary_intent": "DETAIL_LOOKUP",
+   "secondary_intents": [],
+   "confidence": 0.97,
+   "intent_source": "RULE",
+   "rationale": "Matched 'list all', 'list', '^(?:(?:what|which) (?:are|is|was|were) the [a-z]+|(?:return|give|tell me|find|show|list|display|provide) (?:me )?(?:the|all|a|an|each|every)\\b|(?:which|what|who|where)[ ])' (evidence 6 vs next 0)."
+  },
+  "response_intent": {
+   "intent": "TABLE_CONTENT",
+   "confidence": 0.97,
+   "source": "RULE",
+   "rationale": "Lexical evidence 7.5 for TABLE_CONTENT vs 0.0 for MIXED_SUMMARY ('\\blist (?:all|every|out|the)\\b', '\\blist\\b'). R2 explicit format named: TABLE_CONTENT R5 mixed damping: no decisive combined-output phrasing",
+   "blocks": [
+    "TABLE"
+   ],
+   "answer_focus": "VALUE",
+   "is_data_request": true,
+   "not_a_request_reason": "",
+   "evidence_grade": "DIRECT",
+   "evidence": {
+    "scores": {
+     "SINGLE_ANSWER": 0.0,
+     "SHORT_SUMMARY": 0.0,
+     "TABLE_CONTENT": 7.5,
+     "CHART": 0.0,
+     "MIXED_SUMMARY": 0.0
+    },
+    "matched_markers": {
+     "TABLE_CONTENT": [
+      "\\blist (?:all|every|out|the)\\b",
+      "\\blist\\b"
+     ]
+    },
+    "runner_up": "MIXED_SUMMARY",
+    "margin": 1.0
+   }
+  },
+  "prediction_request": {
+   "prediction_required": false,
+   "prediction_trigger": "NONE",
+   "horizon": {
+    "value": 0,
+    "unit": "NONE",
+    "source": "NONE"
+   },
+   "what_if": {
+    "present": false,
+    "raw_clause": "",
+    "parameter": "",
+    "direction": "",
+    "magnitude_pct": 0.0
+   }
+  },
+  "schema_binding": {
+   "affected_tables": [
+    {
+     "table": "employees",
+     "role": "FACT",
+     "confidence": 0.95,
+     "matched_terms": [
+      "employee",
+      "employees"
+     ]
+    }
+   ],
+   "affected_columns": [
+    {
+     "table": "employees",
+     "column": "department",
+     "role": "DIMENSION",
+     "data_type": "VARCHAR(64)",
+     "is_pii": false,
+     "confidence": 0.9,
+     "matched_terms": [
+      "department"
+     ]
+    },
+    {
+     "table": "employees",
+     "column": "employee_id",
+     "role": "IDENTIFIER",
+     "data_type": "INT",
+     "is_pii": false,
+     "confidence": 0.75,
+     "matched_terms": [
+      "employee"
+     ]
+    }
+   ],
+   "unresolved_terms": [
+    "finance"
+   ]
+  },
+  "semantic_roles": {
+   "metrics": [],
+   "dimensions": [
+    "department"
+   ],
+   "temporal_field": "hire_date",
+   "temporal_granularity": "NONE",
+   "filters": [],
+   "ordering": "",
+   "limit": 0,
+   "limit_source": "NONE"
+  },
+  "visualization_hint": {
+   "recommended_chart": "table",
+   "alternatives": [],
+   "rationale": "Response intent TABLE_CONTENT renders as 'table'; the analytical encoding 'table' is not used."
+  },
+  "governance": {
+   "pii_columns_referenced": [],
+   "read_only": true
+  },
+  "warnings": [
+   "UNRESOLVED_TERMS"
+  ],
+  "metadata": {
+   "injection_markers": [],
+   "mode": "RULE_ONLY",
+   "model": "deterministic-fallback",
+   "provider": "none",
+   "prompt_tokens": 0,
+   "completion_tokens": 0,
+   "total_tokens": 0,
+   "schema_tables_considered": 4,
+   "execution_time_ms": 2.38,
+   "tenant_id": "tenant_a",
+   "user_role": ""
+  }
+ },
+ "result_profile": {
+  "row_count": 4,
+  "column_count": 5,
+  "columns": [
+   {
+    "name": "full_name",
+    "role": "DIMENSION",
+    "inferred_type": "string",
+    "non_null": 4,
+    "null_count": 0,
+    "distinct_count": 4,
+    "is_monotonic": false,
+    "min_value": "D***** B******",
+    "max_value": "R****** D**********",
+    "mean": null,
+    "std": null,
+    "sample_values": [
+     "D***** B******",
+     "H***** G**********",
+     "N***** B******",
+     "R****** D**********"
+    ]
+   },
+   {
+    "name": "email",
+    "role": "DIMENSION",
+    "inferred_type": "string",
+    "non_null": 4,
+    "null_count": 0,
+    "distinct_count": 4,
+    "is_monotonic": false,
+    "min_value": "d***************@tenanta.example.com",
+    "max_value": "r********************@tenanta.example.com",
+    "mean": null,
+    "std": null,
+    "sample_values": [
+     "d***************@tenanta.example.com",
+     "h******************@tenanta.example.com",
+     "n***************@tenanta.example.com",
+     "r********************@tenanta.example.com"
+    ]
+   },
+   {
+    "name": "department",
+    "role": "DIMENSION",
+    "inferred_type": "string",
+    "non_null": 4,
+    "null_count": 0,
+    "distinct_count": 1,
+    "is_monotonic": false,
+    "min_value": "Finance",
+    "max_value": "Finance",
+    "mean": null,
+    "std": null,
+    "sample_values": [
+     "Finance",
+     "Finance",
+     "Finance",
+     "Finance"
+    ]
+   },
+   {
+    "name": "hire_date",
+    "role": "TEMPORAL",
+    "inferred_type": "date",
+    "non_null": 4,
+    "null_count": 0,
+    "distinct_count": 4,
+    "is_monotonic": false,
+    "min_value": "2018-12-12T00:00:00",
+    "max_value": "2023-02-18T00:00:00",
+    "mean": null,
+    "std": null,
+    "sample_values": [
+     "2023-02-18",
+     "2020-05-11",
+     "2019-09-26",
+     "2018-12-12"
+    ]
+   },
+   {
+    "name": "salary",
+    "role": "MEASURE",
+    "inferred_type": "number",
+    "non_null": 4,
+    "null_count": 0,
+    "distinct_count": 4,
+    "is_monotonic": false,
+    "min_value": 110700.0,
+    "max_value": 229200.0,
+    "mean": 166450.0,
+    "std": 48558.452748551754,
+    "sample_values": [
+     229200,
+     161600,
+     110700,
+     164300
+    ]
+   }
+  ],
+  "temporal_column": "hire_date",
+  "granularity": "YEAR",
+  "measure_columns": [
+   "salary"
+  ],
+  "dimension_columns": [
+   "full_name",
+   "email",
+   "department"
+  ],
+  "is_time_series": true,
+  "is_regular_interval": false,
+  "has_gaps": true,
+  "layout": "SINGLE",
+  "group_column": "",
+  "period_count": 4,
+  "warnings": [
+   "IRREGULAR_TIME_AXIS"
+  ]
+ },
+ "response": {
+  "response_intent": {
+   "intent": "TABLE_CONTENT",
+   "confidence": 0.97,
+   "source": "RULE",
+   "rationale": "Lexical evidence 7.5 for TABLE_CONTENT vs 0.0 for MIXED_SUMMARY ('\\blist (?:all|every|out|the)\\b', '\\blist\\b'). R2 explicit format named: TABLE_CONTENT R5 mixed damping: no decisive combined-output phrasing",
+   "blocks": [
+    "TABLE"
+   ],
+   "answer_focus": "VALUE",
+   "is_data_request": true,
+   "not_a_request_reason": "",
+   "evidence_grade": "DIRECT",
+   "evidence": {
+    "scores": {
+     "SINGLE_ANSWER": 0.0,
+     "SHORT_SUMMARY": 0.0,
+     "TABLE_CONTENT": 7.5,
+     "CHART": 0.0,
+     "MIXED_SUMMARY": 0.0
+    },
+    "matched_markers": {
+     "TABLE_CONTENT": [
+      "\\blist (?:all|every|out|the)\\b",
+      "\\blist\\b"
+     ]
+    },
+    "runner_up": "MIXED_SUMMARY",
+    "margin": 1.0
+   },
+   "guardrails_applied": [],
+   "original_intent": "TABLE_CONTENT",
+   "warnings": []
+  },
+  "blocks_emitted": [
+   "TABLE"
+  ],
+  "blocks_declared": [
+   "TABLE"
+  ],
+  "table": {
+   "block": "TABLE",
+   "columns": [
+    {
+     "name": "full_name",
+     "label": "Full Name",
+     "role": "DIMENSION",
+     "type": "string",
+     "align": "left",
+     "null_count": 0
+    },
+    {
+     "name": "email",
+     "label": "Email",
+     "role": "DIMENSION",
+     "type": "string",
+     "align": "left",
+     "null_count": 0
+    },
+    {
+     "name": "department",
+     "label": "Department",
+     "role": "DIMENSION",
+     "type": "string",
+     "align": "left",
+     "null_count": 0
+    },
+    {
+     "name": "hire_date",
+     "label": "Hire Date",
+     "role": "TEMPORAL",
+     "type": "date",
+     "align": "left",
+     "null_count": 0
+    },
+    {
+     "name": "salary",
+     "label": "Salary",
+     "role": "MEASURE",
+     "type": "number",
+     "align": "right",
+     "null_count": 0
+    }
+   ],
+   "rows": [
+    {
+     "full_name": "D***** B******",
+     "email": "d***************@tenanta.example.com",
+     "department": "Finance",
+     "hire_date": "2023-02-18",
+     "salary": 229200
+    },
+    {
+     "full_name": "H***** G**********",
+     "email": "h******************@tenanta.example.com",
+     "department": "Finance",
+     "hire_date": "2020-05-11",
+     "salary": 161600
+    },
+    {
+     "full_name": "N***** B******",
+     "email": "n***************@tenanta.example.com",
+     "department": "Finance",
+     "hire_date": "2019-09-26",
+     "salary": 110700
+    },
+    {
+     "full_name": "R****** D**********",
+     "email": "r********************@tenanta.example.com",
+     "department": "Finance",
+     "hire_date": "2018-12-12",
+     "salary": 164300
+    }
+   ],
+   "row_count": 4,
+   "rows_returned": 4,
+   "truncated": false,
+   "implied_limit": 0,
+   "implied_limit_applied": false,
+   "limit_note": ""
+  }
+ },
+ "visualization": {
+  "_meta": {
+   "chart_type": "none",
+   "selection_reason": "No chart built: response intent TABLE_CONTENT emits TABLE.",
+   "rationale": "",
+   "skipped": true
+  }
+ },
+ "prediction": {
+  "stage_1_strategy": {
+   "intent": "DETAIL_LOOKUP",
+   "strategy": "NONE",
+   "rationale": "Row retrieval is not a predictive question.",
+   "promoted_by_explicit_request": false,
+   "prediction_requested": false
+  },
+  "stage_1_strategy_result": {
+   "requested": "NONE",
+   "executed_as": "",
+   "executed": false,
+   "skipped_reason": "No forecast was requested for this query.",
+   "details": {}
+  },
+  "stage_2_readiness": {
+   "verdict": "NOT_REQUESTED",
+   "is_ready": false,
+   "temporal_valid": false,
+   "statistically_sufficient": false,
+   "signal_adequate": false,
+   "n_points": 0,
+   "dropped_rows": 0,
+   "granularity": "NONE",
+   "coefficient_of_variation": 0.0,
+   "trend_r2": 0.0,
+   "expected_relative_error": null,
+   "skill_vs_naive": null,
+   "signal_test": {},
+   "decision": "NOT_EVALUATED",
+   "reason_codes": [],
+   "warnings": [],
+   "stationarity": {},
+   "missing_value_ratio": 0.0,
+   "missing_period_ratio": 0.0,
+   "filled_periods": 0,
+   "reason": "No forecast was requested for this query.",
+   "checks": [
+    "readiness gates not evaluated: No forecast was requested for this query."
+   ]
+  },
+  "stage_3_model_selection": {
+   "model": "NONE",
+   "reason": "",
+   "seasonal_period": 1,
+   "signals": {}
+  },
+  "stage_4_forecast": {
+   "generated": false,
+   "model": "NONE",
+   "model_reason": "",
+   "value_column": "",
+   "time_column": "",
+   "granularity": "NONE",
+   "horizon": 0,
+   "confidence_level": 0.95,
+   "points": [],
+   "in_sample_rmse": 0.0,
+   "in_sample_mae": 0.0,
+   "in_sample_mape": 0.0,
+   "residual_std": 0.0,
+   "historical_dates": [],
+   "historical_values": [],
+   "fitted_values": [],
+   "skipped_reason": "No forecast was requested for this query.",
+   "diagnostics": {}
+  },
+  "stage_5_anomaly": {
+   "evaluated": false,
+   "method": "ADAPTIVE_IQR_ZSCORE",
+   "detrended": false,
+   "trend_r2": 0.0,
+   "seasonal": false,
+   "seasonal_strength": 0.0,
+   "period": 0,
+   "predictive_space": "",
+   "lower_threshold": 0.0,
+   "upper_threshold": 0.0,
+   "median": 0.0,
+   "mean": 0.0,
+   "std": 0.0,
+   "iqr": 0.0,
+   "q1": 0.0,
+   "q3": 0.0,
+   "volatility_regime": "STABLE",
+   "iqr_multiplier": 1.5,
+   "z_threshold": 3.0,
+   "historical_anomalies": [],
+   "predictive_warnings": [],
+   "skipped_reason": "The result is a list of records, not a series; anomaly bands are computed for values over time or across categories."
+  },
+  "stage_6_scenario": {
+   "simulated": false,
+   "spec": {},
+   "baseline_points": [],
+   "scenario_points": [],
+   "deltas": [],
+   "baseline_total": 0.0,
+   "scenario_total": 0.0,
+   "total_delta": 0.0,
+   "total_delta_pct": 0.0,
+   "anomaly_report": {},
+   "skipped_reason": "No what-if scenario supplied."
+  }
+ },
+ "summary": {
+  "text": "The query returned 4 rows. Total salary across the returned rows is 665,800. The average salary per row is 166,450. The highest value was 229,200, 1.38x the average. The lowest value was 110,700. Values vary with a standard deviation of 48,558.\n\nNo forecast was produced: No forecast was requested for this query.",
+  "mode": "DETERMINISTIC",
+  "claim_count": 7,
+  "claims": [
+   {
+    "claim_id": "H0",
+    "dimension": "HISTORICAL",
+    "kind": "ROW_COUNT",
+    "text": "The query returned 4 rows.",
+    "value": 4.0,
+    "unit": "",
+    "source": "result set",
+    "derivation": "len(rows)",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H1",
+    "dimension": "HISTORICAL",
+    "kind": "TOTAL",
+    "text": "Total salary across the returned rows is 665,800.",
+    "value": 665800.0,
+    "unit": "",
+    "source": "column 'salary'",
+    "derivation": "sum of 4 values",
+    "supporting_values": [
+     164300.0,
+     110700.0,
+     161600.0,
+     229200.0
+    ]
+   },
+   {
+    "claim_id": "H2",
+    "dimension": "HISTORICAL",
+    "kind": "MEAN",
+    "text": "The average salary per row is 166,450.",
+    "value": 166450.0,
+    "unit": "",
+    "source": "column 'salary'",
+    "derivation": "665,800 / 4",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H3",
+    "dimension": "HISTORICAL",
+    "kind": "PEAK",
+    "text": "The highest value was 229,200, 1.38x the average.",
+    "value": 229200.0,
+    "unit": "",
+    "source": "column 'salary'",
+    "derivation": "max of the series",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H4",
+    "dimension": "HISTORICAL",
+    "kind": "TROUGH",
+    "text": "The lowest value was 110,700.",
+    "value": 110700.0,
+    "unit": "",
+    "source": "column 'salary'",
+    "derivation": "min of the series",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H6",
+    "dimension": "HISTORICAL",
+    "kind": "DISPERSION",
+    "text": "Values vary with a standard deviation of 48,558.",
+    "value": 48558.452748551754,
+    "unit": "",
+    "source": "column 'salary'",
+    "derivation": "sample standard deviation",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F0",
+    "dimension": "PREDICTIVE",
+    "kind": "SKIPPED",
+    "text": "No forecast was produced: No forecast was requested for this query.",
+    "value": 0.0,
+    "unit": "",
+    "source": "readiness classifier",
+    "derivation": "gate failure",
+    "supporting_values": []
+   }
+  ],
+  "verification": {
+   "numbers_in_summary": 7,
+   "verified": 7,
+   "unverified_values": [],
+   "passed": true,
+   "rule": "PRECISION_AWARE",
+   "tolerance": null,
+   "claims_available": 7
+  },
+  "warnings": [],
+  "rejected_narration": ""
+ },
+ "warnings": [
+  "MASKED_COLUMNS_PRESENT",
+  "IRREGULAR_TIME_AXIS",
+  "UNRESOLVED_TERMS"
+ ],
+ "cache": {
+  "hit": false,
+  "key": "0e8dadf6c9182708"
+ },
+ "profiling": {
+  "total_execution_ms": 4.15,
+  "stage_breakdown_ms": {
+   "Part 1: Query Understanding": 2.41,
+   "Result Profiling": 1.24,
+   "Part 3: Summarization": 0.21,
+   "Part 5: Response Shaping": 0.03,
+   "Part 4: Prediction": 0.01,
+   "Part 2: Visualization": 0.0
+  }
+ }
+}

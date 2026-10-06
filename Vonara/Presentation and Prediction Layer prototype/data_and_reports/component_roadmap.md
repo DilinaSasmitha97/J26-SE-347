@@ -161,8 +161,10 @@ rehearsed with stand-ins built to the teammates' real formats.
 
 ### Phase 4 — Client & evaluation
 
-- [ ] React renderer for the emitted Vega-Lite grammar
-- [ ] Interactive what-if control bound to `/api/v4/simulate`
+- [x] React renderer for the emitted Vega-Lite grammar (Stage 7, `frontend/`)
+- [x] Interactive what-if control bound to `/api/v4/simulate` (Stage 7)
+- [x] Verified in a real browser (Edge) in light, dark and phone width; eight
+      backend defects found by looking at rendered output and fixed (Stage 7)
 - [ ] Usability evaluation on the adaptive-vs-static presentation question
 - [ ] Final results chapter
 

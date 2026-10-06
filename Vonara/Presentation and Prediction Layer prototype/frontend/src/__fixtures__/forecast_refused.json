@@ -1,0 +1,1017 @@
+{
+ "status": "SUCCESS",
+ "pipeline_version": "1.0",
+ "input": {
+  "source_format": "MEMBER2_COLUMNAR",
+  "columns": [
+   "month",
+   "software_spend"
+  ],
+  "row_count": 35,
+  "rows_received": 35,
+  "truncated": false,
+  "masked_columns": {},
+  "renamed_columns": {},
+  "warnings": []
+ },
+ "analysis": {
+  "analysis_schema_version": "1.0",
+  "query_understanding": {
+   "user_query": "Show monthly spend on Software and forecast the next 3 months",
+   "normalized_query": "show monthly spend on software and forecast the next 3 months"
+  },
+  "intent": {
+   "primary_intent": "TREND_ANALYSIS",
+   "secondary_intents": [],
+   "confidence": 0.8083,
+   "intent_source": "RULE",
+   "rationale": "Matched 'monthly' (evidence 3 vs next 1)."
+  },
+  "response_intent": {
+   "intent": "CHART",
+   "confidence": 0.7812,
+   "source": "RULE",
+   "rationale": "Lexical evidence 1.0 for CHART vs 0.0 for MIXED_SUMMARY ('\\b(?:monthly|weekly|daily|quarterly|yearly|annually)\\b'). R5 mixed damping: no decisive combined-output phrasing",
+   "blocks": [
+    "CHART"
+   ],
+   "answer_focus": "VALUE",
+   "is_data_request": true,
+   "not_a_request_reason": "",
+   "evidence_grade": "DIRECT",
+   "evidence": {
+    "scores": {
+     "SINGLE_ANSWER": 0.0,
+     "SHORT_SUMMARY": 0.0,
+     "TABLE_CONTENT": 0.0,
+     "CHART": 1.0,
+     "MIXED_SUMMARY": 0.0
+    },
+    "matched_markers": {
+     "CHART": [
+      "\\b(?:monthly|weekly|daily|quarterly|yearly|annually)\\b"
+     ]
+    },
+    "runner_up": "MIXED_SUMMARY",
+    "margin": 1.0
+   }
+  },
+  "prediction_request": {
+   "prediction_required": true,
+   "prediction_trigger": "EXPLICIT",
+   "horizon": {
+    "value": 3,
+    "unit": "MONTH",
+    "source": "EXPLICIT"
+   },
+   "what_if": {
+    "present": false,
+    "raw_clause": "",
+    "parameter": "",
+    "direction": "",
+    "magnitude_pct": 0.0
+   }
+  },
+  "schema_binding": {
+   "affected_tables": [],
+   "affected_columns": [],
+   "unresolved_terms": [
+    "software",
+    "spend"
+   ]
+  },
+  "semantic_roles": {
+   "metrics": [],
+   "dimensions": [],
+   "temporal_field": "",
+   "temporal_granularity": "MONTH",
+   "filters": [],
+   "ordering": "",
+   "limit": 0,
+   "limit_source": "NONE"
+  },
+  "visualization_hint": {
+   "recommended_chart": "line",
+   "alternatives": [
+    "area",
+    "bar"
+   ],
+   "rationale": "TREND_ANALYSIS maps to 'line' by the intent-encoding table."
+  },
+  "governance": {
+   "pii_columns_referenced": [],
+   "read_only": true
+  },
+  "warnings": [
+   "NO_SCHEMA_BINDING",
+   "UNRESOLVED_TERMS"
+  ],
+  "metadata": {
+   "injection_markers": [],
+   "mode": "RULE_ONLY",
+   "model": "deterministic-fallback",
+   "provider": "none",
+   "prompt_tokens": 0,
+   "completion_tokens": 0,
+   "total_tokens": 0,
+   "schema_tables_considered": 4,
+   "execution_time_ms": 3.02,
+   "tenant_id": "tenant_a",
+   "user_role": ""
+  }
+ },
+ "result_profile": {
+  "row_count": 35,
+  "column_count": 2,
+  "columns": [
+   {
+    "name": "month",
+    "role": "TEMPORAL",
+    "inferred_type": "date",
+    "non_null": 35,
+    "null_count": 0,
+    "distinct_count": 35,
+    "is_monotonic": true,
+    "min_value": "2023-01-01T00:00:00",
+    "max_value": "2025-12-01T00:00:00",
+    "mean": null,
+    "std": null,
+    "sample_values": [
+     "2023-01-01",
+     "2023-02-01",
+     "2023-04-01",
+     "2023-05-01",
+     "2023-06-01"
+    ]
+   },
+   {
+    "name": "software_spend",
+    "role": "MEASURE",
+    "inferred_type": "number",
+    "non_null": 35,
+    "null_count": 0,
+    "distinct_count": 35,
+    "is_monotonic": false,
+    "min_value": 1767.47,
+    "max_value": 13564.14,
+    "mean": 7239.233142857143,
+    "std": 2967.097712279847,
+    "sample_values": [
+     "8205.40",
+     "10118.14",
+     "10338.28",
+     "9014.65",
+     "13564.14"
+    ]
+   }
+  ],
+  "temporal_column": "month",
+  "granularity": "MONTH",
+  "measure_columns": [
+   "software_spend"
+  ],
+  "dimension_columns": [],
+  "is_time_series": true,
+  "is_regular_interval": false,
+  "has_gaps": true,
+  "layout": "SINGLE",
+  "group_column": "",
+  "period_count": 35,
+  "warnings": [
+   "IRREGULAR_TIME_AXIS"
+  ]
+ },
+ "response": {
+  "response_intent": {
+   "intent": "CHART",
+   "confidence": 0.7812,
+   "source": "RULE",
+   "rationale": "Lexical evidence 1.0 for CHART vs 0.0 for MIXED_SUMMARY ('\\b(?:monthly|weekly|daily|quarterly|yearly|annually)\\b'). R5 mixed damping: no decisive combined-output phrasing",
+   "blocks": [
+    "CHART"
+   ],
+   "answer_focus": "VALUE",
+   "is_data_request": true,
+   "not_a_request_reason": "",
+   "evidence_grade": "DIRECT",
+   "evidence": {
+    "scores": {
+     "SINGLE_ANSWER": 0.0,
+     "SHORT_SUMMARY": 0.0,
+     "TABLE_CONTENT": 0.0,
+     "CHART": 1.0,
+     "MIXED_SUMMARY": 0.0
+    },
+    "matched_markers": {
+     "CHART": [
+      "\\b(?:monthly|weekly|daily|quarterly|yearly|annually)\\b"
+     ]
+    },
+    "runner_up": "MIXED_SUMMARY",
+    "margin": 1.0
+   },
+   "guardrails_applied": [],
+   "original_intent": "CHART",
+   "warnings": []
+  },
+  "blocks_emitted": [
+   "CHART"
+  ],
+  "blocks_declared": [
+   "CHART"
+  ],
+  "chart": {
+   "block": "CHART",
+   "chart_type": "line",
+   "rationale": "",
+   "spec": {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "title": "Show Monthly Spend On Software And Forecast The Next 3 Months",
+    "width": "container",
+    "height": 320,
+    "autosize": {
+     "type": "fit",
+     "contains": "padding"
+    },
+    "resolve": {
+     "scale": {
+      "y": "shared",
+      "x": "shared"
+     }
+    },
+    "layer": [
+     {
+      "data": {
+       "values": [
+        {
+         "month": "2023-01-01",
+         "software_spend": 8205.4
+        },
+        {
+         "month": "2023-02-01",
+         "software_spend": 10118.14
+        },
+        {
+         "month": "2023-04-01",
+         "software_spend": 10338.28
+        },
+        {
+         "month": "2023-05-01",
+         "software_spend": 9014.65
+        },
+        {
+         "month": "2023-06-01",
+         "software_spend": 13564.14
+        },
+        {
+         "month": "2023-07-01",
+         "software_spend": 8091.92
+        },
+        {
+         "month": "2023-08-01",
+         "software_spend": 1767.47
+        },
+        {
+         "month": "2023-09-01",
+         "software_spend": 8566.31
+        },
+        {
+         "month": "2023-10-01",
+         "software_spend": 3613.65
+        },
+        {
+         "month": "2023-11-01",
+         "software_spend": 5472.96
+        },
+        {
+         "month": "2023-12-01",
+         "software_spend": 7039.38
+        },
+        {
+         "month": "2024-01-01",
+         "software_spend": 6597.34
+        },
+        {
+         "month": "2024-02-01",
+         "software_spend": 6741.45
+        },
+        {
+         "month": "2024-03-01",
+         "software_spend": 13553.37
+        },
+        {
+         "month": "2024-04-01",
+         "software_spend": 5918.89
+        },
+        {
+         "month": "2024-05-01",
+         "software_spend": 2809.22
+        },
+        {
+         "month": "2024-06-01",
+         "software_spend": 8322.57
+        },
+        {
+         "month": "2024-07-01",
+         "software_spend": 11215.14
+        },
+        {
+         "month": "2024-08-01",
+         "software_spend": 8277.91
+        },
+        {
+         "month": "2024-09-01",
+         "software_spend": 5523.18
+        },
+        {
+         "month": "2024-10-01",
+         "software_spend": 6438.25
+        },
+        {
+         "month": "2024-11-01",
+         "software_spend": 6500.57
+        },
+        {
+         "month": "2024-12-01",
+         "software_spend": 8150.03
+        },
+        {
+         "month": "2025-01-01",
+         "software_spend": 3152.12
+        },
+        {
+         "month": "2025-02-01",
+         "software_spend": 9127.58
+        },
+        {
+         "month": "2025-03-01",
+         "software_spend": 8989.9
+        },
+        {
+         "month": "2025-04-01",
+         "software_spend": 4588.49
+        },
+        {
+         "month": "2025-05-01",
+         "software_spend": 5042.4
+        },
+        {
+         "month": "2025-06-01",
+         "software_spend": 5411.51
+        },
+        {
+         "month": "2025-07-01",
+         "software_spend": 3265.16
+        },
+        {
+         "month": "2025-08-01",
+         "software_spend": 11179.97
+        },
+        {
+         "month": "2025-09-01",
+         "software_spend": 6993.79
+        },
+        {
+         "month": "2025-10-01",
+         "software_spend": 3622.98
+        },
+        {
+         "month": "2025-11-01",
+         "software_spend": 4973.83
+        },
+        {
+         "month": "2025-12-01",
+         "software_spend": 11185.21
+        }
+       ]
+      },
+      "mark": {
+       "type": "line",
+       "point": true,
+       "color": "#4C78A8",
+       "tooltip": true
+      },
+      "encoding": {
+       "x": {
+        "field": "month",
+        "type": "temporal",
+        "title": "Month",
+        "timeUnit": "yearmonth"
+       },
+       "y": {
+        "field": "software_spend",
+        "type": "quantitative",
+        "title": "Software Spend"
+       }
+      }
+     },
+     {
+      "data": {
+       "values": [
+        {
+         "threshold": 16490.1825,
+         "bound": "upper"
+        }
+       ]
+      },
+      "mark": {
+       "type": "rule",
+       "strokeDash": [
+        3,
+        3
+       ],
+       "color": "#B279A2",
+       "opacity": 0.7
+      },
+      "encoding": {
+       "y": {
+        "field": "threshold",
+        "type": "quantitative"
+       }
+      }
+     }
+    ],
+    "_meta": {
+     "chart_type": "line",
+     "selection_reason": "35 ordered time periods encode naturally as a line.",
+     "adapted_from_intent_default": "",
+     "intent": "TREND_ANALYSIS",
+     "row_count": 35,
+     "x_field": "month",
+     "y_field": "software_spend",
+     "color_field": "",
+     "forecast_layered": false,
+     "category_forecasts_layered": false,
+     "extension_rules_applied": [
+      "R3_THRESHOLD_RULES"
+     ],
+     "layer_count": 2
+    }
+   }
+  },
+  "forecast_notice": {
+   "requested": true,
+   "status": "REFUSED",
+   "readiness_decision": "NOT_READY",
+   "warnings": [
+    {
+     "code": "MISSING_PERIODS_INTERPOLATED",
+     "message": "1 of 36 periods had no data and were filled by linear interpolation for the forecast only."
+    }
+   ],
+   "reason_codes": [
+    "LOW_SIGNAL",
+    "MISSING_PERIODS_INTERPOLATED",
+    "STATIONARITY_STATIONARY"
+   ],
+   "message": "No forecast was produced: Series is dominated by noise: on its own history, the best simple forecast missed by 41% of the typical value on average (limit 20%), so a forecast would not be meaningful.",
+   "reason": "Series is dominated by noise: on its own history, the best simple forecast missed by 41% of the typical value on average (limit 20%), so a forecast would not be meaningful.",
+   "model": "NONE",
+   "horizon": 0,
+   "shown_in": []
+  }
+ },
+ "visualization": {
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": "Show Monthly Spend On Software And Forecast The Next 3 Months",
+  "width": "container",
+  "height": 320,
+  "autosize": {
+   "type": "fit",
+   "contains": "padding"
+  },
+  "resolve": {
+   "scale": {
+    "y": "shared",
+    "x": "shared"
+   }
+  },
+  "layer": [
+   {
+    "data": {
+     "values": [
+      {
+       "month": "2023-01-01",
+       "software_spend": 8205.4
+      },
+      {
+       "month": "2023-02-01",
+       "software_spend": 10118.14
+      },
+      {
+       "month": "2023-04-01",
+       "software_spend": 10338.28
+      },
+      {
+       "month": "2023-05-01",
+       "software_spend": 9014.65
+      },
+      {
+       "month": "2023-06-01",
+       "software_spend": 13564.14
+      },
+      {
+       "month": "2023-07-01",
+       "software_spend": 8091.92
+      },
+      {
+       "month": "2023-08-01",
+       "software_spend": 1767.47
+      },
+      {
+       "month": "2023-09-01",
+       "software_spend": 8566.31
+      },
+      {
+       "month": "2023-10-01",
+       "software_spend": 3613.65
+      },
+      {
+       "month": "2023-11-01",
+       "software_spend": 5472.96
+      },
+      {
+       "month": "2023-12-01",
+       "software_spend": 7039.38
+      },
+      {
+       "month": "2024-01-01",
+       "software_spend": 6597.34
+      },
+      {
+       "month": "2024-02-01",
+       "software_spend": 6741.45
+      },
+      {
+       "month": "2024-03-01",
+       "software_spend": 13553.37
+      },
+      {
+       "month": "2024-04-01",
+       "software_spend": 5918.89
+      },
+      {
+       "month": "2024-05-01",
+       "software_spend": 2809.22
+      },
+      {
+       "month": "2024-06-01",
+       "software_spend": 8322.57
+      },
+      {
+       "month": "2024-07-01",
+       "software_spend": 11215.14
+      },
+      {
+       "month": "2024-08-01",
+       "software_spend": 8277.91
+      },
+      {
+       "month": "2024-09-01",
+       "software_spend": 5523.18
+      },
+      {
+       "month": "2024-10-01",
+       "software_spend": 6438.25
+      },
+      {
+       "month": "2024-11-01",
+       "software_spend": 6500.57
+      },
+      {
+       "month": "2024-12-01",
+       "software_spend": 8150.03
+      },
+      {
+       "month": "2025-01-01",
+       "software_spend": 3152.12
+      },
+      {
+       "month": "2025-02-01",
+       "software_spend": 9127.58
+      },
+      {
+       "month": "2025-03-01",
+       "software_spend": 8989.9
+      },
+      {
+       "month": "2025-04-01",
+       "software_spend": 4588.49
+      },
+      {
+       "month": "2025-05-01",
+       "software_spend": 5042.4
+      },
+      {
+       "month": "2025-06-01",
+       "software_spend": 5411.51
+      },
+      {
+       "month": "2025-07-01",
+       "software_spend": 3265.16
+      },
+      {
+       "month": "2025-08-01",
+       "software_spend": 11179.97
+      },
+      {
+       "month": "2025-09-01",
+       "software_spend": 6993.79
+      },
+      {
+       "month": "2025-10-01",
+       "software_spend": 3622.98
+      },
+      {
+       "month": "2025-11-01",
+       "software_spend": 4973.83
+      },
+      {
+       "month": "2025-12-01",
+       "software_spend": 11185.21
+      }
+     ]
+    },
+    "mark": {
+     "type": "line",
+     "point": true,
+     "color": "#4C78A8",
+     "tooltip": true
+    },
+    "encoding": {
+     "x": {
+      "field": "month",
+      "type": "temporal",
+      "title": "Month",
+      "timeUnit": "yearmonth"
+     },
+     "y": {
+      "field": "software_spend",
+      "type": "quantitative",
+      "title": "Software Spend"
+     }
+    }
+   },
+   {
+    "data": {
+     "values": [
+      {
+       "threshold": 16490.1825,
+       "bound": "upper"
+      }
+     ]
+    },
+    "mark": {
+     "type": "rule",
+     "strokeDash": [
+      3,
+      3
+     ],
+     "color": "#B279A2",
+     "opacity": 0.7
+    },
+    "encoding": {
+     "y": {
+      "field": "threshold",
+      "type": "quantitative"
+     }
+    }
+   }
+  ],
+  "_meta": {
+   "chart_type": "line",
+   "selection_reason": "35 ordered time periods encode naturally as a line.",
+   "adapted_from_intent_default": "",
+   "intent": "TREND_ANALYSIS",
+   "row_count": 35,
+   "x_field": "month",
+   "y_field": "software_spend",
+   "color_field": "",
+   "forecast_layered": false,
+   "category_forecasts_layered": false,
+   "extension_rules_applied": [
+    "R3_THRESHOLD_RULES"
+   ],
+   "layer_count": 2
+  }
+ },
+ "prediction": {
+  "stage_1_strategy": {
+   "intent": "TREND_ANALYSIS",
+   "strategy": "TEMPORAL_FORECAST",
+   "rationale": "A measure tracked over time extends naturally into future periods.",
+   "promoted_by_explicit_request": false,
+   "prediction_requested": true
+  },
+  "stage_1_strategy_result": {
+   "requested": "TEMPORAL_FORECAST",
+   "executed_as": "TEMPORAL_FORECAST",
+   "executed": false,
+   "skipped_reason": "",
+   "details": {}
+  },
+  "stage_2_readiness": {
+   "verdict": "LOW_SIGNAL",
+   "is_ready": false,
+   "temporal_valid": true,
+   "statistically_sufficient": true,
+   "signal_adequate": false,
+   "n_points": 36,
+   "dropped_rows": 0,
+   "granularity": "MONTH",
+   "coefficient_of_variation": 0.4051,
+   "trend_r2": 0.0647,
+   "expected_relative_error": 0.4128,
+   "skill_vs_naive": 0.7202,
+   "signal_test": {
+    "assessed": true,
+    "origins": 6,
+    "mae_by_model": {
+     "NAIVE": 4196.73,
+     "LINEAR_REGRESSION": 3022.2966,
+     "EXPONENTIAL_SMOOTHING": 3554.9254,
+     "SEASONAL_NAIVE": 3283.3067
+    },
+    "best_model": "LINEAR_REGRESSION",
+    "expected_relative_error": 0.41275459575162593,
+    "skill_vs_naive": 0.7201551162315315,
+    "threshold": 0.2
+   },
+   "decision": "NOT_READY",
+   "reason_codes": [
+    "LOW_SIGNAL",
+    "MISSING_PERIODS_INTERPOLATED",
+    "STATIONARITY_STATIONARY"
+   ],
+   "warnings": [
+    {
+     "code": "MISSING_PERIODS_INTERPOLATED",
+     "message": "1 of 36 periods had no data and were filled by linear interpolation for the forecast only."
+    }
+   ],
+   "stationarity": {
+    "assessed": true,
+    "adf_p_value": 0.0001,
+    "kpss_p_value": 0.1,
+    "verdict": "STATIONARY"
+   },
+   "missing_value_ratio": 0.0,
+   "missing_period_ratio": 0.0278,
+   "filled_periods": 1,
+   "reason": "Series is dominated by noise: on its own history, the best simple forecast missed by 41% of the typical value on average (limit 20%), so a forecast would not be meaningful.",
+   "checks": [
+    "temporal_validity: PASS (axis='month', granularity=MONTH)",
+    "regularity: PASS (1 empty periods filled, calendar=MONTH)",
+    "sufficiency: PASS (36 observations)",
+    "signal_quality: FAIL (best in-history one-step error 41.3% of level (LINEAR_REGRESSION, 6 origins))"
+   ]
+  },
+  "stage_3_model_selection": {
+   "model": "NONE",
+   "reason": "",
+   "seasonal_period": 1,
+   "signals": {}
+  },
+  "stage_4_forecast": {
+   "generated": false,
+   "model": "NONE",
+   "model_reason": "",
+   "value_column": "",
+   "time_column": "",
+   "granularity": "NONE",
+   "horizon": 0,
+   "confidence_level": 0.95,
+   "points": [],
+   "in_sample_rmse": 0.0,
+   "in_sample_mae": 0.0,
+   "in_sample_mape": 0.0,
+   "residual_std": 0.0,
+   "historical_dates": [],
+   "historical_values": [],
+   "fitted_values": [],
+   "skipped_reason": "Series is dominated by noise: on its own history, the best simple forecast missed by 41% of the typical value on average (limit 20%), so a forecast would not be meaningful.",
+   "diagnostics": {}
+  },
+  "stage_5_anomaly": {
+   "evaluated": true,
+   "method": "ADAPTIVE_IQR_ZSCORE",
+   "detrended": false,
+   "trend_r2": 0.0647,
+   "seasonal": false,
+   "seasonal_strength": 0.2477,
+   "period": 12,
+   "predictive_space": "",
+   "lower_threshold": -2128.0675,
+   "upper_threshold": 16490.1825,
+   "median": 7016.585,
+   "mean": 7322.2603,
+   "std": 2966.5302,
+   "iqr": 3723.65,
+   "q1": 5319.2325,
+   "q3": 9042.8825,
+   "volatility_regime": "MODERATE",
+   "iqr_multiplier": 2.0,
+   "z_threshold": 3.0,
+   "historical_anomalies": [],
+   "predictive_warnings": [],
+   "skipped_reason": ""
+  },
+  "stage_6_scenario": {
+   "simulated": false,
+   "spec": {},
+   "baseline_points": [],
+   "scenario_points": [],
+   "deltas": [],
+   "baseline_total": 0.0,
+   "scenario_total": 0.0,
+   "total_delta": 0.0,
+   "total_delta_pct": 0.0,
+   "anomaly_report": {},
+   "skipped_reason": "No what-if scenario supplied."
+  }
+ },
+ "summary": {
+  "text": "The query returned 35 rows. Total software spend across the returned period is 253,373. The average software spend per period is 7,239. The highest value was 13,564 at 2023-06-01, 1.87x the average. The lowest value was 1,767 at 2023-08-01. Over the period the value increased from 8,205 to 11,185, a change of 36.3%. Values vary with a standard deviation of 2,967.\n\nAnomaly thresholds were adapted to this series' moderate volatility, giving a normal range of -2,128 to 16,490. No values, historical or projected, fall outside the adaptive normal range.\n\nNo forecast was produced: Series is dominated by noise: on its own history, the best simple forecast missed by 41% of the typical value on average (limit 20%), so a forecast would not be meaningful.",
+  "mode": "DETERMINISTIC",
+  "claim_count": 10,
+  "claims": [
+   {
+    "claim_id": "H0",
+    "dimension": "HISTORICAL",
+    "kind": "ROW_COUNT",
+    "text": "The query returned 35 rows.",
+    "value": 35.0,
+    "unit": "",
+    "source": "result set",
+    "derivation": "len(rows)",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H1",
+    "dimension": "HISTORICAL",
+    "kind": "TOTAL",
+    "text": "Total software spend across the returned period is 253,373.",
+    "value": 253373.16,
+    "unit": "",
+    "source": "column 'software_spend'",
+    "derivation": "sum of 35 values",
+    "supporting_values": [
+     8205.4,
+     10118.14,
+     10338.28,
+     9014.65,
+     13564.14,
+     8091.92,
+     1767.47,
+     8566.31,
+     3613.65,
+     5472.96,
+     7039.38,
+     6597.34,
+     6741.45,
+     13553.37,
+     5918.89,
+     2809.22,
+     8322.57,
+     11215.14,
+     8277.91,
+     5523.18,
+     6438.25,
+     6500.57,
+     8150.03,
+     3152.12,
+     9127.58,
+     8989.9,
+     4588.49,
+     5042.4,
+     5411.51,
+     3265.16,
+     11179.97,
+     6993.79,
+     3622.98,
+     4973.83,
+     11185.21
+    ]
+   },
+   {
+    "claim_id": "H2",
+    "dimension": "HISTORICAL",
+    "kind": "MEAN",
+    "text": "The average software spend per period is 7,239.",
+    "value": 7239.233142857143,
+    "unit": "",
+    "source": "column 'software_spend'",
+    "derivation": "253,373 / 35",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H3",
+    "dimension": "HISTORICAL",
+    "kind": "PEAK",
+    "text": "The highest value was 13,564 at 2023-06-01, 1.87x the average.",
+    "value": 13564.14,
+    "unit": "",
+    "source": "column 'software_spend'",
+    "derivation": "max of the series",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H4",
+    "dimension": "HISTORICAL",
+    "kind": "TROUGH",
+    "text": "The lowest value was 1,767 at 2023-08-01.",
+    "value": 1767.47,
+    "unit": "",
+    "source": "column 'software_spend'",
+    "derivation": "min of the series",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H5",
+    "dimension": "HISTORICAL",
+    "kind": "CHANGE",
+    "text": "Over the period the value increased from 8,205 to 11,185, a change of 36.3%.",
+    "value": 36.315231432958775,
+    "unit": "%",
+    "source": "column 'software_spend'",
+    "derivation": "(last - first) / |first| * 100",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H6",
+    "dimension": "HISTORICAL",
+    "kind": "DISPERSION",
+    "text": "Values vary with a standard deviation of 2,967.",
+    "value": 2967.097712279847,
+    "unit": "",
+    "source": "column 'software_spend'",
+    "derivation": "sample standard deviation",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "A0",
+    "dimension": "ANOMALY",
+    "kind": "THRESHOLD",
+    "text": "Anomaly thresholds were adapted to this series' moderate volatility, giving a normal range of -2,128 to 16,490.",
+    "value": 16490.1825,
+    "unit": "",
+    "source": "IQR/Z-score threshold engine",
+    "derivation": "Q1 - 2.0*IQR .. Q3 + 2.0*IQR",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "A3",
+    "dimension": "ANOMALY",
+    "kind": "CLEAR",
+    "text": "No values, historical or projected, fall outside the adaptive normal range.",
+    "value": 0.0,
+    "unit": "",
+    "source": "both dimensions",
+    "derivation": "no threshold breaches",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F0",
+    "dimension": "PREDICTIVE",
+    "kind": "SKIPPED",
+    "text": "No forecast was produced: Series is dominated by noise: on its own history, the best simple forecast missed by 41% of the typical value on average (limit 20%), so a forecast would not be meaningful.",
+    "value": 0.0,
+    "unit": "",
+    "source": "readiness classifier",
+    "derivation": "gate failure",
+    "supporting_values": []
+   }
+  ],
+  "verification": {
+   "numbers_in_summary": 16,
+   "verified": 16,
+   "unverified_values": [],
+   "passed": true,
+   "rule": "PRECISION_AWARE",
+   "tolerance": null,
+   "claims_available": 10
+  },
+  "warnings": [],
+  "rejected_narration": ""
+ },
+ "warnings": [
+  "IRREGULAR_TIME_AXIS",
+  "NO_SCHEMA_BINDING",
+  "UNRESOLVED_TERMS"
+ ],
+ "cache": {
+  "hit": false,
+  "key": "3ab6efea91a548c7"
+ },
+ "profiling": {
+  "total_execution_ms": 17.36,
+  "stage_breakdown_ms": {
+   "Part 4: Prediction": 7.48,
+   "Result Profiling": 5.13,
+   "Part 1: Query Understanding": 3.04,
+   "Part 3: Summarization": 0.79,
+   "Part 5: Response Shaping": 0.04,
+   "Part 2: Visualization": 0.03
+  }
+ }
+}

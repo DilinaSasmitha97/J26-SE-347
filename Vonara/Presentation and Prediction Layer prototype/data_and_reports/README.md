@@ -505,6 +505,24 @@ Details: `integration_rehearsal.md`, `stage6_completion_report.md`.
 
 ---
 
+## User interface (Stage 7)
+
+```bash
+python test_db/seed.py
+cd frontend && npm install && npm run build && cd ..
+uvicorn demo_api:app --port 8004      # open http://localhost:8004
+```
+
+A React interface (`frontend/`) renders every response block, the forecast
+notice and key figures taken from the summary's claims, with tabs for
+anomalies, an interactive what-if (slider or words), the "show the working"
+claim trace and the details of every decision. It calls the real
+`/api/v4/present` and `/api/v4/simulate`; only the masked rows come from
+stand-ins (`demo_api.py`). Charts use the validated data-viz palette in light
+and dark with a line-style and marker-shape key and a table view. 14 UI tests
+over real API responses; checked in a real browser on 12 screens at desktop
+and phone width. See `frontend/README.md` and `stage7_completion_report.md`.
+
 ## Integration
 
 | Endpoint | When | Purpose |
@@ -556,13 +574,14 @@ this layer depends on.
 | `evaluate_spider_intent.py`, `benchmark_data/prepare_spider_intent.py`, `benchmark_data/spider_dev_intent.json` | Stage 5 independent intent benchmark on Spider dev |
 | `test_db/run_api_rehearsal.py`, `test_db/sqlite_mysql.py` | Stage 6 HTTP integration rehearsal; SQLite backend with MySQL compatibility |
 | `test_integration.py` | Stage 6 checks: SQLite/MySQL compatibility, Member 2 stand-in, forecast opt-out, LLM defaults and policy, charts |
+| `frontend/`, `demo_api.py` | Stage 7 React interface and its demo server (real API + stand-in data routes) |
 | `test_intent.py` | thresholds and name columns, whole-word markers, LIMIT 1 only with order, negation / two questions, scalar forecast answers |
 | `strategies.py` | **Part 4** — Stage 1 strategy execution |
 | `input_adapter.py` | Member 2 columnar result → row dicts |
 | `benchmark_data/` | M4 development sample (seed 2026), held-out test sample (seed 2027) + `prepare_m4_sample.py` |
 | `test_db/` | synthetic MySQL database + 77 integration fixtures |
 | `forecast_benchmark.md`, `strategy_benchmark.md`, `readiness_benchmark.md`, `anomaly_benchmark.md`, `whatif_benchmark.md`, `verifier_benchmark.md`, `spider_intent_benchmark.md`, `integration_rehearsal.md` | generated benchmark reports |
-| `stage2_completion_report.md`, `stage3_completion_report.md`, `stage4_completion_report.md`, `stage5_completion_report.md`, `stage6_completion_report.md` | stage reports |
+| `stage2_completion_report.md`, `stage3_completion_report.md`, `stage4_completion_report.md`, `stage5_completion_report.md`, `stage6_completion_report.md`, `stage7_completion_report.md` | stage reports |
 | `synthetic_data.py` | labelled generators + 12-scenario benchmark |
 | `intent_testset.json` | 48 labelled intent cases |
 | `response_intent_dataset.csv` | 125-input response-intent development corpus |

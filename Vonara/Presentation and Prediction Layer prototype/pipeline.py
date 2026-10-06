@@ -226,7 +226,16 @@ def run(
 
     # ---- Part 4 Stage 5: dual-dimension anomaly detection ---------------
     with profiler.stage("Stage 5 Anomaly Detection", "Part 4: Prediction"):
-        if series_values:
+        if series_values and analysis.primary_intent == "DETAIL_LOOKUP":
+            # A list of records that happens to carry a date and a number (an
+            # employee list with hire dates and salaries) is not a series:
+            # bands over it produced claims such as "2018 is a high outlier"
+            # about one employee (Stage 7, seen in the UI).
+            anomaly_report.skipped_reason = (
+                "The result is a list of records, not a series; anomaly bands are "
+                "computed for values over time or across categories."
+            )
+        elif series_values:
             anomaly_report = anomaly_mod.detect_anomalies(
                 series_values, series_labels, forecast=forecast,
                 period=strategies._period(profile),

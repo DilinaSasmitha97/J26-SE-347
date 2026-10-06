@@ -1,0 +1,1865 @@
+{
+ "status": "SUCCESS",
+ "pipeline_version": "1.0",
+ "input": {
+  "source_format": "MEMBER2_COLUMNAR",
+  "columns": [
+   "month",
+   "total_amount"
+  ],
+  "row_count": 36,
+  "rows_received": 36,
+  "truncated": false,
+  "masked_columns": {},
+  "renamed_columns": {},
+  "warnings": []
+ },
+ "analysis": {
+  "analysis_schema_version": "1.0",
+  "query_understanding": {
+   "user_query": "Deep dive into my monthly expenses",
+   "normalized_query": "deep dive into my monthly expenses"
+  },
+  "intent": {
+   "primary_intent": "TREND_ANALYSIS",
+   "secondary_intents": [],
+   "confidence": 0.97,
+   "intent_source": "RULE",
+   "rationale": "Matched 'monthly' (evidence 3 vs next 0)."
+  },
+  "response_intent": {
+   "intent": "MIXED_SUMMARY",
+   "confidence": 0.7625,
+   "source": "RULE",
+   "rationale": "Lexical evidence 4.0 for MIXED_SUMMARY vs 1.0 for CHART ('\\bdeep dive\\b').",
+   "blocks": [
+    "SUMMARY",
+    "TABLE",
+    "CHART"
+   ],
+   "answer_focus": "VALUE",
+   "is_data_request": true,
+   "not_a_request_reason": "",
+   "evidence_grade": "DIRECT",
+   "evidence": {
+    "scores": {
+     "SINGLE_ANSWER": 0.0,
+     "SHORT_SUMMARY": 0.0,
+     "TABLE_CONTENT": 0.0,
+     "CHART": 1.0,
+     "MIXED_SUMMARY": 4.0
+    },
+    "matched_markers": {
+     "CHART": [
+      "\\b(?:monthly|weekly|daily|quarterly|yearly|annually)\\b"
+     ],
+     "MIXED_SUMMARY": [
+      "\\bdeep dive\\b"
+     ]
+    },
+    "runner_up": "CHART",
+    "margin": 0.75
+   }
+  },
+  "prediction_request": {
+   "prediction_required": true,
+   "prediction_trigger": "IMPLICIT",
+   "horizon": {
+    "value": 3,
+    "unit": "MONTH",
+    "source": "INFERRED"
+   },
+   "what_if": {
+    "present": false,
+    "raw_clause": "",
+    "parameter": "",
+    "direction": "",
+    "magnitude_pct": 0.0
+   }
+  },
+  "schema_binding": {
+   "affected_tables": [
+    {
+     "table": "expenses",
+     "role": "FACT",
+     "confidence": 0.95,
+     "matched_terms": [
+      "expens",
+      "expenses"
+     ]
+    }
+   ],
+   "affected_columns": [],
+   "unresolved_terms": [
+    "deep",
+    "dive",
+    "into"
+   ]
+  },
+  "semantic_roles": {
+   "metrics": [
+    {
+     "column": "amount",
+     "aggregation": "SUM",
+     "table": "expenses"
+    }
+   ],
+   "dimensions": [],
+   "temporal_field": "invoice_date",
+   "temporal_granularity": "MONTH",
+   "filters": [],
+   "ordering": "",
+   "limit": 0,
+   "limit_source": "NONE"
+  },
+  "visualization_hint": {
+   "recommended_chart": "line",
+   "alternatives": [
+    "area",
+    "bar"
+   ],
+   "rationale": "TREND_ANALYSIS maps to 'line' by the intent-encoding table."
+  },
+  "governance": {
+   "pii_columns_referenced": [],
+   "read_only": true
+  },
+  "warnings": [
+   "UNRESOLVED_TERMS"
+  ],
+  "metadata": {
+   "injection_markers": [],
+   "mode": "RULE_ONLY",
+   "model": "deterministic-fallback",
+   "provider": "none",
+   "prompt_tokens": 0,
+   "completion_tokens": 0,
+   "total_tokens": 0,
+   "schema_tables_considered": 4,
+   "execution_time_ms": 2.78,
+   "tenant_id": "tenant_a",
+   "user_role": ""
+  }
+ },
+ "result_profile": {
+  "row_count": 36,
+  "column_count": 2,
+  "columns": [
+   {
+    "name": "month",
+    "role": "TEMPORAL",
+    "inferred_type": "date",
+    "non_null": 36,
+    "null_count": 0,
+    "distinct_count": 36,
+    "is_monotonic": true,
+    "min_value": "2023-01-01T00:00:00",
+    "max_value": "2025-12-01T00:00:00",
+    "mean": null,
+    "std": null,
+    "sample_values": [
+     "2023-01-01",
+     "2023-02-01",
+     "2023-03-01",
+     "2023-04-01",
+     "2023-05-01"
+    ]
+   },
+   {
+    "name": "total_amount",
+    "role": "MEASURE",
+    "inferred_type": "number",
+    "non_null": 36,
+    "null_count": 0,
+    "distinct_count": 36,
+    "is_monotonic": false,
+    "min_value": 15451.26,
+    "max_value": 28546.94,
+    "mean": 21582.38527777778,
+    "std": 3645.548412722787,
+    "sample_values": [
+     "20867.98",
+     "23383.90",
+     "25587.59",
+     "25364.91",
+     "22467.76"
+    ]
+   }
+  ],
+  "temporal_column": "month",
+  "granularity": "MONTH",
+  "measure_columns": [
+   "total_amount"
+  ],
+  "dimension_columns": [],
+  "is_time_series": true,
+  "is_regular_interval": true,
+  "has_gaps": false,
+  "layout": "SINGLE",
+  "group_column": "",
+  "period_count": 36,
+  "warnings": []
+ },
+ "response": {
+  "response_intent": {
+   "intent": "MIXED_SUMMARY",
+   "confidence": 0.7625,
+   "source": "RULE",
+   "rationale": "Lexical evidence 4.0 for MIXED_SUMMARY vs 1.0 for CHART ('\\bdeep dive\\b').",
+   "blocks": [
+    "SUMMARY",
+    "TABLE",
+    "CHART"
+   ],
+   "answer_focus": "VALUE",
+   "is_data_request": true,
+   "not_a_request_reason": "",
+   "evidence_grade": "DIRECT",
+   "evidence": {
+    "scores": {
+     "SINGLE_ANSWER": 0.0,
+     "SHORT_SUMMARY": 0.0,
+     "TABLE_CONTENT": 0.0,
+     "CHART": 1.0,
+     "MIXED_SUMMARY": 4.0
+    },
+    "matched_markers": {
+     "CHART": [
+      "\\b(?:monthly|weekly|daily|quarterly|yearly|annually)\\b"
+     ],
+     "MIXED_SUMMARY": [
+      "\\bdeep dive\\b"
+     ]
+    },
+    "runner_up": "CHART",
+    "margin": 0.75
+   },
+   "guardrails_applied": [],
+   "original_intent": "MIXED_SUMMARY",
+   "warnings": []
+  },
+  "blocks_emitted": [
+   "SUMMARY",
+   "TABLE",
+   "CHART"
+  ],
+  "blocks_declared": [
+   "SUMMARY",
+   "TABLE",
+   "CHART"
+  ],
+  "summary": {
+   "block": "SUMMARY",
+   "text": "The query returned 36 rows. Total amount across the returned period is 776,966. The average total amount per period is 21,582. The highest value was 28,547 at 2024-04-01, 1.32x the average. The lowest value was 15,451 at 2023-10-01. Over the period the value increased from 20,868 to 21,095, a change of 1.1%.",
+   "full_text": "The query returned 36 rows. Total amount across the returned period is 776,966. The average total amount per period is 21,582. The highest value was 28,547 at 2024-04-01, 1.32x the average. The lowest value was 15,451 at 2023-10-01. Over the period the value increased from 20,868 to 21,095, a change of 1.1%. Values vary with a standard deviation of 3,646.\n\nAnomaly thresholds were adapted to this series' stable volatility, giving a normal range of -2,965 to 2,805. May 2023 is a moderate low outlier at 22,468, 4.1% from the mean. Apr 2024 is a moderate high outlier at 28,547, 32.3% from the mean. Jun 2025 is a moderate low outlier at 20,255, 6.2% from the mean.\n\nA sarima model was selected and projects 3 month periods ahead. Total Amount for Jan 2026 is projected at 23,916, within a 95% confidence range of 18,881 to 28,951. Total Amount for Feb 2026 is projected at 26,279, within a 95% confidence range of 19,158 to 33,399. Total Amount for Mar 2026 is projected at 28,361, within a 95% confidence range of 19,640 to 37,081. Across the full 3-period horizon the projected total is 78,555. The Mar 2026 projection of 28,361 sits 31.4% above the historical average of 21,582. Forecast uncertainty widens with distance: the interval at the final period is 1.73x as wide as at the first. On the observed data the model's mean absolute percentage error is 8.5%.",
+   "mode": "DETERMINISTIC",
+   "sentence_selection": "LEADING_SENTENCES",
+   "claim_count": 20,
+   "verified": true
+  },
+  "table": {
+   "block": "TABLE",
+   "columns": [
+    {
+     "name": "month",
+     "label": "Month",
+     "role": "TEMPORAL",
+     "type": "date",
+     "align": "left",
+     "null_count": 0
+    },
+    {
+     "name": "total_amount",
+     "label": "Total Amount",
+     "role": "MEASURE",
+     "type": "number",
+     "align": "right",
+     "null_count": 0
+    }
+   ],
+   "rows": [
+    {
+     "month": "2023-01-01",
+     "total_amount": 20867.98
+    },
+    {
+     "month": "2023-02-01",
+     "total_amount": 23383.9
+    },
+    {
+     "month": "2023-03-01",
+     "total_amount": 25587.59
+    },
+    {
+     "month": "2023-04-01",
+     "total_amount": 25364.91
+    },
+    {
+     "month": "2023-05-01",
+     "total_amount": 22467.76
+    },
+    {
+     "month": "2023-06-01",
+     "total_amount": 24333.38
+    },
+    {
+     "month": "2023-07-01",
+     "total_amount": 20802.61
+    },
+    {
+     "month": "2023-08-01",
+     "total_amount": 18652.06
+    },
+    {
+     "month": "2023-09-01",
+     "total_amount": 15845.13
+    },
+    {
+     "month": "2023-10-01",
+     "total_amount": 15451.26
+    },
+    {
+     "month": "2023-11-01",
+     "total_amount": 16441.89
+    },
+    {
+     "month": "2023-12-01",
+     "total_amount": 20923.1
+    },
+    {
+     "month": "2024-01-01",
+     "total_amount": 20601.98
+    },
+    {
+     "month": "2024-02-01",
+     "total_amount": 22821.63
+    },
+    {
+     "month": "2024-03-01",
+     "total_amount": 25527.03
+    },
+    {
+     "month": "2024-04-01",
+     "total_amount": 28546.94
+    },
+    {
+     "month": "2024-05-01",
+     "total_amount": 28111.49
+    },
+    {
+     "month": "2024-06-01",
+     "total_amount": 23104.01
+    },
+    {
+     "month": "2024-07-01",
+     "total_amount": 20925.59
+    },
+    {
+     "month": "2024-08-01",
+     "total_amount": 19522.96
+    },
+    {
+     "month": "2024-09-01",
+     "total_amount": 17390.65
+    },
+    {
+     "month": "2024-10-01",
+     "total_amount": 16127.36
+    },
+    {
+     "month": "2024-11-01",
+     "total_amount": 17297.05
+    },
+    {
+     "month": "2024-12-01",
+     "total_amount": 20136.98
+    },
+    {
+     "month": "2025-01-01",
+     "total_amount": 21524.46
+    },
+    {
+     "month": "2025-02-01",
+     "total_amount": 24961.76
+    },
+    {
+     "month": "2025-03-01",
+     "total_amount": 27001.69
+    },
+    {
+     "month": "2025-04-01",
+     "total_amount": 26147.39
+    },
+    {
+     "month": "2025-05-01",
+     "total_amount": 26752.64
+    },
+    {
+     "month": "2025-06-01",
+     "total_amount": 20254.81
+    },
+    {
+     "month": "2025-07-01",
+     "total_amount": 23768.32
+    },
+    {
+     "month": "2025-08-01",
+     "total_amount": 18837.51
+    },
+    {
+     "month": "2025-09-01",
+     "total_amount": 19906.9
+    },
+    {
+     "month": "2025-10-01",
+     "total_amount": 16765.58
+    },
+    {
+     "month": "2025-11-01",
+     "total_amount": 19714.95
+    },
+    {
+     "month": "2025-12-01",
+     "total_amount": 21094.62
+    }
+   ],
+   "row_count": 36,
+   "rows_returned": 36,
+   "truncated": false,
+   "implied_limit": 0,
+   "implied_limit_applied": false,
+   "limit_note": ""
+  },
+  "chart": {
+   "block": "CHART",
+   "chart_type": "line",
+   "rationale": "",
+   "spec": {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "title": "Deep Dive Into My Monthly Expenses",
+    "width": "container",
+    "height": 320,
+    "autosize": {
+     "type": "fit",
+     "contains": "padding"
+    },
+    "resolve": {
+     "scale": {
+      "y": "shared",
+      "x": "shared"
+     }
+    },
+    "layer": [
+     {
+      "data": {
+       "values": [
+        {
+         "month": "2023-01-01",
+         "total_amount": 20867.98
+        },
+        {
+         "month": "2023-02-01",
+         "total_amount": 23383.9
+        },
+        {
+         "month": "2023-03-01",
+         "total_amount": 25587.59
+        },
+        {
+         "month": "2023-04-01",
+         "total_amount": 25364.91
+        },
+        {
+         "month": "2023-05-01",
+         "total_amount": 22467.76
+        },
+        {
+         "month": "2023-06-01",
+         "total_amount": 24333.38
+        },
+        {
+         "month": "2023-07-01",
+         "total_amount": 20802.61
+        },
+        {
+         "month": "2023-08-01",
+         "total_amount": 18652.06
+        },
+        {
+         "month": "2023-09-01",
+         "total_amount": 15845.13
+        },
+        {
+         "month": "2023-10-01",
+         "total_amount": 15451.26
+        },
+        {
+         "month": "2023-11-01",
+         "total_amount": 16441.89
+        },
+        {
+         "month": "2023-12-01",
+         "total_amount": 20923.1
+        },
+        {
+         "month": "2024-01-01",
+         "total_amount": 20601.98
+        },
+        {
+         "month": "2024-02-01",
+         "total_amount": 22821.63
+        },
+        {
+         "month": "2024-03-01",
+         "total_amount": 25527.03
+        },
+        {
+         "month": "2024-04-01",
+         "total_amount": 28546.94
+        },
+        {
+         "month": "2024-05-01",
+         "total_amount": 28111.49
+        },
+        {
+         "month": "2024-06-01",
+         "total_amount": 23104.01
+        },
+        {
+         "month": "2024-07-01",
+         "total_amount": 20925.59
+        },
+        {
+         "month": "2024-08-01",
+         "total_amount": 19522.96
+        },
+        {
+         "month": "2024-09-01",
+         "total_amount": 17390.65
+        },
+        {
+         "month": "2024-10-01",
+         "total_amount": 16127.36
+        },
+        {
+         "month": "2024-11-01",
+         "total_amount": 17297.05
+        },
+        {
+         "month": "2024-12-01",
+         "total_amount": 20136.98
+        },
+        {
+         "month": "2025-01-01",
+         "total_amount": 21524.46
+        },
+        {
+         "month": "2025-02-01",
+         "total_amount": 24961.76
+        },
+        {
+         "month": "2025-03-01",
+         "total_amount": 27001.69
+        },
+        {
+         "month": "2025-04-01",
+         "total_amount": 26147.39
+        },
+        {
+         "month": "2025-05-01",
+         "total_amount": 26752.64
+        },
+        {
+         "month": "2025-06-01",
+         "total_amount": 20254.81
+        },
+        {
+         "month": "2025-07-01",
+         "total_amount": 23768.32
+        },
+        {
+         "month": "2025-08-01",
+         "total_amount": 18837.51
+        },
+        {
+         "month": "2025-09-01",
+         "total_amount": 19906.9
+        },
+        {
+         "month": "2025-10-01",
+         "total_amount": 16765.58
+        },
+        {
+         "month": "2025-11-01",
+         "total_amount": 19714.95
+        },
+        {
+         "month": "2025-12-01",
+         "total_amount": 21094.62
+        }
+       ]
+      },
+      "mark": {
+       "type": "line",
+       "point": true,
+       "color": "#4C78A8",
+       "tooltip": true
+      },
+      "encoding": {
+       "x": {
+        "field": "month",
+        "type": "temporal",
+        "title": "Month",
+        "timeUnit": "yearmonth"
+       },
+       "y": {
+        "field": "total_amount",
+        "type": "quantitative",
+        "title": "Total Amount"
+       }
+      }
+     },
+     {
+      "data": {
+       "values": [
+        {
+         "month": "2025-12-01T00:00:00",
+         "forecast": 21094.62,
+         "lower_bound": 21094.62,
+         "upper_bound": 21094.62,
+         "segment": "bridge"
+        },
+        {
+         "month": "2026-01-01T00:00:00",
+         "forecast": 23915.8032,
+         "lower_bound": 18880.9064,
+         "upper_bound": 28950.7001,
+         "label": "Jan 2026",
+         "segment": "forecast"
+        },
+        {
+         "month": "2026-02-01T00:00:00",
+         "forecast": 26278.5457,
+         "lower_bound": 19158.1263,
+         "upper_bound": 33398.9651,
+         "label": "Feb 2026",
+         "segment": "forecast"
+        },
+        {
+         "month": "2026-03-01T00:00:00",
+         "forecast": 28360.5071,
+         "lower_bound": 19639.81,
+         "upper_bound": 37081.2042,
+         "label": "Mar 2026",
+         "segment": "forecast"
+        }
+       ]
+      },
+      "mark": {
+       "type": "area",
+       "opacity": 0.18,
+       "color": "#F58518",
+       "tooltip": true
+      },
+      "encoding": {
+       "x": {
+        "field": "month",
+        "type": "temporal",
+        "title": "Month",
+        "timeUnit": "yearmonth"
+       },
+       "y": {
+        "field": "lower_bound",
+        "type": "quantitative",
+        "title": "Total Amount"
+       },
+       "y2": {
+        "field": "upper_bound"
+       }
+      }
+     },
+     {
+      "data": {
+       "values": [
+        {
+         "month": "2025-12-01T00:00:00",
+         "forecast": 21094.62,
+         "lower_bound": 21094.62,
+         "upper_bound": 21094.62,
+         "segment": "bridge"
+        },
+        {
+         "month": "2026-01-01T00:00:00",
+         "forecast": 23915.8032,
+         "lower_bound": 18880.9064,
+         "upper_bound": 28950.7001,
+         "label": "Jan 2026",
+         "segment": "forecast"
+        },
+        {
+         "month": "2026-02-01T00:00:00",
+         "forecast": 26278.5457,
+         "lower_bound": 19158.1263,
+         "upper_bound": 33398.9651,
+         "label": "Feb 2026",
+         "segment": "forecast"
+        },
+        {
+         "month": "2026-03-01T00:00:00",
+         "forecast": 28360.5071,
+         "lower_bound": 19639.81,
+         "upper_bound": 37081.2042,
+         "label": "Mar 2026",
+         "segment": "forecast"
+        }
+       ]
+      },
+      "mark": {
+       "type": "line",
+       "strokeDash": [
+        6,
+        4
+       ],
+       "color": "#F58518",
+       "point": true,
+       "tooltip": true
+      },
+      "encoding": {
+       "x": {
+        "field": "month",
+        "type": "temporal",
+        "title": "Month",
+        "timeUnit": "yearmonth"
+       },
+       "y": {
+        "field": "forecast",
+        "type": "quantitative",
+        "title": "Total Amount"
+       }
+      }
+     },
+     {
+      "data": {
+       "values": [
+        {
+         "month": "May 2023",
+         "value": 22467.76,
+         "dimension": "HISTORICAL",
+         "severity": "MODERATE",
+         "direction": "LOW"
+        },
+        {
+         "month": "Apr 2024",
+         "value": 28546.94,
+         "dimension": "HISTORICAL",
+         "severity": "MODERATE",
+         "direction": "HIGH"
+        },
+        {
+         "month": "Jun 2025",
+         "value": 20254.81,
+         "dimension": "HISTORICAL",
+         "severity": "MODERATE",
+         "direction": "LOW"
+        }
+       ]
+      },
+      "mark": {
+       "type": "point",
+       "filled": true,
+       "size": 150,
+       "shape": "triangle-up",
+       "color": "#D62728",
+       "tooltip": true
+      },
+      "encoding": {
+       "x": {
+        "field": "month",
+        "type": "temporal",
+        "title": "Month",
+        "timeUnit": "yearmonth"
+       },
+       "y": {
+        "field": "value",
+        "type": "quantitative"
+       },
+       "shape": {
+        "field": "dimension",
+        "type": "nominal",
+        "scale": {
+         "domain": [
+          "HISTORICAL",
+          "PREDICTIVE"
+         ],
+         "range": [
+          "triangle-up",
+          "diamond"
+         ]
+        },
+        "legend": {
+         "title": "Anomaly"
+        }
+       }
+      }
+     }
+    ],
+    "_meta": {
+     "chart_type": "line",
+     "selection_reason": "36 ordered time periods encode naturally as a line.",
+     "adapted_from_intent_default": "",
+     "intent": "TREND_ANALYSIS",
+     "row_count": 36,
+     "x_field": "month",
+     "y_field": "total_amount",
+     "color_field": "",
+     "forecast_layered": true,
+     "category_forecasts_layered": false,
+     "extension_rules_applied": [
+      "R2_CONFIDENCE_BAND",
+      "R1_FORECAST_MEAN",
+      "R3_ANOMALY_MARKERS"
+     ],
+     "layer_count": 4
+    }
+   }
+  }
+ },
+ "visualization": {
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": "Deep Dive Into My Monthly Expenses",
+  "width": "container",
+  "height": 320,
+  "autosize": {
+   "type": "fit",
+   "contains": "padding"
+  },
+  "resolve": {
+   "scale": {
+    "y": "shared",
+    "x": "shared"
+   }
+  },
+  "layer": [
+   {
+    "data": {
+     "values": [
+      {
+       "month": "2023-01-01",
+       "total_amount": 20867.98
+      },
+      {
+       "month": "2023-02-01",
+       "total_amount": 23383.9
+      },
+      {
+       "month": "2023-03-01",
+       "total_amount": 25587.59
+      },
+      {
+       "month": "2023-04-01",
+       "total_amount": 25364.91
+      },
+      {
+       "month": "2023-05-01",
+       "total_amount": 22467.76
+      },
+      {
+       "month": "2023-06-01",
+       "total_amount": 24333.38
+      },
+      {
+       "month": "2023-07-01",
+       "total_amount": 20802.61
+      },
+      {
+       "month": "2023-08-01",
+       "total_amount": 18652.06
+      },
+      {
+       "month": "2023-09-01",
+       "total_amount": 15845.13
+      },
+      {
+       "month": "2023-10-01",
+       "total_amount": 15451.26
+      },
+      {
+       "month": "2023-11-01",
+       "total_amount": 16441.89
+      },
+      {
+       "month": "2023-12-01",
+       "total_amount": 20923.1
+      },
+      {
+       "month": "2024-01-01",
+       "total_amount": 20601.98
+      },
+      {
+       "month": "2024-02-01",
+       "total_amount": 22821.63
+      },
+      {
+       "month": "2024-03-01",
+       "total_amount": 25527.03
+      },
+      {
+       "month": "2024-04-01",
+       "total_amount": 28546.94
+      },
+      {
+       "month": "2024-05-01",
+       "total_amount": 28111.49
+      },
+      {
+       "month": "2024-06-01",
+       "total_amount": 23104.01
+      },
+      {
+       "month": "2024-07-01",
+       "total_amount": 20925.59
+      },
+      {
+       "month": "2024-08-01",
+       "total_amount": 19522.96
+      },
+      {
+       "month": "2024-09-01",
+       "total_amount": 17390.65
+      },
+      {
+       "month": "2024-10-01",
+       "total_amount": 16127.36
+      },
+      {
+       "month": "2024-11-01",
+       "total_amount": 17297.05
+      },
+      {
+       "month": "2024-12-01",
+       "total_amount": 20136.98
+      },
+      {
+       "month": "2025-01-01",
+       "total_amount": 21524.46
+      },
+      {
+       "month": "2025-02-01",
+       "total_amount": 24961.76
+      },
+      {
+       "month": "2025-03-01",
+       "total_amount": 27001.69
+      },
+      {
+       "month": "2025-04-01",
+       "total_amount": 26147.39
+      },
+      {
+       "month": "2025-05-01",
+       "total_amount": 26752.64
+      },
+      {
+       "month": "2025-06-01",
+       "total_amount": 20254.81
+      },
+      {
+       "month": "2025-07-01",
+       "total_amount": 23768.32
+      },
+      {
+       "month": "2025-08-01",
+       "total_amount": 18837.51
+      },
+      {
+       "month": "2025-09-01",
+       "total_amount": 19906.9
+      },
+      {
+       "month": "2025-10-01",
+       "total_amount": 16765.58
+      },
+      {
+       "month": "2025-11-01",
+       "total_amount": 19714.95
+      },
+      {
+       "month": "2025-12-01",
+       "total_amount": 21094.62
+      }
+     ]
+    },
+    "mark": {
+     "type": "line",
+     "point": true,
+     "color": "#4C78A8",
+     "tooltip": true
+    },
+    "encoding": {
+     "x": {
+      "field": "month",
+      "type": "temporal",
+      "title": "Month",
+      "timeUnit": "yearmonth"
+     },
+     "y": {
+      "field": "total_amount",
+      "type": "quantitative",
+      "title": "Total Amount"
+     }
+    }
+   },
+   {
+    "data": {
+     "values": [
+      {
+       "month": "2025-12-01T00:00:00",
+       "forecast": 21094.62,
+       "lower_bound": 21094.62,
+       "upper_bound": 21094.62,
+       "segment": "bridge"
+      },
+      {
+       "month": "2026-01-01T00:00:00",
+       "forecast": 23915.8032,
+       "lower_bound": 18880.9064,
+       "upper_bound": 28950.7001,
+       "label": "Jan 2026",
+       "segment": "forecast"
+      },
+      {
+       "month": "2026-02-01T00:00:00",
+       "forecast": 26278.5457,
+       "lower_bound": 19158.1263,
+       "upper_bound": 33398.9651,
+       "label": "Feb 2026",
+       "segment": "forecast"
+      },
+      {
+       "month": "2026-03-01T00:00:00",
+       "forecast": 28360.5071,
+       "lower_bound": 19639.81,
+       "upper_bound": 37081.2042,
+       "label": "Mar 2026",
+       "segment": "forecast"
+      }
+     ]
+    },
+    "mark": {
+     "type": "area",
+     "opacity": 0.18,
+     "color": "#F58518",
+     "tooltip": true
+    },
+    "encoding": {
+     "x": {
+      "field": "month",
+      "type": "temporal",
+      "title": "Month",
+      "timeUnit": "yearmonth"
+     },
+     "y": {
+      "field": "lower_bound",
+      "type": "quantitative",
+      "title": "Total Amount"
+     },
+     "y2": {
+      "field": "upper_bound"
+     }
+    }
+   },
+   {
+    "data": {
+     "values": [
+      {
+       "month": "2025-12-01T00:00:00",
+       "forecast": 21094.62,
+       "lower_bound": 21094.62,
+       "upper_bound": 21094.62,
+       "segment": "bridge"
+      },
+      {
+       "month": "2026-01-01T00:00:00",
+       "forecast": 23915.8032,
+       "lower_bound": 18880.9064,
+       "upper_bound": 28950.7001,
+       "label": "Jan 2026",
+       "segment": "forecast"
+      },
+      {
+       "month": "2026-02-01T00:00:00",
+       "forecast": 26278.5457,
+       "lower_bound": 19158.1263,
+       "upper_bound": 33398.9651,
+       "label": "Feb 2026",
+       "segment": "forecast"
+      },
+      {
+       "month": "2026-03-01T00:00:00",
+       "forecast": 28360.5071,
+       "lower_bound": 19639.81,
+       "upper_bound": 37081.2042,
+       "label": "Mar 2026",
+       "segment": "forecast"
+      }
+     ]
+    },
+    "mark": {
+     "type": "line",
+     "strokeDash": [
+      6,
+      4
+     ],
+     "color": "#F58518",
+     "point": true,
+     "tooltip": true
+    },
+    "encoding": {
+     "x": {
+      "field": "month",
+      "type": "temporal",
+      "title": "Month",
+      "timeUnit": "yearmonth"
+     },
+     "y": {
+      "field": "forecast",
+      "type": "quantitative",
+      "title": "Total Amount"
+     }
+    }
+   },
+   {
+    "data": {
+     "values": [
+      {
+       "month": "May 2023",
+       "value": 22467.76,
+       "dimension": "HISTORICAL",
+       "severity": "MODERATE",
+       "direction": "LOW"
+      },
+      {
+       "month": "Apr 2024",
+       "value": 28546.94,
+       "dimension": "HISTORICAL",
+       "severity": "MODERATE",
+       "direction": "HIGH"
+      },
+      {
+       "month": "Jun 2025",
+       "value": 20254.81,
+       "dimension": "HISTORICAL",
+       "severity": "MODERATE",
+       "direction": "LOW"
+      }
+     ]
+    },
+    "mark": {
+     "type": "point",
+     "filled": true,
+     "size": 150,
+     "shape": "triangle-up",
+     "color": "#D62728",
+     "tooltip": true
+    },
+    "encoding": {
+     "x": {
+      "field": "month",
+      "type": "temporal",
+      "title": "Month",
+      "timeUnit": "yearmonth"
+     },
+     "y": {
+      "field": "value",
+      "type": "quantitative"
+     },
+     "shape": {
+      "field": "dimension",
+      "type": "nominal",
+      "scale": {
+       "domain": [
+        "HISTORICAL",
+        "PREDICTIVE"
+       ],
+       "range": [
+        "triangle-up",
+        "diamond"
+       ]
+      },
+      "legend": {
+       "title": "Anomaly"
+      }
+     }
+    }
+   }
+  ],
+  "_meta": {
+   "chart_type": "line",
+   "selection_reason": "36 ordered time periods encode naturally as a line.",
+   "adapted_from_intent_default": "",
+   "intent": "TREND_ANALYSIS",
+   "row_count": 36,
+   "x_field": "month",
+   "y_field": "total_amount",
+   "color_field": "",
+   "forecast_layered": true,
+   "category_forecasts_layered": false,
+   "extension_rules_applied": [
+    "R2_CONFIDENCE_BAND",
+    "R1_FORECAST_MEAN",
+    "R3_ANOMALY_MARKERS"
+   ],
+   "layer_count": 4
+  }
+ },
+ "prediction": {
+  "stage_1_strategy": {
+   "intent": "TREND_ANALYSIS",
+   "strategy": "TEMPORAL_FORECAST",
+   "rationale": "A measure tracked over time extends naturally into future periods.",
+   "promoted_by_explicit_request": false,
+   "prediction_requested": true
+  },
+  "stage_1_strategy_result": {
+   "requested": "TEMPORAL_FORECAST",
+   "executed_as": "TEMPORAL_FORECAST",
+   "executed": true,
+   "skipped_reason": "",
+   "details": {}
+  },
+  "stage_2_readiness": {
+   "verdict": "READY",
+   "is_ready": true,
+   "temporal_valid": true,
+   "statistically_sufficient": true,
+   "signal_adequate": true,
+   "n_points": 36,
+   "dropped_rows": 0,
+   "granularity": "MONTH",
+   "coefficient_of_variation": 0.1689,
+   "trend_r2": 0.0043,
+   "expected_relative_error": 0.0777,
+   "skill_vs_naive": 0.5922,
+   "signal_test": {
+    "assessed": true,
+    "origins": 6,
+    "mae_by_model": {
+     "NAIVE": 2830.6783,
+     "LINEAR_REGRESSION": 2421.4787,
+     "EXPONENTIAL_SMOOTHING": 2369.159,
+     "SEASONAL_NAIVE": 1676.365
+    },
+    "best_model": "SEASONAL_NAIVE",
+    "expected_relative_error": 0.07767283265608567,
+    "skill_vs_naive": 0.5922131738741069,
+    "threshold": 0.2
+   },
+   "decision": "READY",
+   "reason_codes": [
+    "STATIONARITY_STATIONARY"
+   ],
+   "warnings": [],
+   "stationarity": {
+    "assessed": true,
+    "adf_p_value": 0.0,
+    "kpss_p_value": 0.1,
+    "verdict": "STATIONARY"
+   },
+   "missing_value_ratio": 0.0,
+   "missing_period_ratio": 0.0,
+   "filled_periods": 0,
+   "reason": "All readiness gates passed.",
+   "checks": [
+    "temporal_validity: PASS (axis='month', granularity=MONTH)",
+    "regularity: PASS (0 empty periods filled, calendar=MONTH)",
+    "sufficiency: PASS (36 observations)",
+    "signal_quality: PASS (best in-history one-step error 7.8% of level (SEASONAL_NAIVE, 6 origins))"
+   ]
+  },
+  "stage_3_model_selection": {
+   "model": "SARIMA",
+   "reason": "Trend-oriented intent with seasonal structure (ACF at lag 12 = 0.60 over 36 points): SARIMA models level and season jointly.",
+   "seasonal_period": 12,
+   "signals": {
+    "semantic_intent": "TREND_ANALYSIS",
+    "n_points": 36,
+    "trend_r2": 0.0043,
+    "trend_slope": -22.67457,
+    "coefficient_of_variation": 0.1689,
+    "seasonal_lag": 12,
+    "seasonal_acf": 0.5965,
+    "adf_stationary": true,
+    "adf_p_value": 0.0,
+    "stationarity": {
+     "assessed": true,
+     "adf_p_value": 0.0,
+     "kpss_p_value": 0.1,
+     "verdict": "STATIONARY"
+    },
+    "statsmodels_available": true
+   }
+  },
+  "stage_4_forecast": {
+   "generated": true,
+   "model": "SARIMA",
+   "model_reason": "Trend-oriented intent with seasonal structure (ACF at lag 12 = 0.60 over 36 points): SARIMA models level and season jointly.",
+   "value_column": "total_amount",
+   "time_column": "month",
+   "granularity": "MONTH",
+   "horizon": 3,
+   "confidence_level": 0.95,
+   "points": [
+    {
+     "period_index": 1,
+     "timestamp": "2026-01-01T00:00:00",
+     "label": "Jan 2026",
+     "predicted": 23915.8032,
+     "lower_bound": 18880.9064,
+     "upper_bound": 28950.7001,
+     "interval_width": 10069.7937
+    },
+    {
+     "period_index": 2,
+     "timestamp": "2026-02-01T00:00:00",
+     "label": "Feb 2026",
+     "predicted": 26278.5457,
+     "lower_bound": 19158.1263,
+     "upper_bound": 33398.9651,
+     "interval_width": 14240.8388
+    },
+    {
+     "period_index": 3,
+     "timestamp": "2026-03-01T00:00:00",
+     "label": "Mar 2026",
+     "predicted": 28360.5071,
+     "lower_bound": 19639.81,
+     "upper_bound": 37081.2042,
+     "interval_width": 17441.3942
+    }
+   ],
+   "in_sample_rmse": 2319.1018,
+   "in_sample_mae": 1863.7089,
+   "in_sample_mape": 8.4926,
+   "residual_std": 2371.223,
+   "historical_dates": [
+    "2023-01-01T00:00:00",
+    "2023-02-01T00:00:00",
+    "2023-03-01T00:00:00",
+    "2023-04-01T00:00:00",
+    "2023-05-01T00:00:00",
+    "2023-06-01T00:00:00",
+    "2023-07-01T00:00:00",
+    "2023-08-01T00:00:00",
+    "2023-09-01T00:00:00",
+    "2023-10-01T00:00:00",
+    "2023-11-01T00:00:00",
+    "2023-12-01T00:00:00",
+    "2024-01-01T00:00:00",
+    "2024-02-01T00:00:00",
+    "2024-03-01T00:00:00",
+    "2024-04-01T00:00:00",
+    "2024-05-01T00:00:00",
+    "2024-06-01T00:00:00",
+    "2024-07-01T00:00:00",
+    "2024-08-01T00:00:00",
+    "2024-09-01T00:00:00",
+    "2024-10-01T00:00:00",
+    "2024-11-01T00:00:00",
+    "2024-12-01T00:00:00",
+    "2025-01-01T00:00:00",
+    "2025-02-01T00:00:00",
+    "2025-03-01T00:00:00",
+    "2025-04-01T00:00:00",
+    "2025-05-01T00:00:00",
+    "2025-06-01T00:00:00",
+    "2025-07-01T00:00:00",
+    "2025-08-01T00:00:00",
+    "2025-09-01T00:00:00",
+    "2025-10-01T00:00:00",
+    "2025-11-01T00:00:00",
+    "2025-12-01T00:00:00"
+   ],
+   "historical_values": [
+    20867.98,
+    23383.9,
+    25587.59,
+    25364.91,
+    22467.76,
+    24333.38,
+    20802.61,
+    18652.06,
+    15845.13,
+    15451.26,
+    16441.89,
+    20923.1,
+    20601.98,
+    22821.63,
+    25527.03,
+    28546.94,
+    28111.49,
+    23104.01,
+    20925.59,
+    19522.96,
+    17390.65,
+    16127.36,
+    17297.05,
+    20136.98,
+    21524.46,
+    24961.76,
+    27001.69,
+    26147.39,
+    26752.64,
+    20254.81,
+    23768.32,
+    18837.51,
+    19906.9,
+    16765.58,
+    19714.95,
+    21094.62
+   ],
+   "fitted_values": [
+    0.0,
+    20867.98,
+    21997.6604,
+    23841.669,
+    24646.6812,
+    23488.0192,
+    23938.1535,
+    22268.0609,
+    20341.9374,
+    17946.604,
+    16617.3945,
+    16523.9074,
+    32779.2397,
+    28432.6913,
+    27373.6268,
+    26654.7167,
+    25461.4757,
+    26826.8231,
+    23283.1463,
+    20805.0308,
+    18363.5563,
+    17522.1283,
+    17445.4434,
+    19143.4992,
+    24653.7768,
+    25264.2423,
+    27324.0651,
+    28746.7115,
+    27011.9834,
+    24710.5022,
+    21314.4256,
+    20200.41,
+    17747.8616,
+    17273.6045,
+    17863.0182,
+    20505.5203
+   ],
+   "skipped_reason": "",
+   "diagnostics": {
+    "n_observations": 36,
+    "small_sample_penalty": 1.0833,
+    "z_score": 1.96,
+    "interval_source": "residual_bootstrap",
+    "seasonal_period": 12
+   }
+  },
+  "stage_5_anomaly": {
+   "evaluated": true,
+   "method": "ADAPTIVE_IQR_ZSCORE_STL",
+   "detrended": false,
+   "trend_r2": 0.0043,
+   "seasonal": true,
+   "seasonal_strength": 0.8657,
+   "period": 12,
+   "predictive_space": "SEASONAL",
+   "lower_threshold": -2964.6049,
+   "upper_threshold": 2804.6652,
+   "median": 23.4372,
+   "mean": -23.3883,
+   "std": 1459.2504,
+   "iqr": 1442.3175,
+   "q1": -801.1286,
+   "q3": 641.1889,
+   "volatility_regime": "STABLE",
+   "iqr_multiplier": 1.5,
+   "z_threshold": 2.5,
+   "historical_anomalies": [
+    {
+     "dimension": "HISTORICAL",
+     "index": 4,
+     "label": "May 2023",
+     "value": 22467.76,
+     "direction": "LOW",
+     "z_score": 2.9499,
+     "iqr_distance": 0.9453,
+     "severity": "MODERATE",
+     "deviation_pct": 4.1,
+     "detected_by": [
+      "IQR",
+      "ZSCORE"
+     ],
+     "pattern": "SPIKE"
+    },
+    {
+     "dimension": "HISTORICAL",
+     "index": 15,
+     "label": "Apr 2024",
+     "value": 28546.94,
+     "direction": "HIGH",
+     "z_score": 2.2478,
+     "iqr_distance": 0.3134,
+     "severity": "MODERATE",
+     "deviation_pct": 32.27,
+     "detected_by": [
+      "IQR"
+     ],
+     "pattern": "SPIKE"
+    },
+    {
+     "dimension": "HISTORICAL",
+     "index": 29,
+     "label": "Jun 2025",
+     "value": 20254.81,
+     "direction": "LOW",
+     "z_score": 3.2445,
+     "iqr_distance": 1.2434,
+     "severity": "MODERATE",
+     "deviation_pct": -6.15,
+     "detected_by": [
+      "IQR",
+      "ZSCORE"
+     ],
+     "pattern": "SPIKE"
+    }
+   ],
+   "predictive_warnings": [],
+   "skipped_reason": ""
+  },
+  "stage_6_scenario": {
+   "simulated": false,
+   "spec": {},
+   "baseline_points": [],
+   "scenario_points": [],
+   "deltas": [],
+   "baseline_total": 0.0,
+   "scenario_total": 0.0,
+   "total_delta": 0.0,
+   "total_delta_pct": 0.0,
+   "anomaly_report": {},
+   "skipped_reason": "No what-if scenario supplied."
+  }
+ },
+ "summary": {
+  "text": "The query returned 36 rows. Total amount across the returned period is 776,966. The average total amount per period is 21,582. The highest value was 28,547 at 2024-04-01, 1.32x the average. The lowest value was 15,451 at 2023-10-01. Over the period the value increased from 20,868 to 21,095, a change of 1.1%. Values vary with a standard deviation of 3,646.\n\nAnomaly thresholds were adapted to this series' stable volatility, giving a normal range of -2,965 to 2,805. May 2023 is a moderate low outlier at 22,468, 4.1% from the mean. Apr 2024 is a moderate high outlier at 28,547, 32.3% from the mean. Jun 2025 is a moderate low outlier at 20,255, 6.2% from the mean.\n\nA sarima model was selected and projects 3 month periods ahead. Total Amount for Jan 2026 is projected at 23,916, within a 95% confidence range of 18,881 to 28,951. Total Amount for Feb 2026 is projected at 26,279, within a 95% confidence range of 19,158 to 33,399. Total Amount for Mar 2026 is projected at 28,361, within a 95% confidence range of 19,640 to 37,081. Across the full 3-period horizon the projected total is 78,555. The Mar 2026 projection of 28,361 sits 31.4% above the historical average of 21,582. Forecast uncertainty widens with distance: the interval at the final period is 1.73x as wide as at the first. On the observed data the model's mean absolute percentage error is 8.5%.",
+  "mode": "DETERMINISTIC",
+  "claim_count": 20,
+  "claims": [
+   {
+    "claim_id": "H0",
+    "dimension": "HISTORICAL",
+    "kind": "ROW_COUNT",
+    "text": "The query returned 36 rows.",
+    "value": 36.0,
+    "unit": "",
+    "source": "result set",
+    "derivation": "len(rows)",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H1",
+    "dimension": "HISTORICAL",
+    "kind": "TOTAL",
+    "text": "Total amount across the returned period is 776,966.",
+    "value": 776965.87,
+    "unit": "",
+    "source": "column 'total_amount'",
+    "derivation": "sum of 36 values",
+    "supporting_values": [
+     20867.98,
+     23383.9,
+     25587.59,
+     25364.91,
+     22467.76,
+     24333.38,
+     20802.61,
+     18652.06,
+     15845.13,
+     15451.26,
+     16441.89,
+     20923.1,
+     20601.98,
+     22821.63,
+     25527.03,
+     28546.94,
+     28111.49,
+     23104.01,
+     20925.59,
+     19522.96,
+     17390.65,
+     16127.36,
+     17297.05,
+     20136.98,
+     21524.46,
+     24961.76,
+     27001.69,
+     26147.39,
+     26752.64,
+     20254.81,
+     23768.32,
+     18837.51,
+     19906.9,
+     16765.58,
+     19714.95,
+     21094.62
+    ]
+   },
+   {
+    "claim_id": "H2",
+    "dimension": "HISTORICAL",
+    "kind": "MEAN",
+    "text": "The average total amount per period is 21,582.",
+    "value": 21582.38527777778,
+    "unit": "",
+    "source": "column 'total_amount'",
+    "derivation": "776,966 / 36",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H3",
+    "dimension": "HISTORICAL",
+    "kind": "PEAK",
+    "text": "The highest value was 28,547 at 2024-04-01, 1.32x the average.",
+    "value": 28546.94,
+    "unit": "",
+    "source": "column 'total_amount'",
+    "derivation": "max of the series",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H4",
+    "dimension": "HISTORICAL",
+    "kind": "TROUGH",
+    "text": "The lowest value was 15,451 at 2023-10-01.",
+    "value": 15451.26,
+    "unit": "",
+    "source": "column 'total_amount'",
+    "derivation": "min of the series",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H5",
+    "dimension": "HISTORICAL",
+    "kind": "CHANGE",
+    "text": "Over the period the value increased from 20,868 to 21,095, a change of 1.1%.",
+    "value": 1.086065829083598,
+    "unit": "%",
+    "source": "column 'total_amount'",
+    "derivation": "(last - first) / |first| * 100",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H6",
+    "dimension": "HISTORICAL",
+    "kind": "DISPERSION",
+    "text": "Values vary with a standard deviation of 3,646.",
+    "value": 3645.548412722787,
+    "unit": "",
+    "source": "column 'total_amount'",
+    "derivation": "sample standard deviation",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "A0",
+    "dimension": "ANOMALY",
+    "kind": "THRESHOLD",
+    "text": "Anomaly thresholds were adapted to this series' stable volatility, giving a normal range of -2,965 to 2,805.",
+    "value": 2804.6652,
+    "unit": "",
+    "source": "IQR/Z-score threshold engine",
+    "derivation": "Q1 - 1.5*IQR .. Q3 + 1.5*IQR",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "A1.1",
+    "dimension": "ANOMALY",
+    "kind": "HISTORICAL_ANOMALY",
+    "text": "May 2023 is a moderate low outlier at 22,468, 4.1% from the mean.",
+    "value": 22467.76,
+    "unit": "",
+    "source": "historical dimension",
+    "derivation": "z=2.9499, detected by IQR+ZSCORE",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "A1.2",
+    "dimension": "ANOMALY",
+    "kind": "HISTORICAL_ANOMALY",
+    "text": "Apr 2024 is a moderate high outlier at 28,547, 32.3% from the mean.",
+    "value": 28546.94,
+    "unit": "",
+    "source": "historical dimension",
+    "derivation": "z=2.2478, detected by IQR",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "A1.3",
+    "dimension": "ANOMALY",
+    "kind": "HISTORICAL_ANOMALY",
+    "text": "Jun 2025 is a moderate low outlier at 20,255, 6.2% from the mean.",
+    "value": 20254.81,
+    "unit": "",
+    "source": "historical dimension",
+    "derivation": "z=3.2445, detected by IQR+ZSCORE",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F1",
+    "dimension": "PREDICTIVE",
+    "kind": "MODEL",
+    "text": "A sarima model was selected and projects 3 month periods ahead.",
+    "value": 3.0,
+    "unit": "",
+    "source": "model selection engine",
+    "derivation": "Trend-oriented intent with seasonal structure (ACF at lag 12 = 0.60 over 36 points): SARIMA models level and season jointly.",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F2.1",
+    "dimension": "PREDICTIVE",
+    "kind": "FORECAST",
+    "text": "Total Amount for Jan 2026 is projected at 23,916, within a 95% confidence range of 18,881 to 28,951.",
+    "value": 23915.8032,
+    "unit": "",
+    "source": "SARIMA output",
+    "derivation": "point forecast h=1 with interval half-width 5,035",
+    "supporting_values": [
+     18880.9064,
+     28950.7001
+    ]
+   },
+   {
+    "claim_id": "F2.2",
+    "dimension": "PREDICTIVE",
+    "kind": "FORECAST",
+    "text": "Total Amount for Feb 2026 is projected at 26,279, within a 95% confidence range of 19,158 to 33,399.",
+    "value": 26278.5457,
+    "unit": "",
+    "source": "SARIMA output",
+    "derivation": "point forecast h=2 with interval half-width 7,120",
+    "supporting_values": [
+     19158.1263,
+     33398.9651
+    ]
+   },
+   {
+    "claim_id": "F2.3",
+    "dimension": "PREDICTIVE",
+    "kind": "FORECAST",
+    "text": "Total Amount for Mar 2026 is projected at 28,361, within a 95% confidence range of 19,640 to 37,081.",
+    "value": 28360.5071,
+    "unit": "",
+    "source": "SARIMA output",
+    "derivation": "point forecast h=3 with interval half-width 8,721",
+    "supporting_values": [
+     19639.81,
+     37081.2042
+    ]
+   },
+   {
+    "claim_id": "F7",
+    "dimension": "PREDICTIVE",
+    "kind": "FORECAST_PATH",
+    "text": "Total Amount is projected at 23,916, 26,279 and 28,361 for Jan 2026, Feb 2026 and Mar 2026 respectively.",
+    "value": 23915.8032,
+    "unit": "",
+    "source": "SARIMA output",
+    "derivation": "point forecasts h=1..3",
+    "supporting_values": [
+     23915.8032,
+     26278.5457,
+     28360.5071,
+     18880.9064,
+     28950.7001,
+     19158.1263,
+     33398.9651,
+     19639.81,
+     37081.2042
+    ]
+   },
+   {
+    "claim_id": "F3",
+    "dimension": "PREDICTIVE",
+    "kind": "FORECAST_TOTAL",
+    "text": "Across the full 3-period horizon the projected total is 78,555.",
+    "value": 78554.856,
+    "unit": "",
+    "source": "SARIMA output",
+    "derivation": "sum of point forecasts",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F4",
+    "dimension": "PREDICTIVE",
+    "kind": "FORECAST_VS_HISTORY",
+    "text": "The Mar 2026 projection of 28,361 sits 31.4% above the historical average of 21,582.",
+    "value": 31.405804942242817,
+    "unit": "%",
+    "source": "forecast vs result set",
+    "derivation": "(forecast - historical mean) / |historical mean| * 100",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F5",
+    "dimension": "PREDICTIVE",
+    "kind": "UNCERTAINTY",
+    "text": "Forecast uncertainty widens with distance: the interval at the final period is 1.73x as wide as at the first.",
+    "value": 1.7320507966315137,
+    "unit": "x",
+    "source": "interval construction",
+    "derivation": "final interval width / first interval width",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F6",
+    "dimension": "PREDICTIVE",
+    "kind": "MODEL_FIT",
+    "text": "On the observed data the model's mean absolute percentage error is 8.5%.",
+    "value": 8.4926,
+    "unit": "%",
+    "source": "in-sample residuals",
+    "derivation": "MAPE",
+    "supporting_values": []
+   }
+  ],
+  "verification": {
+   "numbers_in_summary": 47,
+   "verified": 47,
+   "unverified_values": [],
+   "passed": true,
+   "rule": "PRECISION_AWARE",
+   "tolerance": null,
+   "claims_available": 20
+  },
+  "warnings": [],
+  "rejected_narration": ""
+ },
+ "warnings": [
+  "UNRESOLVED_TERMS"
+ ],
+ "cache": {
+  "hit": false,
+  "key": "5eb7a083b95d0f50"
+ },
+ "profiling": {
+  "total_execution_ms": 40.33,
+  "stage_breakdown_ms": {
+   "Part 4: Prediction": 31.83,
+   "Result Profiling": 3.84,
+   "Part 1: Query Understanding": 2.81,
+   "Part 3: Summarization": 1.03,
+   "Part 5: Response Shaping": 0.05,
+   "Part 2: Visualization": 0.04
+  }
+ }
+}

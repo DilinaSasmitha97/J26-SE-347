@@ -175,6 +175,63 @@ def test_response_shape_fixes():
     check(not hits[qa.QueryIntent.COMPARISON], "'per' no longer matches inside 'percent'")
 
 
+def test_found_by_the_ui():
+    print("\n[7] Stage 7: defects found by rendering the UI")
+    import math
+    import summarization
+    import warnings
+    warnings.filterwarnings("ignore")
+    rows = [{"month": f"{2023 + t // 12}-{t % 12 + 1:02d}-01",
+             "total": round(20000 + 6000 * math.sin(2 * math.pi * t / 12) + (2500 if t == 16 else 0), 2)}
+            for t in range(36)]
+    env = pipeline.run("Show my monthly expenses over time", rows=rows, enable_cache=False)
+    spec, meta = env["visualization"], env["visualization"]["_meta"]
+    check(env["prediction"]["stage_5_anomaly"].get("seasonal")
+          and "R3_THRESHOLD_RULES" not in meta["extension_rules_applied"],
+          "a seasonal series' normal range (a deviation) is not drawn as levels on the value axis")
+    shapes = [l["encoding"]["shape"] for l in spec.get("layer", []) if "shape" in l.get("encoding", {})]
+    check(all(s.get("scale", {}).get("range") == ["triangle-up", "diamond"] for s in shapes),
+          "anomaly markers keep their triangle (past) / diamond (forecast) shapes")
+    noisy = [{"month": f"{2023 + t // 12}-{t % 12 + 1:02d}-01", "spend": v}
+             for t, v in enumerate([8200, 10100, 10300, 9000, 13500, 8100, 1800, 8600, 3700, 5500,
+                                    7100, 6700, 6800, 13600, 6000, 2900, 8400, 11300, 8400, 5600])]
+    env = pipeline.run("Show monthly spend", rows=noisy, enable_cache=False)
+    rules = [l for l in env["visualization"].get("layer", []) if l.get("mark", {}).get("type") == "rule"]
+    bounds = [r["bound"] for l in rules for r in l["data"]["values"]]
+    check("lower" not in bounds or env["prediction"]["stage_5_anomaly"]["lower_threshold"] >= 0,
+          "a lower fence below zero is not drawn for a measure that is never negative")
+    staff = [{"full_name": n, "hire_date": d, "salary": s} for n, d, s in
+             [("A", "2018-12-12", 164300), ("B", "2019-09-26", 110700), ("C", "2020-05-11", 161600),
+              ("D", "2021-02-18", 150200), ("E", "2023-02-18", 229200)]]
+    env = pipeline.run("List all employees in the Finance department", rows=staff, enable_cache=False)
+    check(not env["prediction"]["stage_5_anomaly"]["evaluated"]
+          and not any(c["dimension"] == "ANOMALY" for c in env["summary"]["claims"]),
+          "a list of records gets no anomaly bands and no outlier claims")
+    texts = " ".join(c["text"] for c in env["summary"]["claims"])
+    check(not any(c["kind"] == "CHANGE" for c in env["summary"]["claims"])
+          and "per period" not in texts and "returned period" not in texts,
+          "a list of records with a date column is not described as a time series")
+    check(summarization._total_of("total amount") == "Total amount"
+          and summarization._total_of("revenue") == "Total revenue",
+          "no 'Total total amount' in summaries")
+    from fastapi.testclient import TestClient
+    import demo_api
+    client = TestClient(demo_api.app)
+    datasets = client.get("/demo/datasets").json()["datasets"]
+    rows = client.post("/demo/rows", json={"dataset_id": "employees"}).json()
+    check(len(datasets) == 11 and {"columns", "rows", "masking"} <= set(rows["member2_result"]),
+          "demo routes list the data sources and return Member 2's masked payload")
+    out = client.post("/api/v4/present", json={"user_query": "List all employees in the Finance department",
+                                                **rows}).json()
+    check(out["status"] == "SUCCESS" and out["response"]["blocks_emitted"] == ["TABLE"],
+          "that payload goes through the real /api/v4/present unchanged")
+    vendors = client.post("/demo/rows", json={"dataset_id": "by_vendor"}).json()
+    out = client.post("/api/v4/present", json={"user_query": "show spend by vendor", **vendors}).json()
+    spec = out["visualization"]
+    check(out["response"]["blocks_emitted"] != ["CHART"] or bool(spec.get("mark") or spec.get("layer")),
+          "a CHART block always carries a drawable spec (a row lookup asked for as a chart gets bars)")
+
+
 def main() -> int:
     _ensure_database()
     test_mysql_compatibility()
@@ -183,6 +240,7 @@ def main() -> int:
     test_llm_policy_and_defaults()
     test_charts_and_profiling()
     test_response_shape_fixes()
+    test_found_by_the_ui()
     print()
     if _FAILURES:
         print(f"{len(_FAILURES)} check(s) failed:")

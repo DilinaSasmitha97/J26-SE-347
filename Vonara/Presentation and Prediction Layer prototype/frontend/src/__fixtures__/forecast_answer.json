@@ -1,0 +1,762 @@
+{
+ "status": "SUCCESS",
+ "pipeline_version": "1.0",
+ "input": {
+  "source_format": "MEMBER2_COLUMNAR",
+  "columns": [
+   "month",
+   "total_amount"
+  ],
+  "row_count": 24,
+  "rows_received": 24,
+  "truncated": false,
+  "masked_columns": {},
+  "renamed_columns": {},
+  "warnings": []
+ },
+ "analysis": {
+  "analysis_schema_version": "1.0",
+  "query_understanding": {
+   "user_query": "How much will I spend next month?",
+   "normalized_query": "how much will i spend next month?"
+  },
+  "intent": {
+   "primary_intent": "TREND_ANALYSIS",
+   "secondary_intents": [
+    "KPI_SINGLE_VALUE"
+   ],
+   "confidence": 0.97,
+   "intent_source": "RULE",
+   "rationale": "Matched 'how much' (evidence 3 vs next 0). Promoted from KPI_SINGLE_VALUE to TREND_ANALYSIS: an explicit forecast request presupposes a time series."
+  },
+  "response_intent": {
+   "intent": "SINGLE_ANSWER",
+   "confidence": 0.97,
+   "source": "RULE",
+   "rationale": "Lexical evidence 7.5 for SINGLE_ANSWER vs 0.0 for MIXED_SUMMARY ('\\bhow much\\b'). R2 explicit format named: SINGLE_ANSWER R4 bare count: 'how many/much' resolves to one figure R5 mixed damping: no decisive combined-output phrasing",
+   "blocks": [
+    "ANSWER"
+   ],
+   "answer_focus": "VALUE",
+   "is_data_request": true,
+   "not_a_request_reason": "",
+   "evidence_grade": "DIRECT",
+   "evidence": {
+    "scores": {
+     "SINGLE_ANSWER": 7.5,
+     "SHORT_SUMMARY": 0.0,
+     "TABLE_CONTENT": 0.0,
+     "CHART": 0.0,
+     "MIXED_SUMMARY": 0.0
+    },
+    "matched_markers": {
+     "SINGLE_ANSWER": [
+      "\\bhow much\\b"
+     ]
+    },
+    "runner_up": "MIXED_SUMMARY",
+    "margin": 1.0
+   }
+  },
+  "prediction_request": {
+   "prediction_required": true,
+   "prediction_trigger": "EXPLICIT",
+   "horizon": {
+    "value": 1,
+    "unit": "MONTH",
+    "source": "EXPLICIT"
+   },
+   "what_if": {
+    "present": false,
+    "raw_clause": "",
+    "parameter": "",
+    "direction": "",
+    "magnitude_pct": 0.0
+   }
+  },
+  "schema_binding": {
+   "affected_tables": [],
+   "affected_columns": [],
+   "unresolved_terms": [
+    "spend",
+    "will"
+   ]
+  },
+  "semantic_roles": {
+   "metrics": [],
+   "dimensions": [],
+   "temporal_field": "",
+   "temporal_granularity": "MONTH",
+   "filters": [],
+   "ordering": "",
+   "limit": 0,
+   "limit_source": "NONE"
+  },
+  "visualization_hint": {
+   "recommended_chart": "kpi_card",
+   "alternatives": [],
+   "rationale": "Response intent SINGLE_ANSWER renders as 'kpi_card'; the analytical encoding 'line' is not used."
+  },
+  "governance": {
+   "pii_columns_referenced": [],
+   "read_only": true
+  },
+  "warnings": [
+   "NO_SCHEMA_BINDING",
+   "UNRESOLVED_TERMS"
+  ],
+  "metadata": {
+   "injection_markers": [],
+   "mode": "RULE_ONLY",
+   "model": "deterministic-fallback",
+   "provider": "none",
+   "prompt_tokens": 0,
+   "completion_tokens": 0,
+   "total_tokens": 0,
+   "schema_tables_considered": 4,
+   "execution_time_ms": 2.1,
+   "tenant_id": "tenant_d",
+   "user_role": ""
+  }
+ },
+ "result_profile": {
+  "row_count": 24,
+  "column_count": 2,
+  "columns": [
+   {
+    "name": "month",
+    "role": "TEMPORAL",
+    "inferred_type": "date",
+    "non_null": 24,
+    "null_count": 0,
+    "distinct_count": 24,
+    "is_monotonic": true,
+    "min_value": "2024-01-01T00:00:00",
+    "max_value": "2025-12-01T00:00:00",
+    "mean": null,
+    "std": null,
+    "sample_values": [
+     "2024-01-01",
+     "2024-02-01",
+     "2024-03-01",
+     "2024-04-01",
+     "2024-05-01"
+    ]
+   },
+   {
+    "name": "total_amount",
+    "role": "MEASURE",
+    "inferred_type": "number",
+    "non_null": 24,
+    "null_count": 0,
+    "distinct_count": 24,
+    "is_monotonic": false,
+    "min_value": 3531.01,
+    "max_value": 6272.56,
+    "mean": 4934.4679166666665,
+    "std": 853.9597541885284,
+    "sample_values": [
+     "3531.01",
+     "3711.62",
+     "3676.44",
+     "3832.04",
+     "4019.95"
+    ]
+   }
+  ],
+  "temporal_column": "month",
+  "granularity": "MONTH",
+  "measure_columns": [
+   "total_amount"
+  ],
+  "dimension_columns": [],
+  "is_time_series": true,
+  "is_regular_interval": true,
+  "has_gaps": false,
+  "layout": "SINGLE",
+  "group_column": "",
+  "period_count": 24,
+  "warnings": []
+ },
+ "response": {
+  "response_intent": {
+   "intent": "SINGLE_ANSWER",
+   "confidence": 0.97,
+   "source": "RULE",
+   "rationale": "Lexical evidence 7.5 for SINGLE_ANSWER vs 0.0 for MIXED_SUMMARY ('\\bhow much\\b'). R2 explicit format named: SINGLE_ANSWER R4 bare count: 'how many/much' resolves to one figure R5 mixed damping: no decisive combined-output phrasing G1 not applied: a scalar question about the future is answered by the forecast, not by a history row.",
+   "blocks": [
+    "ANSWER"
+   ],
+   "answer_focus": "VALUE",
+   "is_data_request": true,
+   "not_a_request_reason": "",
+   "evidence_grade": "DIRECT",
+   "evidence": {
+    "scores": {
+     "SINGLE_ANSWER": 7.5,
+     "SHORT_SUMMARY": 0.0,
+     "TABLE_CONTENT": 0.0,
+     "CHART": 0.0,
+     "MIXED_SUMMARY": 0.0
+    },
+    "matched_markers": {
+     "SINGLE_ANSWER": [
+      "\\bhow much\\b"
+     ]
+    },
+    "runner_up": "MIXED_SUMMARY",
+    "margin": 1.0
+   },
+   "guardrails_applied": [],
+   "original_intent": "SINGLE_ANSWER",
+   "warnings": []
+  },
+  "blocks_emitted": [
+   "ANSWER"
+  ],
+  "blocks_declared": [
+   "ANSWER"
+  ],
+  "answer": {
+   "block": "ANSWER",
+   "label": "Projected Total Amount",
+   "value": 6430.1603,
+   "display_value": "6,430",
+   "value_type": "number",
+   "focus": "VALUE",
+   "qualifier": "Jan 2026",
+   "qualifier_label": "Forecast Period",
+   "qualifier_column": "month",
+   "source_column": "total_amount",
+   "supporting_row": {},
+   "is_forecast": true,
+   "interval": {
+    "lower": 6175.1352,
+    "upper": 6685.1853,
+    "confidence_level": 0.95,
+    "display": "6,175 to 6,685"
+   },
+   "model": "LINEAR_REGRESSION"
+  },
+  "forecast_notice": {
+   "requested": true,
+   "status": "SHOWN",
+   "readiness_decision": "READY",
+   "warnings": [],
+   "reason_codes": [
+    "STATIONARITY_NON_STATIONARY"
+   ],
+   "message": "Total Amount for Jan 2026 is projected at 6,430, within a 95% confidence range of 6,175 to 6,685.",
+   "strategy": "TEMPORAL_FORECAST",
+   "strategy_message": "",
+   "reason": "",
+   "model": "LINEAR_REGRESSION",
+   "horizon": 1,
+   "shown_in": [
+    "ANSWER"
+   ]
+  }
+ },
+ "visualization": {
+  "_meta": {
+   "chart_type": "none",
+   "selection_reason": "No chart built: response intent SINGLE_ANSWER emits ANSWER.",
+   "rationale": "",
+   "skipped": true
+  }
+ },
+ "prediction": {
+  "stage_1_strategy": {
+   "intent": "TREND_ANALYSIS",
+   "strategy": "TEMPORAL_FORECAST",
+   "rationale": "A measure tracked over time extends naturally into future periods.",
+   "promoted_by_explicit_request": false,
+   "prediction_requested": true
+  },
+  "stage_1_strategy_result": {
+   "requested": "TEMPORAL_FORECAST",
+   "executed_as": "TEMPORAL_FORECAST",
+   "executed": true,
+   "skipped_reason": "",
+   "details": {}
+  },
+  "stage_2_readiness": {
+   "verdict": "READY",
+   "is_ready": true,
+   "temporal_valid": true,
+   "statistically_sufficient": true,
+   "signal_adequate": true,
+   "n_points": 24,
+   "dropped_rows": 0,
+   "granularity": "MONTH",
+   "coefficient_of_variation": 0.1731,
+   "trend_r2": 0.9817,
+   "expected_relative_error": 0.0173,
+   "skill_vs_naive": 0.4129,
+   "signal_test": {
+    "assessed": true,
+    "origins": 6,
+    "mae_by_model": {
+     "NAIVE": 206.8867,
+     "LINEAR_REGRESSION": 85.4249,
+     "EXPONENTIAL_SMOOTHING": 150.8205,
+     "SEASONAL_NAIVE": 1369.215
+    },
+    "best_model": "LINEAR_REGRESSION",
+    "expected_relative_error": 0.017311870701662038,
+    "skill_vs_naive": 0.4129066021082377,
+    "threshold": 0.2
+   },
+   "decision": "READY",
+   "reason_codes": [
+    "STATIONARITY_NON_STATIONARY"
+   ],
+   "warnings": [],
+   "stationarity": {
+    "assessed": true,
+    "adf_p_value": 0.9002,
+    "kpss_p_value": 0.0132,
+    "verdict": "NON_STATIONARY"
+   },
+   "missing_value_ratio": 0.0,
+   "missing_period_ratio": 0.0,
+   "filled_periods": 0,
+   "reason": "All readiness gates passed.",
+   "checks": [
+    "temporal_validity: PASS (axis='month', granularity=MONTH)",
+    "regularity: PASS (0 empty periods filled, calendar=MONTH)",
+    "sufficiency: PASS (24 observations)",
+    "signal_quality: PASS (best in-history one-step error 1.7% of level (LINEAR_REGRESSION, 6 origins))"
+   ]
+  },
+  "stage_3_model_selection": {
+   "model": "LINEAR_REGRESSION",
+   "reason": "Trend intent with strong linear structure (R\u00b2 = 0.98): ordinary least squares extrapolates it with the tightest intervals.",
+   "seasonal_period": 12,
+   "signals": {
+    "semantic_intent": "TREND_ANALYSIS",
+    "n_points": 24,
+    "trend_r2": 0.9817,
+    "trend_slope": 119.655387,
+    "coefficient_of_variation": 0.1731,
+    "seasonal_lag": 12,
+    "seasonal_acf": 0.2557,
+    "adf_stationary": false,
+    "adf_p_value": 0.9002,
+    "stationarity": {
+     "assessed": true,
+     "adf_p_value": 0.9002,
+     "kpss_p_value": 0.0132,
+     "verdict": "NON_STATIONARY"
+    },
+    "statsmodels_available": true,
+    "guard": {
+     "rule_choice": "LINEAR_REGRESSION",
+     "rule_choice_mae": 85.4249,
+     "best_baseline": "NAIVE",
+     "best_baseline_mae": 206.8867,
+     "origins": 6,
+     "overridden": false
+    }
+   }
+  },
+  "stage_4_forecast": {
+   "generated": true,
+   "model": "LINEAR_REGRESSION",
+   "model_reason": "Trend intent with strong linear structure (R\u00b2 = 0.98): ordinary least squares extrapolates it with the tightest intervals.",
+   "value_column": "total_amount",
+   "time_column": "month",
+   "granularity": "MONTH",
+   "horizon": 1,
+   "confidence_level": 0.95,
+   "points": [
+    {
+     "period_index": 1,
+     "timestamp": "2026-01-01T00:00:00",
+     "label": "Jan 2026",
+     "predicted": 6430.1603,
+     "lower_bound": 6175.1352,
+     "upper_bound": 6685.1853,
+     "interval_width": 510.05
+    }
+   ],
+   "in_sample_rmse": 113.2224,
+   "in_sample_mae": 88.455,
+   "in_sample_mape": 1.7786,
+   "residual_std": 115.6576,
+   "historical_dates": [
+    "2024-01-01T00:00:00",
+    "2024-02-01T00:00:00",
+    "2024-03-01T00:00:00",
+    "2024-04-01T00:00:00",
+    "2024-05-01T00:00:00",
+    "2024-06-01T00:00:00",
+    "2024-07-01T00:00:00",
+    "2024-08-01T00:00:00",
+    "2024-09-01T00:00:00",
+    "2024-10-01T00:00:00",
+    "2024-11-01T00:00:00",
+    "2024-12-01T00:00:00",
+    "2025-01-01T00:00:00",
+    "2025-02-01T00:00:00",
+    "2025-03-01T00:00:00",
+    "2025-04-01T00:00:00",
+    "2025-05-01T00:00:00",
+    "2025-06-01T00:00:00",
+    "2025-07-01T00:00:00",
+    "2025-08-01T00:00:00",
+    "2025-09-01T00:00:00",
+    "2025-10-01T00:00:00",
+    "2025-11-01T00:00:00",
+    "2025-12-01T00:00:00"
+   ],
+   "historical_values": [
+    3531.01,
+    3711.62,
+    3676.44,
+    3832.04,
+    4019.95,
+    4058.52,
+    4226.39,
+    4387.99,
+    4630.31,
+    4723.94,
+    4745.88,
+    4991.77,
+    5133.93,
+    5423.72,
+    5213.71,
+    5455.0,
+    5385.52,
+    5357.92,
+    5752.29,
+    5695.7,
+    5932.69,
+    6187.54,
+    6080.79,
+    6272.56
+   ],
+   "fitted_values": [
+    3558.431,
+    3678.0864,
+    3797.7417,
+    3917.3971,
+    4037.0525,
+    4156.7079,
+    4276.3633,
+    4396.0187,
+    4515.6741,
+    4635.3294,
+    4754.9848,
+    4874.6402,
+    4994.2956,
+    5113.951,
+    5233.6064,
+    5353.2618,
+    5472.9172,
+    5592.5725,
+    5712.2279,
+    5831.8833,
+    5951.5387,
+    6071.1941,
+    6190.8495,
+    6310.5049
+   ],
+   "skipped_reason": "",
+   "diagnostics": {
+    "n_observations": 24,
+    "small_sample_penalty": 1.125,
+    "z_score": 1.96,
+    "interval_source": "residual_bootstrap",
+    "seasonal_period": 12
+   }
+  },
+  "stage_5_anomaly": {
+   "evaluated": true,
+   "method": "ADAPTIVE_IQR_ZSCORE_DETRENDED",
+   "detrended": true,
+   "trend_r2": 0.9817,
+   "seasonal": false,
+   "seasonal_strength": 0.0,
+   "period": 0,
+   "predictive_space": "DETRENDED",
+   "lower_threshold": -352.5065,
+   "upper_threshold": 358.5319,
+   "median": -17.9756,
+   "mean": -0.0,
+   "std": 115.6576,
+   "iqr": 177.7596,
+   "q1": -85.8671,
+   "q3": 91.8925,
+   "volatility_regime": "STABLE",
+   "iqr_multiplier": 1.5,
+   "z_threshold": 2.5,
+   "historical_anomalies": [
+    {
+     "dimension": "HISTORICAL",
+     "index": 13,
+     "label": "Feb 2025",
+     "value": 5423.72,
+     "direction": "HIGH",
+     "z_score": 2.6783,
+     "iqr_distance": 0.0,
+     "severity": "MODERATE",
+     "deviation_pct": 9.91,
+     "detected_by": [
+      "ZSCORE"
+     ],
+     "pattern": "SPIKE"
+    }
+   ],
+   "predictive_warnings": [],
+   "skipped_reason": ""
+  },
+  "stage_6_scenario": {
+   "simulated": false,
+   "spec": {},
+   "baseline_points": [],
+   "scenario_points": [],
+   "deltas": [],
+   "baseline_total": 0.0,
+   "scenario_total": 0.0,
+   "total_delta": 0.0,
+   "total_delta_pct": 0.0,
+   "anomaly_report": {},
+   "skipped_reason": "No what-if scenario supplied."
+  }
+ },
+ "summary": {
+  "text": "The query returned 24 rows. Total amount across the returned period is 118,427. The average total amount per period is 4,934. The highest value was 6,273 at 2025-12-01, 1.27x the average. The lowest value was 3,531 at 2024-01-01. Over the period the value increased from 3,531 to 6,273, a change of 77.6%. Values vary with a standard deviation of 853.96.\n\nBecause the series carries a strong trend (R\u00b2 = 0.98), anomalies were measured as deviations from that trend rather than from a flat average, with a normal deviation range of -352.51 to 358.53. Feb 2025 is a moderate high outlier at 5,424, 9.9% from the mean.\n\nA linear regression model was selected and projects 1 month periods ahead. Total Amount for Jan 2026 is projected at 6,430, within a 95% confidence range of 6,175 to 6,685. Across the full 1-period horizon the projected total is 6,430. The Jan 2026 projection of 6,430 sits 30.3% above the historical average of 4,934. On the observed data the model's mean absolute percentage error is 1.8%.",
+  "mode": "DETERMINISTIC",
+  "claim_count": 15,
+  "claims": [
+   {
+    "claim_id": "H0",
+    "dimension": "HISTORICAL",
+    "kind": "ROW_COUNT",
+    "text": "The query returned 24 rows.",
+    "value": 24.0,
+    "unit": "",
+    "source": "result set",
+    "derivation": "len(rows)",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H1",
+    "dimension": "HISTORICAL",
+    "kind": "TOTAL",
+    "text": "Total amount across the returned period is 118,427.",
+    "value": 118427.23,
+    "unit": "",
+    "source": "column 'total_amount'",
+    "derivation": "sum of 24 values",
+    "supporting_values": [
+     3531.01,
+     3711.62,
+     3676.44,
+     3832.04,
+     4019.95,
+     4058.52,
+     4226.39,
+     4387.99,
+     4630.31,
+     4723.94,
+     4745.88,
+     4991.77,
+     5133.93,
+     5423.72,
+     5213.71,
+     5455.0,
+     5385.52,
+     5357.92,
+     5752.29,
+     5695.7,
+     5932.69,
+     6187.54,
+     6080.79,
+     6272.56
+    ]
+   },
+   {
+    "claim_id": "H2",
+    "dimension": "HISTORICAL",
+    "kind": "MEAN",
+    "text": "The average total amount per period is 4,934.",
+    "value": 4934.4679166666665,
+    "unit": "",
+    "source": "column 'total_amount'",
+    "derivation": "118,427 / 24",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H3",
+    "dimension": "HISTORICAL",
+    "kind": "PEAK",
+    "text": "The highest value was 6,273 at 2025-12-01, 1.27x the average.",
+    "value": 6272.56,
+    "unit": "",
+    "source": "column 'total_amount'",
+    "derivation": "max of the series",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H4",
+    "dimension": "HISTORICAL",
+    "kind": "TROUGH",
+    "text": "The lowest value was 3,531 at 2024-01-01.",
+    "value": 3531.01,
+    "unit": "",
+    "source": "column 'total_amount'",
+    "derivation": "min of the series",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H5",
+    "dimension": "HISTORICAL",
+    "kind": "CHANGE",
+    "text": "Over the period the value increased from 3,531 to 6,273, a change of 77.6%.",
+    "value": 77.6420910730924,
+    "unit": "%",
+    "source": "column 'total_amount'",
+    "derivation": "(last - first) / |first| * 100",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H6",
+    "dimension": "HISTORICAL",
+    "kind": "DISPERSION",
+    "text": "Values vary with a standard deviation of 853.96.",
+    "value": 853.9597541885284,
+    "unit": "",
+    "source": "column 'total_amount'",
+    "derivation": "sample standard deviation",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "A0",
+    "dimension": "ANOMALY",
+    "kind": "THRESHOLD",
+    "text": "Because the series carries a strong trend (R\u00b2 = 0.98), anomalies were measured as deviations from that trend rather than from a flat average, with a normal deviation range of -352.51 to 358.53.",
+    "value": 358.5319,
+    "unit": "",
+    "source": "IQR/Z-score threshold engine",
+    "derivation": "detrended residual fence: Q1 - 1.5*IQR .. Q3 + 1.5*IQR",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "A1.1",
+    "dimension": "ANOMALY",
+    "kind": "HISTORICAL_ANOMALY",
+    "text": "Feb 2025 is a moderate high outlier at 5,424, 9.9% from the mean.",
+    "value": 5423.72,
+    "unit": "",
+    "source": "historical dimension",
+    "derivation": "z=2.6783, detected by ZSCORE",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F1",
+    "dimension": "PREDICTIVE",
+    "kind": "MODEL",
+    "text": "A linear regression model was selected and projects 1 month periods ahead.",
+    "value": 1.0,
+    "unit": "",
+    "source": "model selection engine",
+    "derivation": "Trend intent with strong linear structure (R\u00b2 = 0.98): ordinary least squares extrapolates it with the tightest intervals.",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F2.1",
+    "dimension": "PREDICTIVE",
+    "kind": "FORECAST",
+    "text": "Total Amount for Jan 2026 is projected at 6,430, within a 95% confidence range of 6,175 to 6,685.",
+    "value": 6430.1603,
+    "unit": "",
+    "source": "LINEAR_REGRESSION output",
+    "derivation": "point forecast h=1 with interval half-width 255.03",
+    "supporting_values": [
+     6175.1352,
+     6685.1853
+    ]
+   },
+   {
+    "claim_id": "F7",
+    "dimension": "PREDICTIVE",
+    "kind": "FORECAST_PATH",
+    "text": "Total Amount for Jan 2026 is projected at 6,430, within a 95% confidence range of 6,175 to 6,685.",
+    "value": 6430.1603,
+    "unit": "",
+    "source": "LINEAR_REGRESSION output",
+    "derivation": "point forecasts h=1..1",
+    "supporting_values": [
+     6430.1603,
+     6175.1352,
+     6685.1853
+    ]
+   },
+   {
+    "claim_id": "F3",
+    "dimension": "PREDICTIVE",
+    "kind": "FORECAST_TOTAL",
+    "text": "Across the full 1-period horizon the projected total is 6,430.",
+    "value": 6430.1603,
+    "unit": "",
+    "source": "LINEAR_REGRESSION output",
+    "derivation": "sum of point forecasts",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F4",
+    "dimension": "PREDICTIVE",
+    "kind": "FORECAST_VS_HISTORY",
+    "text": "The Jan 2026 projection of 6,430 sits 30.3% above the historical average of 4,934.",
+    "value": 30.31111780626803,
+    "unit": "%",
+    "source": "forecast vs result set",
+    "derivation": "(forecast - historical mean) / |historical mean| * 100",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F6",
+    "dimension": "PREDICTIVE",
+    "kind": "MODEL_FIT",
+    "text": "On the observed data the model's mean absolute percentage error is 1.8%.",
+    "value": 1.7786,
+    "unit": "%",
+    "source": "in-sample residuals",
+    "derivation": "MAPE",
+    "supporting_values": []
+   }
+  ],
+  "verification": {
+   "numbers_in_summary": 31,
+   "verified": 31,
+   "unverified_values": [],
+   "passed": true,
+   "rule": "PRECISION_AWARE",
+   "tolerance": null,
+   "claims_available": 15
+  },
+  "warnings": [],
+  "rejected_narration": ""
+ },
+ "warnings": [
+  "NO_SCHEMA_BINDING",
+  "UNRESOLVED_TERMS"
+ ],
+ "cache": {
+  "hit": false,
+  "key": "4385b0c595ae6612"
+ },
+ "profiling": {
+  "total_execution_ms": 12.58,
+  "stage_breakdown_ms": {
+   "Part 4: Prediction": 6.76,
+   "Result Profiling": 2.18,
+   "Part 1: Query Understanding": 2.12,
+   "Part 3: Summarization": 0.85,
+   "Part 5: Response Shaping": 0.05,
+   "Part 2: Visualization": 0.0
+  }
+ }
+}

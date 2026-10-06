@@ -320,6 +320,17 @@ raises `ORDERING_DIRECTION_AMBIGUOUS`; resolve it with schema knowledge.
     `FORECAST_WITHOUT_LATEST_POINT` or `FORECAST`). The verdict set is
     unchanged. When `basis` is `FORECAST_WITHOUT_LATEST_POINT`, a
     `RECOVERING` verdict is provisional and the summary says so.
+- **Stage 7 changes (user interface), no field added or removed:**
+  - A reference client exists: `frontend/` (React) renders this contract
+    exactly as described here. Use it to check how a response will look.
+  - Anomaly markers in `visualization` now carry an explicit shape scale
+    (triangle = past anomaly, diamond = projected breach).
+  - "Normal range" rules are no longer drawn for seasonal (STL) series, whose
+    band is a deviation rather than a level, and a lower bound below zero is
+    not drawn for a measure that is never negative.
+  - A plain list of records (`DETAIL_LOOKUP`) gets no anomaly bands:
+    `stage_5_anomaly.evaluated` is false with a `skipped_reason`, and the
+    summary has no outlier claims about individual records.
 - **Stage 6 changes (integration rehearsal):**
   - `use_llm` now defaults to **false** on `/api/v4/analyze` and
     `/api/v4/present` (and in `pipeline.run`). Before, any deployment with an

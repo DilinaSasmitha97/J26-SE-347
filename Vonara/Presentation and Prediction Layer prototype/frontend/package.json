@@ -1,0 +1,28 @@
+{
+  "name": "component4-presentation-ui",
+  "private": true,
+  "version": "0.7.0",
+  "description": "Stage 7 React interface for Component 4 (Presentation & Prediction Layer, J26-SE-347): renders the response blocks, Vega-Lite charts, forecasts, anomalies, what-if scenarios and the verified summary trace.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "vega": "^6.1.2",
+    "vega-embed": "^7.0.2",
+    "vega-lite": "^6.1.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@vitejs/plugin-react": "^4.5.0",
+    "jsdom": "^26.1.0",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.0"
+  }
+}

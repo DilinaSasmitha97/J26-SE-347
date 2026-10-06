@@ -139,10 +139,17 @@ def select_encoding(analysis, profile) -> dict:
     x = dimensions[0] if dimensions else (temporal or (measures[1] if len(measures) > 1 else ""))
     decision["x"] = x
 
+    # build_chart only runs for a CHART block, and guardrail G2 has already
+    # found the rows chartable. A data grid here would ship a CHART block the
+    # client cannot draw (found in the Stage 7 UI: "show spend by vendor" is a
+    # DETAIL_LOOKUP that asks for a chart), so these fall back to bars.
     if intent is QueryIntent.CORRELATION:
         if len(measures) >= 2:
             decision["x"], decision["y"] = measures[0], measures[1]
             adapt("scatter", "Two quantitative measures encode as a scatter plot.")
+        elif x and y:
+            adapt("bar", f"Correlation needs two numeric measures; only '{y}' was returned, "
+                         f"so it is compared across '{x}'.")
         else:
             adapt("table", "Correlation needs two numeric measures; only one was returned.")
         return decision
@@ -186,7 +193,10 @@ def select_encoding(analysis, profile) -> dict:
         return decision
 
     if intent is QueryIntent.DETAIL_LOOKUP:
-        adapt("table", "Row-level retrieval is presented as a table, not a chart.")
+        if x and y:
+            adapt("bar", f"Row-level values asked for as a chart: '{y}' compared across {rows} rows of '{x}'.")
+        else:
+            adapt("table", "Row-level retrieval is presented as a table, not a chart.")
         return decision
 
     adapt("bar" if x and y else "table", "Default encoding for the resolved shape.")
@@ -525,7 +535,12 @@ def extend_with_forecast(
                     "encoding": {
                         "x": dict(base_encoding.get("x", {}), field=x_field),
                         "y": {"field": "value", "type": "quantitative"},
+                        # Explicit shapes: without a scale the encoding
+                        # overrode the mark's triangle with Vega's default
+                        # circle (Stage 7, seen in the rendered UI).
                         "shape": {"field": "dimension", "type": "nominal",
+                                  "scale": {"domain": ["HISTORICAL", "PREDICTIVE"],
+                                            "range": ["triangle-up", "diamond"]},
                                   "legend": {"title": "Anomaly"}},
                     },
                 }
@@ -536,16 +551,20 @@ def extend_with_forecast(
         # what distinguishes this from an unexplained red dot. They are only
         # drawable when the band lives in the same space as the plotted values:
         # after detrending the fence is centred on the residual, so a flat rule
-        # at those levels would be actively misleading.
-        if not getattr(anomaly_report, "detrended", False):
+        # at those levels would be actively misleading. The same holds in the
+        # STL seasonal space added in Stage 3; this guard missed it until the
+        # Stage 7 UI drew a seasonal series with "normal range" lines at about
+        # +/-2,700 on an axis of monthly totals near 20,000.
+        if not (getattr(anomaly_report, "detrended", False)
+                or getattr(anomaly_report, "seasonal", False)):
+            bounds = [{"threshold": anomaly_report.upper_threshold, "bound": "upper"}]
+            # A lower fence below zero on a measure that is never negative
+            # rules nothing out; drawing it only stretched the axis below zero.
+            if not (anomaly_report.lower_threshold < 0 <= anomaly_report.q1):
+                bounds.append({"threshold": anomaly_report.lower_threshold, "bound": "lower"})
             layers.append(
                 {
-                    "data": {
-                        "values": [
-                            {"threshold": anomaly_report.upper_threshold, "bound": "upper"},
-                            {"threshold": anomaly_report.lower_threshold, "bound": "lower"},
-                        ]
-                    },
+                    "data": {"values": bounds},
                     "mark": {"type": "rule", "strokeDash": [3, 3],
                              "color": COLORS["threshold"], "opacity": 0.7},
                     "encoding": {"y": {"field": "threshold", "type": "quantitative"}},

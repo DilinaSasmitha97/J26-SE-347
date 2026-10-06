@@ -89,6 +89,13 @@ def fmt(value: float, unit: str = "") -> str:
     return f"{s}{unit}" if unit else s
 
 
+def _total_of(label: str) -> str:
+    """'Total amount' for a measure called 'amount', but not 'Total total amount'."""
+    if label.lower().startswith(("total", "sum")):
+        return label[:1].upper() + label[1:]
+    return f"Total {label}"
+
+
 def _pct(value: float) -> str:
     return f"{value:,.1f}%"
 
@@ -157,8 +164,15 @@ def build_historical_claims(profile, rows: list, analysis, forecast=None) -> lis
 
     if not values:
         return claims
+    # A list of records that happens to carry a date column (hire_date) is not
+    # a time series: no "per period", no first-to-last change, and the date of
+    # the highest value is a record attribute, not a period (found in the
+    # Stage 7 UI on "List all employees in the Finance department").
+    records = layout == "SINGLE" and getattr(analysis, "primary_intent", "") == "DETAIL_LOOKUP"
+    if records:
+        labels = []
     # What one value stands for: a period only when there is one row per period.
-    if layout == "SINGLE":
+    if layout == "SINGLE" and not records:
         unit = "period"
     elif layout == "CROSS_SECTIONAL" and profile.dimension_columns:
         unit = profile.dimension_columns[0].replace("_", " ")
@@ -174,8 +188,8 @@ def build_historical_claims(profile, rows: list, analysis, forecast=None) -> lis
 
     claims.append(
         Claim("H1", "HISTORICAL", "TOTAL",
-              f"Total {label} across the returned "
-              f"{'period' if layout == 'SINGLE' else 'rows'} is {fmt(total)}.",
+              f"{_total_of(label)} across the returned "
+              f"{'period' if unit == 'period' else 'rows'} is {fmt(total)}.",
               total, "", f"column '{measure}'", f"sum of {len(values)} values",
               values[:50])
     )
@@ -200,7 +214,7 @@ def build_historical_claims(profile, rows: list, analysis, forecast=None) -> lis
               trough, "", f"column '{measure}'", "min of the series")
     )
 
-    if layout == "SINGLE" and len(values) >= 2 and values[0] != 0:
+    if layout == "SINGLE" and not records and len(values) >= 2 and values[0] != 0:
         change = values[-1] - values[0]
         change_pct = change / abs(values[0]) * 100.0
         direction = "increased" if change > 0 else ("decreased" if change < 0 else "held flat")
@@ -247,7 +261,7 @@ def build_grouped_claims(profile, rows: list, measure: str) -> list:
               f"{profile.period_count} periods.",
               float(len(series)), "", "result set", f"distinct values of '{group}'"),
         Claim("H1", "HISTORICAL", "TOTAL",
-              f"Total {label} across all {group} values and periods is {fmt(grand)}.",
+              f"{_total_of(label)} across all {group} values and periods is {fmt(grand)}.",
               grand, "", f"column '{measure}'", "sum over every row"),
     ]
     top = ranked[0]
