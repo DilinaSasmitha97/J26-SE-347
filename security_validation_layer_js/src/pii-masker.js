@@ -13,13 +13,17 @@
  *   - a MIXED column that includes a type regex cannot find inside text
  *     (PERSON, ADDRESS, ...) has the whole cell masked, because span-level
  *     masking would leave the name visible.
- * Role-based policies and format-preserving encryption build on this in the
- * next stage; `mode` is the hook for them.
+ *
+ * Dynamic masking: with a masking policy, the action for each column depends
+ * on the viewer's role (clear / partial / redact / fpe), so the same query
+ * returns real values to an admin, pseudonyms to an analyst and masks to
+ * support staff. 'fpe' uses format-preserving encryption (pii-fpe.js).
  */
 
 'use strict';
 
 const { detectInText, detectValue } = require('./pii-detectors');
+const { resolveAction } = require('./masking-policy');
 
 const MASK = '*';
 
@@ -103,8 +107,9 @@ const PARTIAL = {
 /**
  * Mask every PII span inside a longer string: regex-detected items, plus any
  * name spans the NER stage found for this cell ({ start, end } offsets).
+ * `actionFor(type)` picks the action per span, so one cell can mix actions.
  */
-function maskSpans(str, nameSpans = []) {
+function maskSpans(str, nameSpans = [], actionFor = () => 'partial', fpe = null) {
   const spans = [
     ...detectInText(str),
     ...nameSpans.map((s) => ({ type: 'PERSON', start: s.start, end: s.end, value: str.slice(s.start, s.end) })),
@@ -114,24 +119,37 @@ function maskSpans(str, nameSpans = []) {
   let pos = 0;
   for (const s of spans) {
     if (s.start < pos) continue; // overlaps an item already masked
-    out += str.slice(pos, s.start) + maskValue(s.value, s.type, 'partial');
+    out += str.slice(pos, s.start) + maskValue(s.value, s.type, actionFor(s.type), fpe);
     pos = s.end;
   }
-  return { value: out + str.slice(pos), changed: true };
+  const value = out + str.slice(pos);
+  return { value, changed: value !== str };
 }
 
-/** Mask one value of a known PII type. Falls back to a full mask if the value does not fit the type. */
-function maskValue(value, type, mode = 'partial') {
+/**
+ * Apply one action to one value of a known PII type:
+ *   clear    unchanged
+ *   partial  type-specific partial mask (falls back to a full mask)
+ *   redact   [TYPE] token
+ *   fpe      format-preserving encryption (falls back to redact when the type
+ *            or value cannot be encrypted, or no key is configured)
+ */
+function maskValue(value, type, action = 'partial', fpe = null) {
   if (value === null || value === undefined) return value;
   const str = String(value);
-  if (!str.trim()) return value;
-  if (mode === 'redact' || type === 'SECRET') return type === 'SECRET' ? '[REDACTED]' : `[${type}]`;
+  if (!str.trim() || action === 'clear') return value;
+  if (type === 'SECRET') return '[REDACTED]';
   // A cell holding several values or surrounding text (GROUP_CONCAT(email),
-  // CONCAT('Call ', phone)): mask each detected item in place rather than
+  // CONCAT('Call ', phone)): handle each detected item in place rather than
   // treating the whole string as one value. Nothing detectable -> full mask.
   if (SPAN_DETECTABLE.has(type) && detectValue(str) !== type) {
-    const r = maskSpans(str);
-    return r.changed ? r.value : maskAll(str);
+    const r = maskSpans(str, [], () => action, fpe);
+    return r.changed ? r.value : (action === 'redact' ? `[${type}]` : maskAll(str));
+  }
+  if (action === 'redact') return `[${type}]`;
+  if (action === 'fpe') {
+    const encrypted = fpe ? fpe.protect(str, type) : null;
+    return encrypted === null ? `[${type}]` : encrypted;
   }
   const strategy = PARTIAL[type];
   const masked = strategy ? strategy(str) : null;
@@ -142,43 +160,62 @@ function maskValue(value, type, mode = 'partial') {
  * Mask a query result using its column classification.
  *
  *   result          { columns, rows: [[...]] } from the query executor
- *   classification  classifyColumns() output, one entry per column
- *   mode            'partial' (default) | 'redact'
+ *   classification  classifyColumns() (+ applyNer()) output, one entry per column
+ *   options
+ *     role, policy  dynamic masking: the action per PII type comes from the
+ *                   role's entry in the masking policy (masking-policy.js)
+ *     mode          without a policy: one action for everything ('partial' | 'redact')
+ *     fpe           createPiiFpe() instance, needed for the 'fpe' action
  *
  * Returns a new object (the input is not modified):
- *   { ...result, rows, masking: { mode, columns: [{ name, piiType, strategy }], maskedCells } }
+ *   { ...result, rows, masking: { role, columns: [{ name, piiType, action, pseudonymised }], maskedCells } }
+ * `pseudonymised` marks columns whose values are encrypted look-alikes, so
+ * consumers never mistake them for real data.
  */
-function mask(result, classification, { mode = 'partial' } = {}) {
+function mask(result, classification, { mode = 'partial', role = null, policy = null, fpe = null } = {}) {
   if (!result || !Array.isArray(result.rows)) throw new TypeError('mask() needs a query result with rows');
+  const actionFor = (type, sources) => (policy ? resolveAction(policy, role, type, sources) : mode);
+
   const plan = result.columns.map((col, i) => {
     const cls = (classification && classification[i]) || {};
     const type = cls.piiType || null;
+    const sources = cls.sources || [];
     let strategy = null;
-    if (type === 'CONTAINS_PII') strategy = 'spans';
-    else if (type === 'UNVERIFIED') strategy = 'full'; // could not be checked for names -> fail closed
-    else if (type === 'MIXED') {
-      // A column built from several tagged sources: if every part can be found by regex,
-      // mask the spans; otherwise (a name is in there) mask the whole cell.
+    let action = null;
+    if (type === 'CONTAINS_PII') {
+      strategy = 'spans';
+      action = 'per-span';
+    } else if (type === 'UNVERIFIED') {
+      // Could not be checked for names: only a role allowed to see everything gets it unmasked.
+      action = actionFor('UNVERIFIED', sources);
+      strategy = action === 'clear' ? null : 'full';
+    } else if (type === 'MIXED') {
+      // Several tagged sources in one column: mask span by span if regex can find every
+      // part; otherwise (a name is in there) mask the whole cell unless the role may see all parts.
       const parts = cls.sourceTypes || [];
-      strategy = parts.length && parts.every((t) => SPAN_DETECTABLE.has(t)) ? 'spans' : 'full';
-    } else if (type) strategy = mode;
-    return { name: col.name, piiType: type, strategy };
+      const actions = parts.map((t) => actionFor(t, sources));
+      if (actions.length && actions.every((a) => a === 'clear')) action = 'clear';
+      else if (parts.length && parts.every((t) => SPAN_DETECTABLE.has(t))) { strategy = 'spans'; action = 'per-span'; }
+      else { strategy = 'full'; action = 'full'; }
+    } else if (type) {
+      action = actionFor(type, sources);
+      strategy = action === 'clear' ? null : 'value';
+    }
+    return { name: col.name, piiType: type, action, strategy, sources };
   });
 
   let maskedCells = 0;
   const rows = result.rows.map((row, ri) => row.map((v, i) => {
-    const { piiType, strategy } = plan[i];
+    const { piiType, action, strategy, sources } = plan[i];
     if (!strategy || v === null || v === undefined || String(v).trim() === '') return v;
     let out;
     if (strategy === 'spans') {
       const names = (classification[i] && classification[i].personSpans && classification[i].personSpans[ri]) || [];
-      const r = maskSpans(String(v), names);
-      if (!r.changed) return v;
-      out = r.value;
+      out = maskSpans(String(v), names, (t) => actionFor(t, sources), fpe).value;
     } else if (strategy === 'full') {
       out = maskAll(String(v));
     } else {
-      out = maskValue(v, piiType, strategy);
+      out = maskValue(v, piiType, action, fpe);
     }
     if (out !== v) maskedCells++;
     return out;
@@ -187,7 +224,14 @@ function mask(result, classification, { mode = 'partial' } = {}) {
   return {
     ...result,
     rows,
-    masking: { mode, columns: plan.filter((p) => p.strategy), maskedCells },
+    masking: {
+      role: policy ? role : null,
+      mode: policy ? null : mode,
+      columns: plan.filter((p) => p.action).map(({ name, piiType, action }) => ({
+        name, piiType, action, pseudonymised: action === 'fpe',
+      })),
+      maskedCells,
+    },
   };
 }
 
