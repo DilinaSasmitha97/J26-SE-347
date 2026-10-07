@@ -63,49 +63,66 @@ User Query + JWT Token
 * **FastAPI REST Endpoints (Middleware Gateway Specification):**
 
   #### Endpoint 1: `POST /api/v1/translate`
-  * **Summary:** Accepts natural language query, database schema, and security rules, returning translated SQL & metadata.
+  * **Summary:** Accepts natural language query, optional database schema, and security rules, returning translated SQL & metadata. If `schema_meta` is omitted, the default multi-tenant HR & Payroll schema (14 tables) is used automatically.
   * **Request Headers:** `Content-Type: application/json`
   * **Request Payload (JSON):**
     ```json
     {
-      "user_query": "What is the name and capacity of the stadium with the highest average attendance?",
-      "db_id": "concert_singer",
-      "schema_meta": "CREATE TABLE stadium (stadium_id INT, name VARCHAR, capacity INT, average INT);",
-      "injected_rules": "STRICT CONSTRAINT: Filter all results by tenant_id = 'tenant_a_123'."
+      "user_query": "What are the first and last names of employees in Human Resources department?",
+      "injected_rules": "STRICT CONSTRAINT: Filter all records by tenant_id = 101."
     }
     ```
   * **Response Payload — 200 OK (JSON):**
     ```json
     {
       "status": "SUCCESS",
-      "predicted_sql": "SELECT name, capacity FROM stadium ORDER BY average DESC LIMIT 1;",
+      "predicted_sql": "SELECT T1.first_name, T1.last_name FROM employees AS T1 JOIN departments AS T2 ON T1.department_id = T2.id WHERE T2.name = 'Human Resources' AND T1.tenant_id = 101;",
       "metadata": {
-        "prompt_tokens": 326,
-        "completion_tokens": 31,
-        "total_tokens": 357,
-        "model": "llama-3.3-70b-versatile",
-        "refinement_attempts": 1,
-        "execution_time_ms": 488.3
+        "prompt_tokens": 3428,
+        "completion_tokens": 58,
+        "total_tokens": 3486,
+        "execution_time_ms": 1250.4
       }
     }
     ```
-  * **Response Payload — Error Response (JSON):**
+
+  #### Endpoint 2: `POST /api/v1/ask`
+  * **Summary:** End-to-end natural language query execution returning predicted SQL and live table rows with strict tenant isolation.
+  * **Request Payload (JSON):**
     ```json
     {
-      "status": "ERROR",
-      "error_code": "SYNTAX_REFINEMENT_FAILED",
-      "detail": "Failed to generate syntactically valid SQL after max refinement attempts."
+      "question": "Show top 5 employees by basic salary",
+      "injected_rules": "WHERE tenant_id = 101",
+      "execute_query": true,
+      "max_rows": 5
+    }
+    ```
+  * **Response Payload — 200 OK (JSON):**
+    ```json
+    {
+      "status": "SUCCESS",
+      "question": "Show top 5 employees by basic salary",
+      "predicted_sql": "SELECT employee_no, first_name, last_name FROM employees WHERE tenant_id = 101 AND is_active = 1;",
+      "row_count": 5,
+      "columns": ["employee_no", "first_name", "last_name"],
+      "rows": [
+        {"employee_no": "EMP-101-0001", "first_name": "Sachini", "last_name": "Abeysekara"}
+      ],
+      "metadata": { "execution_time_ms": 2200.5 }
     }
     ```
 
-  #### Endpoint 2: `GET /api/v1/health`
+  #### Endpoint 3: `GET /api/v1/schema`
+  * **Summary:** Returns full active database DDL schema statements (`shared_database/multitenant_hr_schema.sql`).
+
+  #### Endpoint 4: `GET /api/v1/health`
   * **Summary:** Health check for engine and LLM provider connectivity.
   * **Response Payload (JSON):**
     ```json
     {
       "status": "UP",
-      "llm_provider": "groq",
-      "active_model": "llama-3.3-70b-versatile"
+      "llm_provider": "openrouter",
+      "active_model": "qwen/qwen-2.5-coder-32b-instruct"
     }
     ```
 

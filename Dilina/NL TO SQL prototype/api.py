@@ -32,10 +32,10 @@ app.add_middleware(
 # ----------------- Data Models -----------------
 
 class TranslateRequest(BaseModel):
-    user_query: str = Field(..., description="Natural language question from the user", example="What is the name and capacity of the stadium with the highest average attendance?")
-    db_id: Optional[str] = Field("default", description="Database identifier / tenant context", example="concert_singer")
-    schema_meta: str = Field(..., description="DDL or schema CREATE TABLE statements", example="CREATE TABLE stadium (stadium_id INT, name VARCHAR, capacity INT, average INT);")
-    injected_rules: Optional[str] = Field(None, description="Security / RBAC grounding rules from Member 3", example="STRICT CONSTRAINT: Filter all results by tenant_id = 'tenant_a_123'.")
+    user_query: str = Field(..., description="Natural language question from the user", example="List all active employees and their departments")
+    db_id: Optional[str] = Field("default", description="Database identifier: default (multitenant_hr) or nemsuerp", example="default")
+    schema_meta: Optional[str] = Field(None, description="Optional DDL schema. If omitted, default multi-tenant HR schema is loaded automatically.")
+    injected_rules: Optional[str] = Field(None, description="Security / RBAC grounding rules from Member 3", example="STRICT CONSTRAINT: Filter all results by tenant_id = 101.")
     use_pruning: Optional[bool] = Field(True, description="Whether to apply Task 1 schema pruning")
     enable_refinement: Optional[bool] = Field(True, description="Whether to apply Task 3 automated self-correction loop")
     max_refinement_attempts: Optional[int] = Field(2, description="Maximum self-correction refinement attempts")
@@ -46,9 +46,10 @@ class TranslateResponse(BaseModel):
     metadata: dict
 
 class AskRequest(BaseModel):
-    question: str = Field(..., description="Natural language question to query against the ERP database", example="Show top 10 employees by salary")
-    injected_rules: Optional[str] = Field(None, description="Security / Tenant isolation rules from Member 3", example="Filter by tenant_id = 'tenant_123'")
-    execute_query: Optional[bool] = Field(True, description="Whether to execute the SQL on your ERP and return live rows")
+    question: str = Field(..., description="Natural language question to query against the database", example="Show top 5 employees by basic salary")
+    db_id: Optional[str] = Field("default", description="Database identifier: default (multitenant_hr) or nemsuerp", example="default")
+    injected_rules: Optional[str] = Field(None, description="Security / Tenant isolation rules from Member 3", example="STRICT CONSTRAINT: Filter by tenant_id = 101")
+    execute_query: Optional[bool] = Field(True, description="Whether to execute the SQL on database and return live rows")
     max_rows: Optional[int] = Field(50, description="Maximum number of rows to return from the database")
 
 class AskResponse(BaseModel):
@@ -59,6 +60,7 @@ class AskResponse(BaseModel):
     columns: Optional[list[str]] = []
     rows: Optional[list[dict]] = []
     metadata: dict
+
 
 class SchemaExtractRequest(BaseModel):
     user_query: str
@@ -109,23 +111,46 @@ def health():
         active_model=active_model
     )
 
+@app.get("/api/v1/schema", summary="Inspect Active Database Schema")
+def get_database_schema(db_id: Optional[str] = "default"):
+    """
+    Returns the active database schema DDL statements.
+    Default: Multi-Tenant HR & Payroll schema (14 tables).
+    """
+    try:
+        schema = database.get_cached_or_live_schema(db_id=db_id)
+        return {
+            "status": "SUCCESS",
+            "db_id": db_id,
+            "schema_bytes": len(schema),
+            "schema_meta": schema
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"status": "ERROR", "detail": str(e)})
+
 @app.post("/api/v1/translate", response_model=TranslateResponse, summary="Translate Natural Language to SQL")
 def translate_query(req: TranslateRequest):
     """
     Core translation endpoint adhering to Team Interface Contract:
-    Accepts natural language query, schema DDL, and injected security rules,
+    Accepts natural language query, optional schema DDL, and injected security rules,
     and returns predicted SQL with token execution metadata.
+    If schema_meta is omitted, the default multi-tenant HR schema is loaded automatically.
     """
     start_time = time.time()
     try:
+        # Load default multi-tenant HR schema if caller didn't supply custom DDL
+        schema_meta = req.schema_meta
+        if not schema_meta:
+            schema_meta = database.get_cached_or_live_schema(db_id=req.db_id)
+
         sql, token_stats = main.translate(
             nl_query=req.user_query,
-            schema_meta=req.schema_meta,
+            schema_meta=schema_meta,
             injected_rules=req.injected_rules,
             use_pruning=req.use_pruning,
             enable_refinement=req.enable_refinement,
             max_refinement_attempts=req.max_refinement_attempts,
-            full_schema_meta=req.schema_meta
+            full_schema_meta=schema_meta
         )
         
         execution_time_ms = round((time.time() - start_time) * 1000, 2)
@@ -147,27 +172,27 @@ def translate_query(req: TranslateRequest):
             }
         )
 
-@app.post("/api/v1/ask", response_model=AskResponse, summary="Ask Question Directly Against Live ERP Database")
+@app.post("/api/v1/ask", response_model=AskResponse, summary="Ask Question Directly Against Live Database")
 def ask_database(req: AskRequest):
     """
     End-to-end question answering:
-    1. Loads live/cached ERP database schema
+    1. Loads live/cached schema (defaults to multi-tenant HR & Payroll)
     2. Prunes schema using Task 1 schema extractor
-    3. Translates Natural Language question into SQL
-    4. Validates & self-corrects using SQL Server compiler dry-run (Task 3)
-    5. Executes the SQL against your local database (if execute_query=True)
-    6. Returns both the SQL query and the actual data rows!
+    3. Translates Natural Language question into SQL conforming to Member 3 rules
+    4. Validates & self-corrects using compiler dry-run (Task 3)
+    5. Executes SQL against database (MySQL or portable SQLite)
+    6. Returns both SQL query and actual data rows!
     """
     start_time = time.time()
     conn = None
     try:
-        # 1. Fetch schema from live database or cache
-        schema_meta = database.get_cached_or_live_schema()
+        # 1. Fetch schema from cache or database
+        schema_meta = database.get_cached_or_live_schema(db_id=req.db_id)
 
         # Connect to DB for live dry-run validation and row fetch
         if req.execute_query:
             try:
-                conn = database.get_db_connection()
+                conn = database.get_db_connection(db_id=req.db_id)
             except Exception as e:
                 conn = None
 

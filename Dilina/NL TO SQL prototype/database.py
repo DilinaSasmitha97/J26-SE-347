@@ -1,23 +1,34 @@
 import os
-import pyodbc
 import sqlite3
 from dotenv import load_dotenv
 from profiler import time_block, log_step
 
+try:
+    import pyodbc
+except ImportError:
+    pyodbc = None
+
+try:
+    import pymysql
+except ImportError:
+    pymysql = None
+
 load_dotenv()
 
-def get_db_connection(profiler=None):
+
+def get_sqlserver_connection(profiler=None):
     """
-    Connect to Microsoft SQL Server using settings from environment variables.
+    Connect to Microsoft SQL Server (NemsuERPNew) using settings from environment variables.
     Will attempt to use ODBC Driver 17, with a fallback to the standard SQL Server driver.
     """
+    if not pyodbc:
+        raise Exception("pyodbc is not installed. SQL Server connection requires pyodbc.")
+
     server = os.getenv("DB_SERVER", "MSI\\SQLEXPRESS")
     database_name = os.getenv("DB_NAME", "NemsuERPNew")
     user = os.getenv("DB_USER")
     password = os.getenv("DB_PASSWORD")
     
-    # Priority 1: ODBC Driver 17 for SQL Server
-    # Priority 2: Standard SQL Server driver (fallback)
     drivers = ["ODBC Driver 17 for SQL Server", "SQL Server"]
     conn = None
     
@@ -40,16 +51,87 @@ def get_db_connection(profiler=None):
         try:
             with time_block(f"SQL Server Connect Attempt ({driver})", parent_summary=profiler.categories if profiler else None, category="Database Connection"):
                 conn = pyodbc.connect(conn_str)
-            log_step(f"Successfully connected using driver: {driver}")
+            log_step(f"Successfully connected to SQL Server using driver: {driver}")
             break
-        except pyodbc.Error as e:
+        except Exception as e:
             log_step(f"Connection failed for driver '{driver}': {e}", level="WARN")
             pass
             
     if not conn:
-        raise Exception("Could not connect to the database with any driver. Please verify your connection details.")
+        raise Exception("Could not connect to SQL Server with any driver. Please verify your connection details.")
         
     return conn
+
+
+def get_mysql_connection(profiler=None):
+    """
+    Connect to MySQL 8.x instance for the multi_tenant_hr database.
+    """
+    if not pymysql:
+        raise Exception("pymysql is not installed.")
+
+    host = os.getenv("MYSQL_HOST", "localhost")
+    port = int(os.getenv("MYSQL_PORT", 3306))
+    user = os.getenv("MYSQL_USER", "root")
+    password = os.getenv("MYSQL_PASSWORD", "")
+    db = os.getenv("MYSQL_DATABASE", "multi_tenant_hr")
+
+    with time_block("MySQL Connect Attempt", parent_summary=profiler.categories if profiler else None, category="Database Connection"):
+        conn = pymysql.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=db,
+            charset="utf8mb4",
+            autocommit=True
+        )
+    log_step(f"Successfully connected to MySQL database '{db}' on {host}:{port}")
+    return conn
+
+
+def get_sqlite_multitenant_connection(profiler=None):
+    """
+    Connect to local portable SQLite multitenant_hr.db database for zero-config team execution.
+    """
+    candidates = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "multitenant_hr.db"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "shared_database", "multitenant_hr.db")
+    ]
+    db_path = None
+    for cand in candidates:
+        if os.path.exists(cand):
+            db_path = cand
+            break
+
+    if not db_path:
+        raise FileNotFoundError(f"Could not locate multitenant_hr.db in candidates: {candidates}")
+
+    with time_block("SQLite Multitenant Connect", parent_summary=profiler.categories if profiler else None, category="Database Connection"):
+        conn = sqlite3.connect(db_path, check_same_thread=False)
+    log_step(f"Successfully connected to SQLite multitenant HR database: {db_path}")
+    return conn
+
+
+def get_db_connection(db_id: str = "default", profiler=None):
+    """
+    Multi-dialect database router:
+    - If db_id == 'nemsuerp' or DB_TYPE == 'sqlserver': routes to SQL Server (NemsuERPNew).
+    - If DB_TYPE == 'mysql' or MYSQL_HOST is set: attempts MySQL, falls back to SQLite.
+    - Default: connects to SQLite multitenant_hr.db.
+    """
+    db_type = os.getenv("DB_TYPE", "").lower().strip()
+    if db_id.lower() == "nemsuerp" or db_type == "sqlserver":
+        return get_sqlserver_connection(profiler=profiler)
+
+    if db_type == "mysql" or os.getenv("MYSQL_HOST"):
+        try:
+            return get_mysql_connection(profiler=profiler)
+        except Exception as e:
+            log_step(f"MySQL connection failed ({e}); falling back to portable SQLite multitenant_hr.db", level="WARN")
+
+    return get_sqlite_multitenant_connection(profiler=profiler)
+
 
 
 def extract_schema_as_create_statements(conn, profiler=None) -> str:
@@ -181,12 +263,12 @@ def extract_sqlite_schema_as_create_statements(conn, profiler=None) -> str:
                 schema_statements.append(stmt)
                 
         return "\n\n".join(schema_statements)
-def execute_query(sql_query: str, max_rows: int = 100):
+def execute_query(sql_query: str, max_rows: int = 100, db_id: str = "default"):
     """
     Executes a SQL query against the configured database and returns
     column headers and row data as JSON-serializable dictionaries.
     """
-    conn = get_db_connection()
+    conn = get_db_connection(db_id=db_id)
     try:
         cursor = conn.cursor()
         cursor.execute(sql_query)
@@ -206,19 +288,43 @@ def execute_query(sql_query: str, max_rows: int = 100):
         conn.close()
 
 
-def get_cached_or_live_schema(force_refresh: bool = False) -> str:
+def get_cached_or_live_schema(force_refresh: bool = False, db_id: str = "default") -> str:
     """
-    Returns full DDL schema from local erp_schema_cache.sql cache or extracts from live DB.
+    Returns full DDL schema from local cache or extracts from live DB.
+    - If db_id == 'nemsuerp': returns erp_schema_cache.sql (SQL Server 100+ tables).
+    - Default: returns multitenant_hr_schema.sql (Multi-Tenant HR 14 tables).
     """
-    cache_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_schema_cache.sql")
-    if not force_refresh and os.path.exists(cache_path):
-        with open(cache_path, "r", encoding="utf-8") as f:
-            return f.read()
-            
-    conn = get_db_connection()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    if db_id.lower() == "nemsuerp":
+        cache_path = os.path.join(base_dir, "erp_schema_cache.sql")
+        if not force_refresh and os.path.exists(cache_path):
+            with open(cache_path, "r", encoding="utf-8") as f:
+                return f.read()
+        conn = get_sqlserver_connection()
+        try:
+            return extract_schema_as_create_statements(conn)
+        finally:
+            conn.close()
+
+    # Default: Multi-Tenant HR schema
+    candidates = [
+        os.path.join(base_dir, "multitenant_hr_schema.sql"),
+        os.path.join(os.path.dirname(os.path.dirname(base_dir)), "shared_database", "multitenant_hr_schema.sql")
+    ]
+    for cand in candidates:
+        if os.path.exists(cand):
+            with open(cand, "r", encoding="utf-8") as f:
+                return f.read()
+
+    # Fallback to local SQLite or MySQL extraction
+    conn = get_db_connection(db_id=db_id)
     try:
-        schema = extract_schema_as_create_statements(conn)
-        return schema
+        if isinstance(conn, sqlite3.Connection):
+            return extract_sqlite_schema_as_create_statements(conn)
+        else:
+            return extract_schema_as_create_statements(conn)
     finally:
         conn.close()
+
 
