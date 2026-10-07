@@ -8,7 +8,8 @@ its correct decision by DEFINITION, before the classifier is run:
   NOT_READY           no time axis, fewer than 4 observations, a constant
                       series, more than 20% unreadable values, more than 25%
                       empty periods, pure noise (noise 50% of the level, no
-                      trend), one series per category, raw unaggregated rows
+                      trend), one series per category, raw unaggregated rows,
+                      a result cut at the security layer's row limit (Stage 8)
   READY_WITH_WARNING  a few empty periods, a few unreadable values, a
                       near-constant series, a 4-7 period history (too short to
                       test predictability)
@@ -127,6 +128,9 @@ CASES = [
     ("8+ of 24 months missing", NOT_READY, "IRREGULAR_INTERVALS",
      lambda r: drop_periods(monthly(r, 24), r.randint(8, 12), r)),
     ("pure noise (50%)", NOT_READY, "LOW_SIGNAL", lambda r: monthly(r, 24, 0.50, 0.0)),
+    ("result cut at the row limit", NOT_READY, "INPUT_TRUNCATED",
+     lambda r: (monthly(r, 24), {"truncated": True, "row_count": r.randint(200, 5000),
+                                 "rows_received": 24})),
     ("one series per region", NOT_READY, "MULTI_SERIES",
      lambda r: [{"month": _month(t), "region": g, "amount": round(r.uniform(1e3, 9e3), 2)}
                 for t in range(18) for g in ("North", "South", "East")]),
@@ -139,8 +143,10 @@ def main() -> int:
     for name, expected, code, build in CASES:
         for k in range(N_SEEDS):
             rng = random.Random(master.randint(1, 10**9))
-            rows = build(rng)
-            report = prediction.assess_readiness(profile_results(rows), rows)
+            built = build(rng)
+            # A builder may also return the input adapter's summary (truncation).
+            rows, info = built if isinstance(built, tuple) else (built, None)
+            report = prediction.assess_readiness(profile_results(rows), rows, input_info=info)
             records.append({
                 "case": name, "seed": k, "expected": expected, "expected_code": code,
                 "decision": report.decision, "verdict": report.verdict,

@@ -18,7 +18,7 @@
   "anomaly_persistence": {
     "cases": 300,
     "detected_as_recent_anomaly": 261,
-    "accuracy": 0.5823754789272031,
+    "accuracy": 0.5862068965517241,
     "baseline_always_persists": 0.6590038314176245,
     "baseline_always_recovers": 0.34099616858237547,
     "truth_persisting_cases": 172,
@@ -40,10 +40,10 @@
       },
       "SHIFT": {
         "detected": 82,
-        "accuracy": 0.8170731707317073,
+        "accuracy": 0.8292682926829268,
         "verdicts": {
-          "RECOVERING": 18,
-          "PERSISTING": 47,
+          "RECOVERING": 17,
+          "PERSISTING": 48,
           "WORSENING": 17
         },
         "truth_persists": 77,
@@ -70,12 +70,12 @@
       }
     },
     "models_used": {
-      "NAIVE": 88,
+      "NAIVE": 89,
       "LINEAR_REGRESSION": 71,
       "EXPONENTIAL_SMOOTHING": 77,
       "SEASONAL_NAIVE": 23,
-      "SARIMA": 2
+      "SARIMA": 1
     },
-    "accuracy_spike_and_shift": 0.8875739644970414
+    "accuracy_spike_and_shift": 0.893491124260355
   }
 }

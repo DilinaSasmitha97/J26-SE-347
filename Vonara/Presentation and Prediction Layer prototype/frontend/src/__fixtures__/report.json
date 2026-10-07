@@ -136,7 +136,7 @@
    "completion_tokens": 0,
    "total_tokens": 0,
    "schema_tables_considered": 4,
-   "execution_time_ms": 2.78,
+   "execution_time_ms": 16.76,
    "tenant_id": "tenant_a",
    "user_role": ""
   }
@@ -251,7 +251,7 @@
   "summary": {
    "block": "SUMMARY",
    "text": "The query returned 36 rows. Total amount across the returned period is 776,966. The average total amount per period is 21,582. The highest value was 28,547 at 2024-04-01, 1.32x the average. The lowest value was 15,451 at 2023-10-01. Over the period the value increased from 20,868 to 21,095, a change of 1.1%.",
-   "full_text": "The query returned 36 rows. Total amount across the returned period is 776,966. The average total amount per period is 21,582. The highest value was 28,547 at 2024-04-01, 1.32x the average. The lowest value was 15,451 at 2023-10-01. Over the period the value increased from 20,868 to 21,095, a change of 1.1%. Values vary with a standard deviation of 3,646.\n\nAnomaly thresholds were adapted to this series' stable volatility, giving a normal range of -2,965 to 2,805. May 2023 is a moderate low outlier at 22,468, 4.1% from the mean. Apr 2024 is a moderate high outlier at 28,547, 32.3% from the mean. Jun 2025 is a moderate low outlier at 20,255, 6.2% from the mean.\n\nA sarima model was selected and projects 3 month periods ahead. Total Amount for Jan 2026 is projected at 23,916, within a 95% confidence range of 18,881 to 28,951. Total Amount for Feb 2026 is projected at 26,279, within a 95% confidence range of 19,158 to 33,399. Total Amount for Mar 2026 is projected at 28,361, within a 95% confidence range of 19,640 to 37,081. Across the full 3-period horizon the projected total is 78,555. The Mar 2026 projection of 28,361 sits 31.4% above the historical average of 21,582. Forecast uncertainty widens with distance: the interval at the final period is 1.73x as wide as at the first. On the observed data the model's mean absolute percentage error is 8.5%.",
+   "full_text": "The query returned 36 rows. Total amount across the returned period is 776,966. The average total amount per period is 21,582. The highest value was 28,547 at 2024-04-01, 1.32x the average. The lowest value was 15,451 at 2023-10-01. Over the period the value increased from 20,868 to 21,095, a change of 1.1%. Values vary with a standard deviation of 3,646.\n\nAnomaly thresholds were adapted to this series' stable volatility, giving a normal range of -2,965 to 2,805. May 2023 is a moderate low outlier at 22,468, 4.1% from the mean. Apr 2024 is a moderate high outlier at 28,547, 32.3% from the mean. Jun 2025 is a moderate low outlier at 20,255, 6.2% from the mean.\n\nA seasonal naive model was selected and projects 3 month periods ahead. Total Amount for Jan 2026 is projected at 21,524, within a 95% confidence range of 17,227 to 25,822. Total Amount for Feb 2026 is projected at 24,962, within a 95% confidence range of 20,664 to 29,260. Total Amount for Mar 2026 is projected at 27,002, within a 95% confidence range of 22,704 to 31,299. Across the full 3-period horizon the projected total is 73,488. The Mar 2026 projection of 27,002 sits 25.1% above the historical average of 21,582. Forecast uncertainty widens with distance: the interval at the final period is 1.00x as wide as at the first. On the observed data the model's mean absolute percentage error is 6.8%.",
    "mode": "DETERMINISTIC",
    "sentence_selection": "LEADING_SENTENCES",
    "claim_count": 20,
@@ -631,25 +631,25 @@
         },
         {
          "month": "2026-01-01T00:00:00",
-         "forecast": 23915.8032,
-         "lower_bound": 18880.9064,
-         "upper_bound": 28950.7001,
+         "forecast": 21524.46,
+         "lower_bound": 17226.6644,
+         "upper_bound": 25822.2556,
          "label": "Jan 2026",
          "segment": "forecast"
         },
         {
          "month": "2026-02-01T00:00:00",
-         "forecast": 26278.5457,
-         "lower_bound": 19158.1263,
-         "upper_bound": 33398.9651,
+         "forecast": 24961.76,
+         "lower_bound": 20663.9644,
+         "upper_bound": 29259.5556,
          "label": "Feb 2026",
          "segment": "forecast"
         },
         {
          "month": "2026-03-01T00:00:00",
-         "forecast": 28360.5071,
-         "lower_bound": 19639.81,
-         "upper_bound": 37081.2042,
+         "forecast": 27001.69,
+         "lower_bound": 22703.8944,
+         "upper_bound": 31299.4856,
          "label": "Mar 2026",
          "segment": "forecast"
         }
@@ -690,25 +690,25 @@
         },
         {
          "month": "2026-01-01T00:00:00",
-         "forecast": 23915.8032,
-         "lower_bound": 18880.9064,
-         "upper_bound": 28950.7001,
+         "forecast": 21524.46,
+         "lower_bound": 17226.6644,
+         "upper_bound": 25822.2556,
          "label": "Jan 2026",
          "segment": "forecast"
         },
         {
          "month": "2026-02-01T00:00:00",
-         "forecast": 26278.5457,
-         "lower_bound": 19158.1263,
-         "upper_bound": 33398.9651,
+         "forecast": 24961.76,
+         "lower_bound": 20663.9644,
+         "upper_bound": 29259.5556,
          "label": "Feb 2026",
          "segment": "forecast"
         },
         {
          "month": "2026-03-01T00:00:00",
-         "forecast": 28360.5071,
-         "lower_bound": 19639.81,
-         "upper_bound": 37081.2042,
+         "forecast": 27001.69,
+         "lower_bound": 22703.8944,
+         "upper_bound": 31299.4856,
          "label": "Mar 2026",
          "segment": "forecast"
         }
@@ -1021,25 +1021,25 @@
       },
       {
        "month": "2026-01-01T00:00:00",
-       "forecast": 23915.8032,
-       "lower_bound": 18880.9064,
-       "upper_bound": 28950.7001,
+       "forecast": 21524.46,
+       "lower_bound": 17226.6644,
+       "upper_bound": 25822.2556,
        "label": "Jan 2026",
        "segment": "forecast"
       },
       {
        "month": "2026-02-01T00:00:00",
-       "forecast": 26278.5457,
-       "lower_bound": 19158.1263,
-       "upper_bound": 33398.9651,
+       "forecast": 24961.76,
+       "lower_bound": 20663.9644,
+       "upper_bound": 29259.5556,
        "label": "Feb 2026",
        "segment": "forecast"
       },
       {
        "month": "2026-03-01T00:00:00",
-       "forecast": 28360.5071,
-       "lower_bound": 19639.81,
-       "upper_bound": 37081.2042,
+       "forecast": 27001.69,
+       "lower_bound": 22703.8944,
+       "upper_bound": 31299.4856,
        "label": "Mar 2026",
        "segment": "forecast"
       }
@@ -1080,25 +1080,25 @@
       },
       {
        "month": "2026-01-01T00:00:00",
-       "forecast": 23915.8032,
-       "lower_bound": 18880.9064,
-       "upper_bound": 28950.7001,
+       "forecast": 21524.46,
+       "lower_bound": 17226.6644,
+       "upper_bound": 25822.2556,
        "label": "Jan 2026",
        "segment": "forecast"
       },
       {
        "month": "2026-02-01T00:00:00",
-       "forecast": 26278.5457,
-       "lower_bound": 19158.1263,
-       "upper_bound": 33398.9651,
+       "forecast": 24961.76,
+       "lower_bound": 20663.9644,
+       "upper_bound": 29259.5556,
        "label": "Feb 2026",
        "segment": "forecast"
       },
       {
        "month": "2026-03-01T00:00:00",
-       "forecast": 28360.5071,
-       "lower_bound": 19639.81,
-       "upper_bound": 37081.2042,
+       "forecast": 27001.69,
+       "lower_bound": 22703.8944,
+       "upper_bound": 31299.4856,
        "label": "Mar 2026",
        "segment": "forecast"
       }
@@ -1270,15 +1270,19 @@
    "filled_periods": 0,
    "reason": "All readiness gates passed.",
    "checks": [
+    "input_completeness: PASS",
     "temporal_validity: PASS (axis='month', granularity=MONTH)",
     "regularity: PASS (0 empty periods filled, calendar=MONTH)",
     "sufficiency: PASS (36 observations)",
     "signal_quality: PASS (best in-history one-step error 7.8% of level (SEASONAL_NAIVE, 6 origins))"
-   ]
+   ],
+   "input_truncated": false,
+   "noise_limit": 0.2,
+   "policy_version": "2026-10-07.1"
   },
   "stage_3_model_selection": {
-   "model": "SARIMA",
-   "reason": "Trend-oriented intent with seasonal structure (ACF at lag 12 = 0.60 over 36 points): SARIMA models level and season jointly.",
+   "model": "SEASONAL_NAIVE",
+   "reason": "Trend-oriented intent with seasonal structure (ACF at lag 12 = 0.60 over 36 points): SARIMA models level and season jointly. However, on this series' own history it did not beat the seasonal naive benchmark (one-step MAE 2,624.23 vs 1,676.37), so the benchmark is used instead.",
    "seasonal_period": 12,
    "signals": {
     "semantic_intent": "TREND_ANALYSIS",
@@ -1296,13 +1300,21 @@
      "kpss_p_value": 0.1,
      "verdict": "STATIONARY"
     },
-    "statsmodels_available": true
+    "statsmodels_available": true,
+    "guard": {
+     "rule_choice": "SARIMA",
+     "rule_choice_mae": 2624.2257,
+     "best_baseline": "SEASONAL_NAIVE",
+     "best_baseline_mae": 1676.365,
+     "origins": 6,
+     "overridden": true
+    }
    }
   },
   "stage_4_forecast": {
    "generated": true,
-   "model": "SARIMA",
-   "model_reason": "Trend-oriented intent with seasonal structure (ACF at lag 12 = 0.60 over 36 points): SARIMA models level and season jointly.",
+   "model": "SEASONAL_NAIVE",
+   "model_reason": "Trend-oriented intent with seasonal structure (ACF at lag 12 = 0.60 over 36 points): SARIMA models level and season jointly. However, on this series' own history it did not beat the seasonal naive benchmark (one-step MAE 2,624.23 vs 1,676.37), so the benchmark is used instead.",
    "value_column": "total_amount",
    "time_column": "month",
    "granularity": "MONTH",
@@ -1313,34 +1325,34 @@
      "period_index": 1,
      "timestamp": "2026-01-01T00:00:00",
      "label": "Jan 2026",
-     "predicted": 23915.8032,
-     "lower_bound": 18880.9064,
-     "upper_bound": 28950.7001,
-     "interval_width": 10069.7937
+     "predicted": 21524.46,
+     "lower_bound": 17226.6644,
+     "upper_bound": 25822.2556,
+     "interval_width": 8595.5911
     },
     {
      "period_index": 2,
      "timestamp": "2026-02-01T00:00:00",
      "label": "Feb 2026",
-     "predicted": 26278.5457,
-     "lower_bound": 19158.1263,
-     "upper_bound": 33398.9651,
-     "interval_width": 14240.8388
+     "predicted": 24961.76,
+     "lower_bound": 20663.9644,
+     "upper_bound": 29259.5556,
+     "interval_width": 8595.5911
     },
     {
      "period_index": 3,
      "timestamp": "2026-03-01T00:00:00",
      "label": "Mar 2026",
-     "predicted": 28360.5071,
-     "lower_bound": 19639.81,
-     "upper_bound": 37081.2042,
-     "interval_width": 17441.3942
+     "predicted": 27001.69,
+     "lower_bound": 22703.8944,
+     "upper_bound": 31299.4856,
+     "interval_width": 8595.5911
     }
    ],
-   "in_sample_rmse": 2319.1018,
-   "in_sample_mae": 1863.7089,
-   "in_sample_mape": 8.4926,
-   "residual_std": 2371.223,
+   "in_sample_rmse": 1981.4626,
+   "in_sample_mae": 1541.825,
+   "in_sample_mape": 6.7919,
+   "residual_std": 2024.0795,
    "historical_dates": [
     "2023-01-01T00:00:00",
     "2023-02-01T00:00:00",
@@ -1418,50 +1430,54 @@
     21094.62
    ],
    "fitted_values": [
-    0.0,
     20867.98,
-    21997.6604,
-    23841.669,
-    24646.6812,
-    23488.0192,
-    23938.1535,
-    22268.0609,
-    20341.9374,
-    17946.604,
-    16617.3945,
-    16523.9074,
-    32779.2397,
-    28432.6913,
-    27373.6268,
-    26654.7167,
-    25461.4757,
-    26826.8231,
-    23283.1463,
-    20805.0308,
-    18363.5563,
-    17522.1283,
-    17445.4434,
-    19143.4992,
-    24653.7768,
-    25264.2423,
-    27324.0651,
-    28746.7115,
-    27011.9834,
-    24710.5022,
-    21314.4256,
-    20200.41,
-    17747.8616,
-    17273.6045,
-    17863.0182,
-    20505.5203
+    23383.9,
+    25587.59,
+    25364.91,
+    22467.76,
+    24333.38,
+    20802.61,
+    18652.06,
+    15845.13,
+    15451.26,
+    16441.89,
+    20923.1,
+    20867.98,
+    23383.9,
+    25587.59,
+    25364.91,
+    22467.76,
+    24333.38,
+    20802.61,
+    18652.06,
+    15845.13,
+    15451.26,
+    16441.89,
+    20923.1,
+    20601.98,
+    22821.63,
+    25527.03,
+    28546.94,
+    28111.49,
+    23104.01,
+    20925.59,
+    19522.96,
+    17390.65,
+    16127.36,
+    17297.05,
+    20136.98
    ],
    "skipped_reason": "",
    "diagnostics": {
+    "horizon_source": "DEFAULT",
+    "horizon_requested": 3,
     "n_observations": 36,
     "small_sample_penalty": 1.0833,
     "z_score": 1.96,
-    "interval_source": "residual_bootstrap",
-    "seasonal_period": 12
+    "interval_source": "residual_normal",
+    "seasonal_period": 12,
+    "clipped_at_zero": 0,
+    "calendar": "MONTH"
    }
   },
   "stage_5_anomaly": {
@@ -1551,7 +1567,7 @@
   }
  },
  "summary": {
-  "text": "The query returned 36 rows. Total amount across the returned period is 776,966. The average total amount per period is 21,582. The highest value was 28,547 at 2024-04-01, 1.32x the average. The lowest value was 15,451 at 2023-10-01. Over the period the value increased from 20,868 to 21,095, a change of 1.1%. Values vary with a standard deviation of 3,646.\n\nAnomaly thresholds were adapted to this series' stable volatility, giving a normal range of -2,965 to 2,805. May 2023 is a moderate low outlier at 22,468, 4.1% from the mean. Apr 2024 is a moderate high outlier at 28,547, 32.3% from the mean. Jun 2025 is a moderate low outlier at 20,255, 6.2% from the mean.\n\nA sarima model was selected and projects 3 month periods ahead. Total Amount for Jan 2026 is projected at 23,916, within a 95% confidence range of 18,881 to 28,951. Total Amount for Feb 2026 is projected at 26,279, within a 95% confidence range of 19,158 to 33,399. Total Amount for Mar 2026 is projected at 28,361, within a 95% confidence range of 19,640 to 37,081. Across the full 3-period horizon the projected total is 78,555. The Mar 2026 projection of 28,361 sits 31.4% above the historical average of 21,582. Forecast uncertainty widens with distance: the interval at the final period is 1.73x as wide as at the first. On the observed data the model's mean absolute percentage error is 8.5%.",
+  "text": "The query returned 36 rows. Total amount across the returned period is 776,966. The average total amount per period is 21,582. The highest value was 28,547 at 2024-04-01, 1.32x the average. The lowest value was 15,451 at 2023-10-01. Over the period the value increased from 20,868 to 21,095, a change of 1.1%. Values vary with a standard deviation of 3,646.\n\nAnomaly thresholds were adapted to this series' stable volatility, giving a normal range of -2,965 to 2,805. May 2023 is a moderate low outlier at 22,468, 4.1% from the mean. Apr 2024 is a moderate high outlier at 28,547, 32.3% from the mean. Jun 2025 is a moderate low outlier at 20,255, 6.2% from the mean.\n\nA seasonal naive model was selected and projects 3 month periods ahead. Total Amount for Jan 2026 is projected at 21,524, within a 95% confidence range of 17,227 to 25,822. Total Amount for Feb 2026 is projected at 24,962, within a 95% confidence range of 20,664 to 29,260. Total Amount for Mar 2026 is projected at 27,002, within a 95% confidence range of 22,704 to 31,299. Across the full 3-period horizon the projected total is 73,488. The Mar 2026 projection of 27,002 sits 25.1% above the historical average of 21,582. Forecast uncertainty widens with distance: the interval at the final period is 1.00x as wide as at the first. On the observed data the model's mean absolute percentage error is 6.8%.",
   "mode": "DETERMINISTIC",
   "claim_count": 20,
   "claims": [
@@ -1717,84 +1733,84 @@
     "claim_id": "F1",
     "dimension": "PREDICTIVE",
     "kind": "MODEL",
-    "text": "A sarima model was selected and projects 3 month periods ahead.",
+    "text": "A seasonal naive model was selected and projects 3 month periods ahead.",
     "value": 3.0,
     "unit": "",
     "source": "model selection engine",
-    "derivation": "Trend-oriented intent with seasonal structure (ACF at lag 12 = 0.60 over 36 points): SARIMA models level and season jointly.",
+    "derivation": "Trend-oriented intent with seasonal structure (ACF at lag 12 = 0.60 over 36 points): SARIMA models level and season jointly. However, on this series' own history it did not beat the seasonal naive benchmark (one-step MAE 2,624.23 vs 1,676.37), so the benchmark is used instead.",
     "supporting_values": []
    },
    {
     "claim_id": "F2.1",
     "dimension": "PREDICTIVE",
     "kind": "FORECAST",
-    "text": "Total Amount for Jan 2026 is projected at 23,916, within a 95% confidence range of 18,881 to 28,951.",
-    "value": 23915.8032,
+    "text": "Total Amount for Jan 2026 is projected at 21,524, within a 95% confidence range of 17,227 to 25,822.",
+    "value": 21524.46,
     "unit": "",
-    "source": "SARIMA output",
-    "derivation": "point forecast h=1 with interval half-width 5,035",
+    "source": "SEASONAL_NAIVE output",
+    "derivation": "point forecast h=1 with interval half-width 4,298",
     "supporting_values": [
-     18880.9064,
-     28950.7001
+     17226.6644,
+     25822.2556
     ]
    },
    {
     "claim_id": "F2.2",
     "dimension": "PREDICTIVE",
     "kind": "FORECAST",
-    "text": "Total Amount for Feb 2026 is projected at 26,279, within a 95% confidence range of 19,158 to 33,399.",
-    "value": 26278.5457,
+    "text": "Total Amount for Feb 2026 is projected at 24,962, within a 95% confidence range of 20,664 to 29,260.",
+    "value": 24961.76,
     "unit": "",
-    "source": "SARIMA output",
-    "derivation": "point forecast h=2 with interval half-width 7,120",
+    "source": "SEASONAL_NAIVE output",
+    "derivation": "point forecast h=2 with interval half-width 4,298",
     "supporting_values": [
-     19158.1263,
-     33398.9651
+     20663.9644,
+     29259.5556
     ]
    },
    {
     "claim_id": "F2.3",
     "dimension": "PREDICTIVE",
     "kind": "FORECAST",
-    "text": "Total Amount for Mar 2026 is projected at 28,361, within a 95% confidence range of 19,640 to 37,081.",
-    "value": 28360.5071,
+    "text": "Total Amount for Mar 2026 is projected at 27,002, within a 95% confidence range of 22,704 to 31,299.",
+    "value": 27001.69,
     "unit": "",
-    "source": "SARIMA output",
-    "derivation": "point forecast h=3 with interval half-width 8,721",
+    "source": "SEASONAL_NAIVE output",
+    "derivation": "point forecast h=3 with interval half-width 4,298",
     "supporting_values": [
-     19639.81,
-     37081.2042
+     22703.8944,
+     31299.4856
     ]
    },
    {
     "claim_id": "F7",
     "dimension": "PREDICTIVE",
     "kind": "FORECAST_PATH",
-    "text": "Total Amount is projected at 23,916, 26,279 and 28,361 for Jan 2026, Feb 2026 and Mar 2026 respectively.",
-    "value": 23915.8032,
+    "text": "Total Amount is projected at 21,524, 24,962 and 27,002 for Jan 2026, Feb 2026 and Mar 2026 respectively.",
+    "value": 21524.46,
     "unit": "",
-    "source": "SARIMA output",
+    "source": "SEASONAL_NAIVE output",
     "derivation": "point forecasts h=1..3",
     "supporting_values": [
-     23915.8032,
-     26278.5457,
-     28360.5071,
-     18880.9064,
-     28950.7001,
-     19158.1263,
-     33398.9651,
-     19639.81,
-     37081.2042
+     21524.46,
+     24961.76,
+     27001.69,
+     17226.6644,
+     25822.2556,
+     20663.9644,
+     29259.5556,
+     22703.8944,
+     31299.4856
     ]
    },
    {
     "claim_id": "F3",
     "dimension": "PREDICTIVE",
     "kind": "FORECAST_TOTAL",
-    "text": "Across the full 3-period horizon the projected total is 78,555.",
-    "value": 78554.856,
+    "text": "Across the full 3-period horizon the projected total is 73,488.",
+    "value": 73487.91,
     "unit": "",
-    "source": "SARIMA output",
+    "source": "SEASONAL_NAIVE output",
     "derivation": "sum of point forecasts",
     "supporting_values": []
    },
@@ -1802,8 +1818,8 @@
     "claim_id": "F4",
     "dimension": "PREDICTIVE",
     "kind": "FORECAST_VS_HISTORY",
-    "text": "The Mar 2026 projection of 28,361 sits 31.4% above the historical average of 21,582.",
-    "value": 31.405804942242817,
+    "text": "The Mar 2026 projection of 27,002 sits 25.1% above the historical average of 21,582.",
+    "value": 25.109850706827043,
     "unit": "%",
     "source": "forecast vs result set",
     "derivation": "(forecast - historical mean) / |historical mean| * 100",
@@ -1813,8 +1829,8 @@
     "claim_id": "F5",
     "dimension": "PREDICTIVE",
     "kind": "UNCERTAINTY",
-    "text": "Forecast uncertainty widens with distance: the interval at the final period is 1.73x as wide as at the first.",
-    "value": 1.7320507966315137,
+    "text": "Forecast uncertainty widens with distance: the interval at the final period is 1.00x as wide as at the first.",
+    "value": 1.0,
     "unit": "x",
     "source": "interval construction",
     "derivation": "final interval width / first interval width",
@@ -1824,8 +1840,8 @@
     "claim_id": "F6",
     "dimension": "PREDICTIVE",
     "kind": "MODEL_FIT",
-    "text": "On the observed data the model's mean absolute percentage error is 8.5%.",
-    "value": 8.4926,
+    "text": "On the observed data the model's mean absolute percentage error is 6.8%.",
+    "value": 6.7919,
     "unit": "%",
     "source": "in-sample residuals",
     "derivation": "MAPE",
@@ -1852,14 +1868,14 @@
   "key": "5eb7a083b95d0f50"
  },
  "profiling": {
-  "total_execution_ms": 40.33,
+  "total_execution_ms": 1072.68,
   "stage_breakdown_ms": {
-   "Part 4: Prediction": 31.83,
-   "Result Profiling": 3.84,
-   "Part 1: Query Understanding": 2.81,
-   "Part 3: Summarization": 1.03,
-   "Part 5: Response Shaping": 0.05,
-   "Part 2: Visualization": 0.04
+   "Part 4: Prediction": 1019.86,
+   "Result Profiling": 26.53,
+   "Part 1: Query Understanding": 16.83,
+   "Part 3: Summarization": 4.24,
+   "Part 5: Response Shaping": 0.15,
+   "Part 2: Visualization": 0.1
   }
  }
 }

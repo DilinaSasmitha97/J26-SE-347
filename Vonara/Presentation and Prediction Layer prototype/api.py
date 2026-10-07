@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+import input_adapter
 import llm
 import pipeline
 
@@ -156,6 +157,10 @@ def present(request: PresentRequest) -> dict:
             scenario_text=request.scenario_text,
             value_column=request.value_column,
         )
+    except input_adapter.InputFormatError as exc:
+        # The payload itself is malformed: a caller-side problem, reported as
+        # such so it is not mistaken for a failure of this component (Stage 8).
+        return {"status": "ERROR", "error_code": "INPUT_FORMAT_ERROR", "detail": str(exc)}
     except Exception as exc:  # noqa: BLE001
         return {
             "status": "ERROR",
@@ -190,6 +195,8 @@ def simulate(request: SimulateRequest) -> dict:
             "visualization": envelope["visualization"],
             "summary": envelope["summary"],
         }
+    except input_adapter.InputFormatError as exc:
+        return {"status": "ERROR", "error_code": "INPUT_FORMAT_ERROR", "detail": str(exc)}
     except Exception as exc:  # noqa: BLE001
         return {
             "status": "ERROR",

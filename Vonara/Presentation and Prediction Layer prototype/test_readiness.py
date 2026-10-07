@@ -110,7 +110,7 @@ def test_sarima_and_bands():
     values = [1000 + 10 * t + 200 * math.sin(2 * math.pi * t / 12) + rng.gauss(0, 20)
               for t in range(36)]
     proj = prediction.project_series(values, "SARIMA", 3, 0.95, 12)
-    check(proj["model"] == "SARIMA" and proj["interval_source"] == "residual_bootstrap",
+    check(proj["model"] == "SARIMA" and proj["interval_source"].startswith("residual_"),
           "SARIMA bands come from its residuals, not statsmodels' parameter-exact intervals")
     widths = [hi - lo for lo, hi in zip(proj["lower"], proj["upper"])]
     check(all(b > a for a, b in zip(widths, widths[1:])), "SARIMA bands widen with distance")

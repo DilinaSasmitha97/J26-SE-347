@@ -111,7 +111,8 @@ describe("response blocks", () => {
     expect(within(tiles).getByText(compact(claim(chartForecast, "F2.1").value))).toBeInTheDocument();
     expect(within(tiles).getByText(compact(claim(chartForecast, "F3").value))).toBeInTheDocument();
     expect(within(tiles).getByText("Jan 2026")).toBeInTheDocument();
-    expect(within(tiles).getByText(/typical error 8\.5%/)).toBeInTheDocument();
+    const fit = chartForecast.summary.claims.find((c) => c.kind === "MODEL_FIT").value.toFixed(1);
+    expect(within(tiles).getByText(new RegExp(`typical error ${fit.replace(".", "\\.")}%`))).toBeInTheDocument();
   });
 
   it("says why a requested forecast was refused, and offers no what-if", () => {
@@ -120,6 +121,22 @@ describe("response blocks", () => {
     expect(notice).toHaveTextContent("Forecast not shown");
     expect(notice).toHaveTextContent(forecastRefused.response.forecast_notice.message.slice(0, 30));
     expect(screen.getByRole("tab", { name: /What-if/ })).toBeDisabled();
+  });
+
+  it("lists how the forecast was made: shortened horizon, fallback, range cut at zero", () => {
+    // The real notice for this question, plus a note of each kind the API can add.
+    const envelope = structuredClone(chartForecast);
+    const notice = envelope.response.forecast_notice;
+    notice.horizon_source = "DEFAULT";
+    notice.notes = [
+      { code: "HORIZON_SHORTENED", message: "9 periods were asked for; 5 are shown." },
+      { code: "RANGE_CLIPPED_AT_ZERO", message: "The forecast range is cut at zero." },
+    ];
+    render(<ResponseView envelope={envelope} embed={recorder().embed} />);
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("periods ahead (default)");
+    expect(within(status).getByText("9 periods were asked for; 5 are shown.")).toBeInTheDocument();
+    expect(within(status).getByText("The forecast range is cut at zero.")).toBeInTheDocument();
   });
 
   it("lays out a report in the emitted block order with the claim trace", () => {

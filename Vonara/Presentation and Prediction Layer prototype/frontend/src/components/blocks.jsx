@@ -405,20 +405,25 @@ export function ForecastNotice({ notice }) {
   const warned = shown && notice.warnings && notice.warnings.length > 0;
   const tone = !shown ? "critical" : warned ? "warning" : "good";
   const icon = !shown ? "x" : warned ? "alert" : "check";
+  const periods = `${notice.horizon} ${notice.horizon === 1 ? "period" : "periods"} ahead`;
+  const byDefault = notice.horizon_source === "DEFAULT" ? " (default)" : "";
   const title = !shown
     ? "Forecast not shown"
     : warned
       ? "Forecast shown, with cautions"
-      : `Forecast shown${notice.model ? ` · ${modelName(notice.model)}, ${notice.horizon} ${notice.horizon === 1 ? "period" : "periods"} ahead` : ""}`;
+      : `Forecast shown${notice.model ? ` · ${modelName(notice.model)}, ${periods}${byDefault}` : ""}`;
+  // Notes are facts about how the forecast was made (shortened horizon, model
+  // fallback, range cut at zero); cautions are readiness warnings.
+  const items = [...(warned ? notice.warnings : []), ...(shown ? notice.notes || [] : [])];
   return (
     <div className={`notice notice-${tone}`} role="status">
       <Icon name={icon} size={18} />
       <div>
         <strong>{title}</strong>
         {notice.message && <div>{notice.message}</div>}
-        {warned && (
+        {items.length > 0 && (
           <ul>
-            {notice.warnings.map((w) => <li key={w.code}>{w.message}</li>)}
+            {items.map((w) => <li key={w.code}>{w.message}</li>)}
           </ul>
         )}
       </div>

@@ -115,7 +115,7 @@
    "completion_tokens": 0,
    "total_tokens": 0,
    "schema_tables_considered": 4,
-   "execution_time_ms": 3.02,
+   "execution_time_ms": 19.08,
    "tenant_id": "tenant_a",
    "user_role": ""
   }
@@ -760,11 +760,15 @@
    "filled_periods": 1,
    "reason": "Series is dominated by noise: on its own history, the best simple forecast missed by 41% of the typical value on average (limit 20%), so a forecast would not be meaningful.",
    "checks": [
+    "input_completeness: PASS",
     "temporal_validity: PASS (axis='month', granularity=MONTH)",
     "regularity: PASS (1 empty periods filled, calendar=MONTH)",
     "sufficiency: PASS (36 observations)",
     "signal_quality: FAIL (best in-history one-step error 41.3% of level (LINEAR_REGRESSION, 6 origins))"
-   ]
+   ],
+   "input_truncated": false,
+   "noise_limit": 0.2,
+   "policy_version": "2026-10-07.1"
   },
   "stage_3_model_selection": {
    "model": "NONE",
@@ -1004,14 +1008,14 @@
   "key": "3ab6efea91a548c7"
  },
  "profiling": {
-  "total_execution_ms": 17.36,
+  "total_execution_ms": 72.69,
   "stage_breakdown_ms": {
-   "Part 4: Prediction": 7.48,
-   "Result Profiling": 5.13,
-   "Part 1: Query Understanding": 3.04,
-   "Part 3: Summarization": 0.79,
-   "Part 5: Response Shaping": 0.04,
-   "Part 2: Visualization": 0.03
+   "Part 4: Prediction": 25.02,
+   "Result Profiling": 20.54,
+   "Part 1: Query Understanding": 19.2,
+   "Part 3: Summarization": 4.38,
+   "Part 5: Response Shaping": 0.11,
+   "Part 2: Visualization": 0.08
   }
  }
 }

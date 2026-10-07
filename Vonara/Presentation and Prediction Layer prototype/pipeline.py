@@ -175,7 +175,11 @@ def run(
     # ---- Part 4 Stage 2: readiness -------------------------------------
     if should_predict:
         with profiler.stage("Stage 2 Readiness", "Part 4: Prediction"):
-            readiness = prediction_mod.assess_readiness(profile, rows, target_measure)
+            readiness = prediction_mod.assess_readiness(
+                profile, rows, target_measure,
+                input_info={"truncated": adapted.truncated, "row_count": adapted.row_count,
+                            "rows_received": adapted.rows_received},
+            )
     else:
         # Distinguish "we never asked" from "we asked and the data said no" -
         # reporting NOT_TEMPORAL for an unrequested forecast would misattribute
@@ -256,7 +260,12 @@ def run(
 
     # ---- Part 4 Stage 1 (execution): the strategy-specific prediction ----
     with profiler.stage("Stage 1 Strategy Execution", "Part 4: Prediction"):
-        if should_predict:
+        if should_predict and readiness.verdict == ReadinessVerdict.TRUNCATED.value:
+            # Category and distribution projections over a fragment are as
+            # wrong as a time-series forecast over one (Stage 8).
+            strategy_result = strategies.StrategyResult(
+                requested=strategy["strategy"], skipped_reason=readiness.reason)
+        elif should_predict:
             strategy_result = strategies.execute(
                 strategy["strategy"], analysis, profile, rows, forecast=forecast,
                 anomaly_report=anomaly_report, horizon=horizon or analysis.horizon.value or 3,

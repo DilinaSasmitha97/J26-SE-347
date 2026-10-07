@@ -114,7 +114,7 @@
    "completion_tokens": 0,
    "total_tokens": 0,
    "schema_tables_considered": 4,
-   "execution_time_ms": 2.1,
+   "execution_time_ms": 12.06,
    "tenant_id": "tenant_d",
    "user_role": ""
   }
@@ -252,6 +252,9 @@
    "reason": "",
    "model": "LINEAR_REGRESSION",
    "horizon": 1,
+   "horizon_source": "QUESTION",
+   "horizon_requested": 1,
+   "notes": [],
    "shown_in": [
     "ANSWER"
    ]
@@ -323,11 +326,15 @@
    "filled_periods": 0,
    "reason": "All readiness gates passed.",
    "checks": [
+    "input_completeness: PASS",
     "temporal_validity: PASS (axis='month', granularity=MONTH)",
     "regularity: PASS (0 empty periods filled, calendar=MONTH)",
     "sufficiency: PASS (24 observations)",
     "signal_quality: PASS (best in-history one-step error 1.7% of level (LINEAR_REGRESSION, 6 origins))"
-   ]
+   ],
+   "input_truncated": false,
+   "noise_limit": 0.2,
+   "policy_version": "2026-10-07.1"
   },
   "stage_3_model_selection": {
    "model": "LINEAR_REGRESSION",
@@ -464,11 +471,15 @@
    ],
    "skipped_reason": "",
    "diagnostics": {
+    "horizon_source": "QUESTION",
+    "horizon_requested": 1,
     "n_observations": 24,
     "small_sample_penalty": 1.125,
     "z_score": 1.96,
-    "interval_source": "residual_bootstrap",
-    "seasonal_period": 12
+    "interval_source": "residual_normal",
+    "seasonal_period": 12,
+    "clipped_at_zero": 0,
+    "calendar": "MONTH"
    }
   },
   "stage_5_anomaly": {
@@ -749,13 +760,13 @@
   "key": "4385b0c595ae6612"
  },
  "profiling": {
-  "total_execution_ms": 12.58,
+  "total_execution_ms": 72.26,
   "stage_breakdown_ms": {
-   "Part 4: Prediction": 6.76,
-   "Result Profiling": 2.18,
-   "Part 1: Query Understanding": 2.12,
-   "Part 3: Summarization": 0.85,
-   "Part 5: Response Shaping": 0.05,
+   "Part 4: Prediction": 37.73,
+   "Result Profiling": 14.93,
+   "Part 1: Query Understanding": 12.13,
+   "Part 3: Summarization": 4.01,
+   "Part 5: Response Shaping": 0.13,
    "Part 2: Visualization": 0.0
   }
  }

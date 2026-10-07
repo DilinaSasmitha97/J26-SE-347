@@ -226,6 +226,7 @@ class ReadinessVerdict(str, Enum):
     MULTI_SERIES = "MULTI_SERIES"                # one series per category: forecast each
     NOT_AGGREGATED = "NOT_AGGREGATED"            # several raw rows per period
     INCOMPLETE = "INCOMPLETE"                    # too many missing values / periods
+    TRUNCATED = "TRUNCATED"                      # result cut at the security layer's row cap
 
 
 # ==========================================================================

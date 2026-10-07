@@ -121,6 +121,11 @@ def _dedupe(names: list) -> tuple:
 def _adapt_columnar(payload: dict) -> AdaptedInput:
     columns = payload.get("columns") or []
     raw_rows = payload.get("rows") or []
+    if not isinstance(columns, list) or not isinstance(raw_rows, list):
+        raise InputFormatError("`columns` and `rows` must both be arrays.")
+    if raw_rows and not columns:
+        # Every value would be dropped silently: rows cannot be read without names.
+        raise InputFormatError("The result has rows but no `columns` to name them.")
     names = [c.get("name") if isinstance(c, dict) else c for c in columns]
 
     result = AdaptedInput(source_format=FORMAT_MEMBER2_COLUMNAR)
@@ -145,7 +150,13 @@ def _adapt_columnar(payload: dict) -> AdaptedInput:
         result.warnings.append("RAGGED_ROWS")
 
     result.rows_received = len(result.rows)
-    result.row_count = int(payload.get("rowCount", result.rows_received) or 0)
+    try:
+        result.row_count = int(payload.get("rowCount", result.rows_received) or 0)
+    except (TypeError, ValueError):
+        # A malformed count must not crash the request, but it is reported: the
+        # truncation check below then rests on the `truncated` flag alone.
+        result.row_count = result.rows_received
+        result.warnings.append("INVALID_ROW_COUNT")
     result.truncated = bool(payload.get("truncated")) or result.row_count > result.rows_received
     if result.truncated:
         result.warnings.append("INPUT_TRUNCATED")
@@ -156,9 +167,16 @@ def _adapt_columnar(payload: dict) -> AdaptedInput:
     for entry in masking.get("columns") or []:
         original = entry.get("name")
         pii_type = entry.get("piiType") or "UNKNOWN"
+        matched = False
         for final, orig in zip(result.columns, names):
-            if orig == original and final not in result.masked_columns:
-                result.masked_columns[final] = pii_type
+            if orig == original:
+                matched = True
+                if final not in result.masked_columns:
+                    result.masked_columns[final] = pii_type
+        if not matched and "MASKED_COLUMN_NOT_FOUND" not in result.warnings:
+            # Masking names a column the result does not have: the contract
+            # between the two layers disagrees, which must be visible.
+            result.warnings.append("MASKED_COLUMN_NOT_FOUND")
     if result.masked_columns:
         result.warnings.append("MASKED_COLUMNS_PRESENT")
     return result

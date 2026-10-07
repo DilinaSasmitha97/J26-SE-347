@@ -14,6 +14,8 @@ evaluation numbers reproducible.
 """
 
 import math
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass, field, asdict
 import warnings
 from datetime import datetime, timedelta
@@ -130,12 +132,51 @@ def map_intent_to_strategy(analysis) -> dict:
 # Stage 2 - Data Readiness Classifier
 # ==========================================================================
 
+# Policy values live in forecast_config.json (Stage 8), so they can be changed,
+# versioned and reported without editing code; the module constants below are
+# read from it and keep their names for every existing caller. A missing or
+# unreadable file falls back to these same defaults.
+_DEFAULT_CONFIG = {
+    "version": "built-in",
+    "readiness": {
+        "min_points_any": 4, "min_points_trend": 6, "min_points_seasonal": 24,
+        "min_points_signal_test": 8, "signal_test_origins": 6,
+        "max_expected_error": {"default": 0.20},
+        "max_missing_value_ratio": 0.20, "max_missing_period_ratio": 0.25,
+        "near_constant_cv": 0.01, "min_points_stationarity": 12,
+        "refuse_truncated_input": True, "holidays": [],
+    },
+    "forecast": {"max_horizon": 24, "clip_non_negative": True, "sarima_timeout_seconds": 5.0},
+}
+
+
+def _load_config() -> dict:
+    import json
+    import os
+    from pathlib import Path
+
+    path = Path(os.getenv("C4_FORECAST_CONFIG") or Path(__file__).with_name("forecast_config.json"))
+    config = {k: dict(v) if isinstance(v, dict) else v for k, v in _DEFAULT_CONFIG.items()}
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return config
+    config["version"] = loaded.get("version", "unversioned")
+    for section in ("readiness", "forecast"):
+        config[section].update({k: v for k, v in (loaded.get(section) or {}).items()
+                                if not k.startswith("_")})
+    return config
+
+
+CONFIG = _load_config()
+_R, _F = CONFIG["readiness"], CONFIG["forecast"]
+
 # Gate thresholds. MIN_POINTS_* are the smallest samples at which each model's
 # parameters are identifiable; they are deliberately low because multi-tenant
 # business result sets are small (12-36 points is typical).
-MIN_POINTS_ANY = 4
-MIN_POINTS_TREND = 6
-MIN_POINTS_SEASONAL = 24          # 2 full cycles at monthly granularity
+MIN_POINTS_ANY = int(_R["min_points_any"])
+MIN_POINTS_TREND = int(_R["min_points_trend"])
+MIN_POINTS_SEASONAL = int(_R["min_points_seasonal"])   # 2 full cycles at monthly granularity
 
 # Gate 3 - forecastability. The question is asked on the series' own history:
 # forecast each of the last SIGNAL_TEST_ORIGINS points one step ahead from the
@@ -147,18 +188,54 @@ MIN_POINTS_SEASONAL = 24          # 2 full cycles at monthly granularity
 # time, then scored once on the held-out M4 seed-2027 sample
 # (evaluate_forecasting.py). The first Stage 2 run chose 0.15 on synthetic data
 # alone; its refusal precision on real data was 0.59.
-MIN_POINTS_SIGNAL_TEST = 8
-SIGNAL_TEST_ORIGINS = 6
-MAX_EXPECTED_ERROR = 0.20
+MIN_POINTS_SIGNAL_TEST = int(_R["min_points_signal_test"])
+SIGNAL_TEST_ORIGINS = int(_R["signal_test_origins"])
+_NOISE_LIMITS = (_R["max_expected_error"] if isinstance(_R["max_expected_error"], dict)
+                 else {"default": _R["max_expected_error"]})
+MAX_EXPECTED_ERROR = float(_NOISE_LIMITS.get("default", 0.20))
+
+
+def max_expected_error(granularity: str = None) -> float:
+    """The forecastability limit for a granularity (falls back to the default)."""
+    return float(_NOISE_LIMITS.get(granularity or "", MAX_EXPECTED_ERROR))
+
 
 # Data-quality policy (Stage 2, proposal 3.5). Values that cannot be read
 # (NULLs, unparseable cells) and calendar periods with no row are measured
 # separately: a missing VALUE is information lost, a missing PERIOD is a hole
 # in the time axis that a model would silently close up.
-MAX_MISSING_VALUE_RATIO = 0.20    # more unreadable cells than this -> NOT_READY
-MAX_MISSING_PERIOD_RATIO = 0.25   # more empty periods than this -> NOT_READY
-NEAR_CONSTANT_CV = 0.01           # below this, a forecast adds next to nothing
-MIN_POINTS_STATIONARITY = 12      # ADF/KPSS have almost no power below this
+MAX_MISSING_VALUE_RATIO = float(_R["max_missing_value_ratio"])    # more unreadable -> NOT_READY
+MAX_MISSING_PERIOD_RATIO = float(_R["max_missing_period_ratio"])  # more empty periods -> NOT_READY
+NEAR_CONSTANT_CV = float(_R["near_constant_cv"])                  # below: forecast adds little
+MIN_POINTS_STATIONARITY = int(_R["min_points_stationarity"])      # ADF/KPSS powerless below
+# A result Member 2 cut at its row cap describes the cap, not the data: which
+# rows were dropped depends on the query's ORDER BY, which this layer cannot
+# see, so the history may be missing its latest periods (Stage 8).
+REFUSE_TRUNCATED_INPUT = bool(_R["refuse_truncated_input"])
+# Non-trading weekdays (ISO dates) for business-day calendars, so a public
+# holiday is not counted as a missing day.
+HOLIDAYS = frozenset(str(d) for d in _R.get("holidays") or [])
+
+MAX_HORIZON = int(_F["max_horizon"])
+CLIP_NON_NEGATIVE = bool(_F["clip_non_negative"])
+SARIMA_TIMEOUT_SECONDS = float(_F["sarima_timeout_seconds"])
+
+# Stage 8 candidates. Each was measured on DEVELOPMENT data only
+# (evaluate_stage8_candidates.py) and is switched on in forecast_config.json
+# only if it helped there; see data_and_reports/stage8_candidates.md.
+#   guard_sarima               SARIMA must also beat naive / seasonal naive on
+#                              the series' own history (it was exempt for speed)
+#   fitted_smoothing_min_points from this many points, damped Holt's smoothing
+#                              constants are estimated instead of fixed (0 = off)
+#   band_method                "normal" (z x residual std) or "empirical"
+#                              (quantile of the absolute residuals)
+#   conflict_noise_limit       refuse when ADF/KPSS conflict AND the in-history
+#                              error exceeds this (null = off)
+GUARD_SARIMA = bool(_F.get("guard_sarima", False))
+FITTED_SMOOTHING_MIN_POINTS = int(_F.get("fitted_smoothing_min_points") or 0)
+BAND_METHOD = str(_F.get("band_method", "normal"))
+_conflict = _R.get("conflict_noise_limit")
+CONFLICT_NOISE_LIMIT = None if _conflict is None else float(_conflict)
 
 # Three-level decision (proposal 3.5 / FR05).
 DECISION_READY = "READY"
@@ -196,6 +273,9 @@ class ReadinessReport:
     filled_periods: int = 0
     reason: str = ""
     checks: list = field(default_factory=list)
+    input_truncated: bool = False
+    noise_limit: float = None                        # forecastability limit applied
+    policy_version: str = ""                         # forecast_config.json version
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -248,12 +328,14 @@ def in_history_errors(values: list, models: list, origins: int = SIGNAL_TEST_ORI
     return out
 
 
-def forecastability(values: list, period: int = 12) -> dict:
+def forecastability(values: list, period: int = 12, limit: float = None) -> dict:
     """
     Gate 3: how predictable is this series, judged only from its own history?
 
     Candidates are cheap and assumption-light (naive, seasonal naive, linear,
     Holt), so the test measures the data rather than any one model's fit.
+    `limit` is the noise limit reported with the result (default: the
+    configured default limit).
     """
     n = len(values)
     if n < MIN_POINTS_SIGNAL_TEST:
@@ -274,7 +356,7 @@ def forecastability(values: list, period: int = 12) -> dict:
         "best_model": best_model,
         "expected_relative_error": best_mae / level,
         "skill_vs_naive": best_mae / naive_mae if naive_mae else 1.0,
-        "threshold": MAX_EXPECTED_ERROR,
+        "threshold": MAX_EXPECTED_ERROR if limit is None else limit,
     }
 
 
@@ -327,9 +409,13 @@ def prepare_series(rows: list, time_column: str, value_column: str,
     origin = dates[0]
 
     if business_days:
+        # Configured holidays are not trading days; a holiday that does hold a
+        # row stays on the grid, so no observation is ever discarded.
+        observed = {d.date() for d in dates}
         grid, cur = [], origin
         while cur <= dates[-1]:
-            if cur.weekday() < 5:
+            if cur.weekday() < 5 and (cur.date().isoformat() not in HOLIDAYS
+                                      or cur.date() in observed):
                 grid.append(cur)
             cur += timedelta(days=1)
         position = {d.date(): i for i, d in enumerate(grid)}
@@ -428,6 +514,7 @@ _VERDICT_CODES = {
     ReadinessVerdict.INSUFFICIENT_POINTS.value: "INSUFFICIENT_POINTS",
     ReadinessVerdict.DEGENERATE.value: "CONSTANT_SERIES",
     ReadinessVerdict.LOW_SIGNAL.value: "LOW_SIGNAL",
+    ReadinessVerdict.TRUNCATED.value: "INPUT_TRUNCATED",
 }
 
 
@@ -452,18 +539,24 @@ def _warn(report, code: str, message: str) -> None:
     report.reason_codes.append(code)
 
 
-def assess_readiness(profile, rows: list, value_column: str = None) -> ReadinessReport:
+def assess_readiness(profile, rows: list, value_column: str = None,
+                     input_info: dict = None) -> ReadinessReport:
     """
     Stage 2. Decide whether this result set can support a forecast at all.
 
     Returns a three-level `decision` - READY, READY_WITH_WARNING or NOT_READY -
     with `reason_codes`, alongside the detailed `verdict`. Gates, in order:
-    temporal validity, data completeness (unreadable values, empty periods),
-    statistical sufficiency, signal quality (constant / near-constant /
-    forecastability), plus ADF+KPSS stationarity evidence. A refusal always
-    names its reason; a caution never blocks the forecast but travels with it.
+    input completeness (a result cut at Member 2's row cap), temporal validity,
+    data completeness (unreadable values, empty periods), statistical
+    sufficiency, signal quality (constant / near-constant / forecastability),
+    plus ADF+KPSS stationarity evidence. A refusal always names its reason; a
+    caution never blocks the forecast but travels with it.
+
+    `input_info` is the input adapter's summary (`truncated`, `row_count`,
+    `rows_received`); without it the result is assumed complete.
     """
-    report = _assess_readiness(profile, rows, value_column)
+    report = _assess_readiness(profile, rows, value_column, input_info or {})
+    report.policy_version = CONFIG["version"]
     if report.is_ready:
         report.decision = DECISION_WARN if report.warnings else DECISION_READY
     else:
@@ -474,8 +567,36 @@ def assess_readiness(profile, rows: list, value_column: str = None) -> Readiness
     return report
 
 
-def _assess_readiness(profile, rows: list, value_column: str = None) -> ReadinessReport:
+def _truncation_message(input_info: dict) -> str:
+    received = input_info.get("rows_received")
+    total = input_info.get("row_count")
+    counted = (f"only {received} of {total} rows arrived" if total and received is not None
+               and total > received else "the result was marked as truncated")
+    return (f"The result was cut at the security layer's row limit ({counted}), so the "
+            "history may be missing periods, possibly the latest ones")
+
+
+def _assess_readiness(profile, rows: list, value_column: str = None,
+                      input_info: dict = None) -> ReadinessReport:
     report = ReadinessReport()
+    input_info = input_info or {}
+
+    # --- Gate 0: input completeness (Stage 8) ---------------------------
+    # Checked first because it invalidates every later measurement: the
+    # completeness and sufficiency gates would be judging a fragment.
+    if input_info.get("truncated"):
+        report.input_truncated = True
+        message = _truncation_message(input_info)
+        if REFUSE_TRUNCATED_INPUT:
+            report.verdict = ReadinessVerdict.TRUNCATED.value
+            report.reason = (f"{message}. A forecast from it could start from the wrong "
+                             "level. Ask for a coarser period (for example monthly totals) "
+                             "or a shorter date range so the full result fits.")
+            report.checks.append("input_completeness: FAIL (result truncated at row limit)")
+            return report
+        _warn(report, "INPUT_TRUNCATED", f"{message}; treat the forecast with care.")
+    report.checks.append("input_completeness: PASS" if not input_info.get("truncated")
+                         else "input_completeness: WARN (truncated, policy allows)")
 
     # --- Gate 1: temporal validity ------------------------------------
     if not profile.temporal_column:
@@ -630,7 +751,9 @@ def _assess_readiness(profile, rows: list, value_column: str = None) -> Readines
 
     period = SEASONAL_PERIOD.get(Granularity(profile.granularity), 1) \
         if profile.granularity else 1
-    test = forecastability(values, period)
+    limit = max_expected_error(profile.granularity)
+    report.noise_limit = limit
+    test = forecastability(values, period, limit)
     report.signal_test = test
 
     if not test["assessed"]:
@@ -652,15 +775,29 @@ def _assess_readiness(profile, rows: list, value_column: str = None) -> Readines
             f"best in-history one-step error {err * 100:.1f}% of level "
             f"({test['best_model']}, {test['origins']} origins)"
         )
-        if err > MAX_EXPECTED_ERROR:
+        if err > limit:
             report.verdict = ReadinessVerdict.LOW_SIGNAL.value
             report.reason = (
                 f"Series is dominated by noise: on its own history, the best simple "
                 f"forecast missed by {err * 100:.0f}% of the typical value on average "
-                f"(limit {MAX_EXPECTED_ERROR * 100:.0f}%), so a forecast would not be "
+                f"(limit {limit * 100:.0f}%), so a forecast would not be "
                 "meaningful."
             )
             report.checks.append(f"signal_quality: FAIL ({detail})")
+            return report
+        conflict = report.stationarity.get("verdict") == "CONFLICT"
+        if conflict and CONFLICT_NOISE_LIMIT is not None and err > CONFLICT_NOISE_LIMIT:
+            # A level shift or changing variance (the tests disagree) on top of
+            # a borderline in-history error: on M4 such windows were unreliable
+            # far more often than the error alone suggests (Stage 8).
+            report.verdict = ReadinessVerdict.LOW_SIGNAL.value
+            report.reason = (
+                f"The series looks unstable (the ADF and KPSS stationarity tests disagree, "
+                f"typical of a level shift) and its best simple forecast already missed by "
+                f"{err * 100:.0f}% of the typical value on its own history, so a forecast "
+                "would not be reliable."
+            )
+            report.checks.append(f"signal_quality: FAIL (stationarity conflict; {detail})")
             return report
         report.signal_adequate = True
         report.checks.append(f"signal_quality: PASS ({detail})")
@@ -847,16 +984,18 @@ def select_model(analysis, readiness: ReadinessReport, values: list,
     instead and the reason says so. A rule that sounds right but loses to
     "next month equals this month" should not be shown to a user.
 
-    SARIMA is exempt: an in-history check would need one SARIMA refit per
-    origin (~0.3 s each) on every request, and SARIMA is only chosen after an
-    explicit seasonal-autocorrelation test. The benchmark reports how the
-    guarded and unguarded selectors compare, including this exemption.
+    SARIMA was exempt until Stage 8 because each origin needs a refit. A refit
+    takes ~0.05 s on 24-72 points (measured), and on 72-month development
+    series SARIMA failed badly without the check (MASE 57 on one series), so
+    it is now guarded too unless `guard_sarima` is off in forecast_config.json.
     """
     selection = _rule_selection(analysis, readiness, values)
     if not guard or not readiness.is_ready:
         return selection
     chosen = selection.model
-    if chosen in (ForecastModel.NONE.value, ForecastModel.SARIMA.value)             or len(values) < MIN_POINTS_SIGNAL_TEST:
+    exempt = (ForecastModel.NONE.value,) if GUARD_SARIMA else \
+        (ForecastModel.NONE.value, ForecastModel.SARIMA.value)
+    if chosen in exempt or len(values) < MIN_POINTS_SIGNAL_TEST:
         return selection
 
     period = selection.seasonal_period
@@ -963,7 +1102,20 @@ def _add_months(base: datetime, months: int) -> datetime:
     return datetime(year, month, day)
 
 
-def _next_timestamp(last: datetime, granularity: str, steps: int) -> datetime:
+def _next_business_day(last: datetime, steps: int) -> datetime:
+    """The `steps`-th trading day after `last`: weekends and configured holidays skipped."""
+    cur, moved = last, 0
+    while moved < steps:
+        cur += timedelta(days=1)
+        if cur.weekday() < 5 and cur.date().isoformat() not in HOLIDAYS:
+            moved += 1
+    return cur
+
+
+def _next_timestamp(last: datetime, granularity: str, steps: int,
+                    calendar: str = None) -> datetime:
+    if calendar == "BUSINESS_DAY":
+        return _next_business_day(last, steps)
     g = Granularity(granularity) if granularity else Granularity.NONE
     if g is Granularity.MONTH:
         return _add_months(last, steps)
@@ -1038,6 +1190,29 @@ def _fit_holt(values: list, horizon: int, alpha: float = 0.5, beta: float = 0.3,
     return fitted, forecasts
 
 
+def _fit_holt_estimated(values: list, horizon: int) -> tuple:
+    """
+    Damped-trend Holt with alpha, beta and phi estimated by statsmodels.
+
+    Only used from FITTED_SMOOTHING_MIN_POINTS observations: on 12-36 points
+    estimation over-fits, which is why the fixed constants are the default.
+    Falls back to the fixed-constant fit if estimation fails.
+    """
+    if not _HAS_STATSMODELS or not _HAS_NUMPY:
+        return _fit_holt(values, horizon)
+    try:
+        from statsmodels.tsa.holtwinters import ExponentialSmoothing
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fit = ExponentialSmoothing(np.asarray(values, dtype=float), trend="add",
+                                       damped_trend=True,
+                                       initialization_method="estimated").fit()
+        return [float(v) for v in fit.fittedvalues], [float(v) for v in fit.forecast(horizon)]
+    except Exception:  # noqa: BLE001
+        return _fit_holt(values, horizon)
+
+
 def _fit_wma(values: list, horizon: int, window: int = 3) -> tuple:
     """
     Weighted moving average with linearly increasing recency weights.
@@ -1109,6 +1284,7 @@ def _fit_seasonal_naive(values: list, horizon: int, period: int) -> tuple:
 # Two parameters instead of four is what a 24-36 point history can support.
 SARIMA_ORDER = (0, 1, 1)
 SARIMA_SEASONAL_ORDER = (0, 1, 1)
+_SARIMA_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="sarima")
 
 
 def _fit_sarima(values: list, horizon: int, period: int, confidence: float) -> tuple:
@@ -1124,7 +1300,8 @@ def _fit_sarima(values: list, horizon: int, period: int, confidence: float) -> t
     """
     if not _HAS_STATSMODELS:
         return None
-    try:
+
+    def fit_once():
         model = SARIMAX(
             values,
             order=SARIMA_ORDER,
@@ -1138,6 +1315,18 @@ def _fit_sarima(values: list, horizon: int, period: int, confidence: float) -> t
         fitted = [float(v) for v in fit.fittedvalues]
         mean = [float(v) for v in fit.get_forecast(steps=horizon).predicted_mean]
         return fitted, mean, None, None
+
+    try:
+        if SARIMA_TIMEOUT_SECONDS <= 0:
+            return fit_once()
+        # A fit on a long daily series can take seconds and would block the
+        # response. Python cannot stop a running thread, so a fit that overruns
+        # finishes in the background and its result is discarded.
+        future = _SARIMA_POOL.submit(fit_once)
+        return future.result(timeout=SARIMA_TIMEOUT_SECONDS)
+    except FutureTimeout:
+        log_step(f"SARIMA fit exceeded {SARIMA_TIMEOUT_SECONDS:g}s; falling back.", level="WARN")
+        return "TIMEOUT"
     except Exception as exc:  # noqa: BLE001
         log_step(f"SARIMA fit failed ({exc}); falling back.", level="WARN")
         return None
@@ -1166,9 +1355,17 @@ def project_series(
     horizon: int,
     confidence: float = 0.95,
     seasonal_period: int = 12,
+    interpolated: list = None,
 ) -> dict:
     """
     Fit one model to a bare series and project it with confidence bounds.
+
+    `interpolated` lists positions that were filled in, not observed
+    (prepare_series). They are fitted like any point but left out of the
+    residuals the band is measured from: a filled point lies on a straight
+    line between its neighbours, so counting it made the band too narrow
+    (95% coverage fell to 92% at 25% filled months; Stage 8,
+    missing_data_sensitivity.md).
 
     This is the single forecasting code path: `generate_forecast` uses it for
     live requests and the benchmark harness uses it for backtests, so the
@@ -1201,7 +1398,12 @@ def project_series(
         # all; below that statsmodels returns numerically explosive forecasts.
         sarima = (_fit_sarima(values, horizon, seasonal_period, confidence)
                   if n >= 2 * seasonal_period else None)
-        if sarima:
+        if sarima == "TIMEOUT":
+            used = ForecastModel.EXPONENTIAL_SMOOTHING
+            fallback_note = (f" [SARIMA took longer than {SARIMA_TIMEOUT_SECONDS:g}s; "
+                             "fell back to exponential smoothing]")
+            fitted, forecasts = _fit_holt(values, horizon)
+        elif sarima:
             fitted, forecasts, lower_direct, upper_direct = sarima
             # The first cycle + 1 fitted values are start-up artefacts of the
             # double differencing, not forecasts; they would inflate the band.
@@ -1225,12 +1427,17 @@ def project_series(
     elif m is ForecastModel.SEASONAL_NAIVE:
         fitted, forecasts = _fit_seasonal_naive(values, horizon, seasonal_period)
         skip_residuals = seasonal_period if n > seasonal_period else 1
+    elif FITTED_SMOOTHING_MIN_POINTS and n >= FITTED_SMOOTHING_MIN_POINTS:
+        fitted, forecasts = _fit_holt_estimated(values, horizon)
     else:
         fitted, forecasts = _fit_holt(values, horizon)
 
     span = min(len(fitted), n)
-    rmse, mae, mape = _accuracy(values[skip_residuals:span], fitted[skip_residuals:span])
-    residuals = [a - f for a, f in zip(values[skip_residuals:span], fitted[skip_residuals:span])]
+    filled = set(interpolated or [])
+    kept = [i for i in range(skip_residuals, span) if i not in filled]
+    actual_kept, fitted_kept = [values[i] for i in kept], [fitted[i] for i in kept]
+    rmse, mae, mape = _accuracy(actual_kept, fitted_kept)
+    residuals = [a - f for a, f in zip(actual_kept, fitted_kept)]
     resid_std = (
         math.sqrt(sum(r ** 2 for r in residuals) / max(1, len(residuals) - 1))
         if len(residuals) > 1
@@ -1240,6 +1447,18 @@ def project_series(
     z = _Z.get(round(confidence, 2), 1.96)
     # Inflate intervals on short series: +50% at n=6, negligible past n=30.
     small_sample_penalty = 1.0 + (3.0 / max(n, 4))
+    # "empirical": the one-step half-width is the confidence-level quantile of
+    # the absolute residuals instead of z x std, so skewed errors are not
+    # assumed normal. Needs enough residuals to estimate a tail quantile.
+    spread = z * resid_std
+    band_source = "residual_normal"
+    if BAND_METHOD == "empirical" and len(residuals) >= 10:
+        ordered = sorted(abs(r) for r in residuals)
+        pos = confidence * (len(ordered) - 1)
+        lo_i = int(math.floor(pos))
+        hi_i = min(lo_i + 1, len(ordered) - 1)
+        spread = ordered[lo_i] + (ordered[hi_i] - ordered[lo_i]) * (pos - lo_i)
+        band_source = "residual_empirical"
     seasonal_widening = used is ForecastModel.SEASONAL_NAIVE and n > seasonal_period
 
     lower, upper = [], []
@@ -1254,15 +1473,30 @@ def project_series(
             hi = value + centre_half * small_sample_penalty
         else:
             steps = (h // seasonal_period + 1) if seasonal_widening else (h + 1)
-            half = z * resid_std * math.sqrt(steps) * small_sample_penalty
+            half = spread * math.sqrt(steps) * small_sample_penalty
             # Guarantee a non-degenerate band even on a perfect in-sample fit.
             half = max(half, abs(value) * 0.02 * math.sqrt(h + 1))
             lo, hi = value - half, value + half
         lower.append(float(lo))
         upper.append(float(hi))
 
+    # A measure that has never been negative (spend, counts, units) cannot go
+    # below zero: a symmetric band around a small forecast would otherwise
+    # promise "-120 to 900 tickets" (Stage 8). The point forecast is clipped
+    # too, since a trend can run through zero. Counted so it can be disclosed.
+    clipped = 0
+    forecasts = [float(f) for f in forecasts]
+    if CLIP_NON_NEGATIVE and values and min(values) >= 0:
+        for h in range(len(forecasts)):
+            if forecasts[h] < 0 or lower[h] < 0:
+                clipped += 1
+            forecasts[h] = max(0.0, forecasts[h])
+            lower[h] = max(0.0, lower[h])
+            upper[h] = max(upper[h], forecasts[h])
+
     return {
         "model": used.value,
+        "clipped_at_zero": clipped,
         "fallback_note": fallback_note,
         "fitted": [float(f) for f in fitted[:span]],
         "forecasts": [float(f) for f in forecasts],
@@ -1272,7 +1506,7 @@ def project_series(
         "rmse": rmse,
         "mae": mae,
         "mape": mape,
-        "interval_source": "model" if lower_direct is not None else "residual_bootstrap",
+        "interval_source": "model" if lower_direct is not None else band_source,
         "small_sample_penalty": small_sample_penalty,
         "z": z,
     }
@@ -1311,9 +1545,19 @@ def generate_forecast(
     if prepared["filled_indices"]:
         result.diagnostics["interpolated_periods"] = prepared["filled_indices"]
 
-    if horizon is None:
-        horizon = analysis.horizon.value or 3
-    horizon = max(1, min(int(horizon), 24))
+    # Where the horizon came from, so the notice can say "you asked for 6" or
+    # "3 by default" (Stage 8): the API parameter, the question, or the default.
+    # The analyzer marks a horizon it filled in itself as INFERRED.
+    if horizon is not None:
+        source = "REQUEST_PARAMETER"
+    elif getattr(analysis.horizon, "value", None):
+        horizon = analysis.horizon.value
+        source = "QUESTION" if getattr(analysis.horizon, "source", "") == "EXPLICIT" else "DEFAULT"
+    else:
+        horizon, source = 3, "DEFAULT"
+    result.diagnostics["horizon_source"] = source
+    result.diagnostics["horizon_requested"] = int(horizon)
+    horizon = max(1, min(int(horizon), MAX_HORIZON))
 
     # Never project further than half the observed span: extrapolating 12
     # periods from 8 observations is not a forecast, it is a guess.
@@ -1332,7 +1576,8 @@ def generate_forecast(
     result.historical_values = values
 
     projection = project_series(values, selection.model, horizon, confidence,
-                                selection.seasonal_period)
+                                selection.seasonal_period,
+                                interpolated=prepared["filled_indices"])
     result.model = projection["model"]
     result.model_reason += projection["fallback_note"]
     n = len(values)
@@ -1349,7 +1594,7 @@ def generate_forecast(
     for h, (value, lo, hi) in enumerate(
         zip(projection["forecasts"], projection["lower"], projection["upper"])
     ):
-        ts = _next_timestamp(last_date, result.granularity, h + 1)
+        ts = _next_timestamp(last_date, result.granularity, h + 1, prepared["calendar"])
         result.points.append(
             ForecastPoint(
                 period_index=h + 1,
@@ -1370,6 +1615,8 @@ def generate_forecast(
             "z_score": z,
             "interval_source": projection["interval_source"],
             "seasonal_period": selection.seasonal_period,
+            "clipped_at_zero": projection["clipped_at_zero"],
+            "calendar": prepared["calendar"],
         }
     )
     log_step(

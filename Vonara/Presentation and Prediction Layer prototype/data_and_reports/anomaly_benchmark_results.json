@@ -473,14 +473,14 @@
     "predictive": {
       "STATIC": {
         "overall": {
-          "precision": 0.6363636363636364,
-          "recall": 0.30246913580246915,
-          "f1": 0.4100418410041841,
-          "false_positive_rate": 0.08641975308641975,
-          "tp": 98,
-          "fp": 56,
-          "fn": 226,
-          "tn": 592
+          "precision": 0.6546762589928058,
+          "recall": 0.2808641975308642,
+          "f1": 0.3930885529157668,
+          "false_positive_rate": 0.07407407407407407,
+          "tp": 91,
+          "fp": 48,
+          "fn": 233,
+          "tn": 600
         },
         "by_scenario": {
           "NORMAL": {
@@ -495,35 +495,35 @@
           },
           "SHIFT": {
             "precision": 1.0,
-            "recall": 0.30246913580246915,
-            "f1": 0.46445497630331756,
+            "recall": 0.2808641975308642,
+            "f1": 0.43855421686746987,
             "false_positive_rate": null,
-            "tp": 98,
+            "tp": 91,
             "fp": 0,
-            "fn": 226,
+            "fn": 233,
             "tn": 0
           },
           "SPIKE_LAST": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.16358024691358025,
+            "false_positive_rate": 0.1388888888888889,
             "tp": 0,
-            "fp": 53,
+            "fp": 45,
             "fn": 0,
-            "tn": 271
+            "tn": 279
           }
         },
         "by_shape": {
           "FLAT": {
-            "precision": 0.6896551724137931,
-            "recall": 0.7407407407407407,
-            "f1": 0.7142857142857143,
-            "false_positive_rate": 0.16666666666666666,
-            "tp": 60,
-            "fp": 27,
-            "fn": 21,
-            "tn": 135
+            "precision": 0.726027397260274,
+            "recall": 0.654320987654321,
+            "f1": 0.6883116883116883,
+            "false_positive_rate": 0.12345679012345678,
+            "tp": 53,
+            "fp": 20,
+            "fn": 28,
+            "tn": 142
           },
           "TREND": {
             "precision": 0.5172413793103449,
@@ -536,14 +536,14 @@
             "tn": 148
           },
           "SEASONAL": {
-            "precision": 0.6875,
+            "precision": 0.7333333333333333,
             "recall": 0.13580246913580246,
-            "f1": 0.22680412371134023,
-            "false_positive_rate": 0.030864197530864196,
+            "f1": 0.22916666666666663,
+            "false_positive_rate": 0.024691358024691357,
             "tp": 11,
-            "fp": 5,
+            "fp": 4,
             "fn": 70,
-            "tn": 157
+            "tn": 158
           },
           "TREND_SEASONAL": {
             "precision": 0.5454545454545454,
@@ -558,20 +558,20 @@
         },
         "series_with_any_warning": {
           "NORMAL": 0.018518518518518517,
-          "SHIFT": 0.3148148148148148,
-          "SPIKE_LAST": 0.19444444444444445
+          "SHIFT": 0.28703703703703703,
+          "SPIKE_LAST": 0.1574074074074074
         }
       },
       "COMBINED_NO_STL": {
         "overall": {
-          "precision": 0.6447368421052632,
-          "recall": 0.30246913580246915,
-          "f1": 0.411764705882353,
-          "false_positive_rate": 0.08333333333333333,
-          "tp": 98,
-          "fp": 54,
-          "fn": 226,
-          "tn": 594
+          "precision": 0.6691176470588235,
+          "recall": 0.2808641975308642,
+          "f1": 0.39565217391304347,
+          "false_positive_rate": 0.06944444444444445,
+          "tp": 91,
+          "fp": 45,
+          "fn": 233,
+          "tn": 603
         },
         "by_scenario": {
           "NORMAL": {
@@ -586,35 +586,35 @@
           },
           "SHIFT": {
             "precision": 1.0,
-            "recall": 0.30246913580246915,
-            "f1": 0.46445497630331756,
+            "recall": 0.2808641975308642,
+            "f1": 0.43855421686746987,
             "false_positive_rate": null,
-            "tp": 98,
+            "tp": 91,
             "fp": 0,
-            "fn": 226,
+            "fn": 233,
             "tn": 0
           },
           "SPIKE_LAST": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.16049382716049382,
+            "false_positive_rate": 0.13271604938271606,
             "tp": 0,
-            "fp": 52,
+            "fp": 43,
             "fn": 0,
-            "tn": 272
+            "tn": 281
           }
         },
         "by_shape": {
           "FLAT": {
-            "precision": 0.7058823529411765,
-            "recall": 0.7407407407407407,
-            "f1": 0.7228915662650603,
-            "false_positive_rate": 0.15432098765432098,
-            "tp": 60,
-            "fp": 25,
-            "fn": 21,
-            "tn": 137
+            "precision": 0.7464788732394366,
+            "recall": 0.654320987654321,
+            "f1": 0.6973684210526315,
+            "false_positive_rate": 0.1111111111111111,
+            "tp": 53,
+            "fp": 18,
+            "fn": 28,
+            "tn": 144
           },
           "TREND": {
             "precision": 0.6585365853658537,
@@ -627,14 +627,14 @@
             "tn": 148
           },
           "SEASONAL": {
-            "precision": 0.375,
+            "precision": 0.5,
             "recall": 0.037037037037037035,
-            "f1": 0.06741573033707865,
-            "false_positive_rate": 0.030864197530864196,
+            "f1": 0.06896551724137931,
+            "false_positive_rate": 0.018518518518518517,
             "tp": 3,
-            "fp": 5,
+            "fp": 3,
             "fn": 78,
-            "tn": 157
+            "tn": 159
           },
           "TREND_SEASONAL": {
             "precision": 0.4444444444444444,
@@ -649,202 +649,20 @@
         },
         "series_with_any_warning": {
           "NORMAL": 0.009259259259259259,
-          "SHIFT": 0.3333333333333333,
-          "SPIKE_LAST": 0.2037037037037037
+          "SHIFT": 0.3055555555555556,
+          "SPIKE_LAST": 0.16666666666666666
         }
       },
       "IQR": {
         "overall": {
-          "precision": 0.6494252873563219,
-          "recall": 0.3487654320987654,
-          "f1": 0.45381526104417674,
-          "false_positive_rate": 0.0941358024691358,
-          "tp": 113,
-          "fp": 61,
-          "fn": 211,
-          "tn": 587
-        },
-        "by_scenario": {
-          "NORMAL": {
-            "precision": 0.0,
-            "recall": null,
-            "f1": 0.0,
-            "false_positive_rate": 0.015432098765432098,
-            "tp": 0,
-            "fp": 5,
-            "fn": 0,
-            "tn": 319
-          },
-          "SHIFT": {
-            "precision": 1.0,
-            "recall": 0.3487654320987654,
-            "f1": 0.517162471395881,
-            "false_positive_rate": null,
-            "tp": 113,
-            "fp": 0,
-            "fn": 211,
-            "tn": 0
-          },
-          "SPIKE_LAST": {
-            "precision": 0.0,
-            "recall": null,
-            "f1": 0.0,
-            "false_positive_rate": 0.1728395061728395,
-            "tp": 0,
-            "fp": 56,
-            "fn": 0,
-            "tn": 268
-          }
-        },
-        "by_shape": {
-          "FLAT": {
-            "precision": 0.7058823529411765,
-            "recall": 0.7407407407407407,
-            "f1": 0.7228915662650603,
-            "false_positive_rate": 0.15432098765432098,
-            "tp": 60,
-            "fp": 25,
-            "fn": 21,
-            "tn": 137
-          },
-          "TREND": {
-            "precision": 0.6585365853658537,
-            "recall": 0.3333333333333333,
-            "f1": 0.4426229508196721,
-            "false_positive_rate": 0.08641975308641975,
-            "tp": 27,
-            "fp": 14,
-            "fn": 54,
-            "tn": 148
-          },
-          "SEASONAL": {
-            "precision": 0.46153846153846156,
-            "recall": 0.14814814814814814,
-            "f1": 0.22429906542056077,
-            "false_positive_rate": 0.08641975308641975,
-            "tp": 12,
-            "fp": 14,
-            "fn": 69,
-            "tn": 148
-          },
-          "TREND_SEASONAL": {
-            "precision": 0.6363636363636364,
-            "recall": 0.1728395061728395,
-            "f1": 0.27184466019417475,
-            "false_positive_rate": 0.04938271604938271,
-            "tp": 14,
-            "fp": 8,
-            "fn": 67,
-            "tn": 154
-          }
-        },
-        "series_with_any_warning": {
-          "NORMAL": 0.037037037037037035,
-          "SHIFT": 0.39814814814814814,
-          "SPIKE_LAST": 0.21296296296296297
-        }
-      },
-      "ZSCORE": {
-        "overall": {
-          "precision": 0.5461538461538461,
-          "recall": 0.2191358024691358,
-          "f1": 0.31277533039647576,
-          "false_positive_rate": 0.09104938271604938,
-          "tp": 71,
-          "fp": 59,
-          "fn": 253,
-          "tn": 589
-        },
-        "by_scenario": {
-          "NORMAL": {
-            "precision": 0.0,
-            "recall": null,
-            "f1": 0.0,
-            "false_positive_rate": 0.012345679012345678,
-            "tp": 0,
-            "fp": 4,
-            "fn": 0,
-            "tn": 320
-          },
-          "SHIFT": {
-            "precision": 1.0,
-            "recall": 0.2191358024691358,
-            "f1": 0.3594936708860759,
-            "false_positive_rate": null,
-            "tp": 71,
-            "fp": 0,
-            "fn": 253,
-            "tn": 0
-          },
-          "SPIKE_LAST": {
-            "precision": 0.0,
-            "recall": null,
-            "f1": 0.0,
-            "false_positive_rate": 0.1697530864197531,
-            "tp": 0,
-            "fp": 55,
-            "fn": 0,
-            "tn": 269
-          }
-        },
-        "by_shape": {
-          "FLAT": {
-            "precision": 0.631578947368421,
-            "recall": 0.4444444444444444,
-            "f1": 0.5217391304347826,
-            "false_positive_rate": 0.12962962962962962,
-            "tp": 36,
-            "fp": 21,
-            "fn": 45,
-            "tn": 141
-          },
-          "TREND": {
-            "precision": 0.6,
-            "recall": 0.18518518518518517,
-            "f1": 0.2830188679245283,
-            "false_positive_rate": 0.06172839506172839,
-            "tp": 15,
-            "fp": 10,
-            "fn": 66,
-            "tn": 152
-          },
-          "SEASONAL": {
-            "precision": 0.2962962962962963,
-            "recall": 0.09876543209876543,
-            "f1": 0.14814814814814814,
-            "false_positive_rate": 0.11728395061728394,
-            "tp": 8,
-            "fp": 19,
-            "fn": 73,
-            "tn": 143
-          },
-          "TREND_SEASONAL": {
-            "precision": 0.5714285714285714,
-            "recall": 0.14814814814814814,
-            "f1": 0.23529411764705882,
-            "false_positive_rate": 0.05555555555555555,
-            "tp": 12,
-            "fp": 9,
-            "fn": 69,
-            "tn": 153
-          }
-        },
-        "series_with_any_warning": {
-          "NORMAL": 0.037037037037037035,
-          "SHIFT": 0.25,
-          "SPIKE_LAST": 0.21296296296296297
-        }
-      },
-      "COMBINED": {
-        "overall": {
-          "precision": 0.6174863387978142,
-          "recall": 0.3487654320987654,
-          "f1": 0.4457593688362919,
-          "false_positive_rate": 0.10802469135802469,
-          "tp": 113,
-          "fp": 70,
-          "fn": 211,
-          "tn": 578
+          "precision": 0.7046979865771812,
+          "recall": 0.32407407407407407,
+          "f1": 0.4439746300211417,
+          "false_positive_rate": 0.06790123456790123,
+          "tp": 105,
+          "fp": 44,
+          "fn": 219,
+          "tn": 604
         },
         "by_scenario": {
           "NORMAL": {
@@ -859,35 +677,35 @@
           },
           "SHIFT": {
             "precision": 1.0,
-            "recall": 0.3487654320987654,
-            "f1": 0.517162471395881,
+            "recall": 0.32407407407407407,
+            "f1": 0.48951048951048953,
             "false_positive_rate": null,
-            "tp": 113,
+            "tp": 105,
             "fp": 0,
-            "fn": 211,
+            "fn": 219,
             "tn": 0
           },
           "SPIKE_LAST": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.19753086419753085,
+            "false_positive_rate": 0.11728395061728394,
             "tp": 0,
-            "fp": 64,
+            "fp": 38,
             "fn": 0,
-            "tn": 260
+            "tn": 286
           }
         },
         "by_shape": {
           "FLAT": {
-            "precision": 0.7058823529411765,
-            "recall": 0.7407407407407407,
-            "f1": 0.7228915662650603,
-            "false_positive_rate": 0.15432098765432098,
-            "tp": 60,
-            "fp": 25,
-            "fn": 21,
-            "tn": 137
+            "precision": 0.7464788732394366,
+            "recall": 0.654320987654321,
+            "f1": 0.6973684210526315,
+            "false_positive_rate": 0.1111111111111111,
+            "tp": 53,
+            "fp": 18,
+            "fn": 28,
+            "tn": 144
           },
           "TREND": {
             "precision": 0.6585365853658537,
@@ -900,14 +718,196 @@
             "tn": 148
           },
           "SEASONAL": {
-            "precision": 0.3870967741935484,
+            "precision": 0.7333333333333333,
+            "recall": 0.13580246913580246,
+            "f1": 0.22916666666666663,
+            "false_positive_rate": 0.024691358024691357,
+            "tp": 11,
+            "fp": 4,
+            "fn": 70,
+            "tn": 158
+          },
+          "TREND_SEASONAL": {
+            "precision": 0.6363636363636364,
+            "recall": 0.1728395061728395,
+            "f1": 0.27184466019417475,
+            "false_positive_rate": 0.04938271604938271,
+            "tp": 14,
+            "fp": 8,
+            "fn": 67,
+            "tn": 154
+          }
+        },
+        "series_with_any_warning": {
+          "NORMAL": 0.046296296296296294,
+          "SHIFT": 0.3611111111111111,
+          "SPIKE_LAST": 0.1574074074074074
+        }
+      },
+      "ZSCORE": {
+        "overall": {
+          "precision": 0.6111111111111112,
+          "recall": 0.2037037037037037,
+          "f1": 0.3055555555555555,
+          "false_positive_rate": 0.06481481481481481,
+          "tp": 66,
+          "fp": 42,
+          "fn": 258,
+          "tn": 606
+        },
+        "by_scenario": {
+          "NORMAL": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "false_positive_rate": 0.015432098765432098,
+            "tp": 0,
+            "fp": 5,
+            "fn": 0,
+            "tn": 319
+          },
+          "SHIFT": {
+            "precision": 1.0,
+            "recall": 0.2037037037037037,
+            "f1": 0.3384615384615384,
+            "false_positive_rate": null,
+            "tp": 66,
+            "fp": 0,
+            "fn": 258,
+            "tn": 0
+          },
+          "SPIKE_LAST": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "false_positive_rate": 0.11419753086419752,
+            "tp": 0,
+            "fp": 37,
+            "fn": 0,
+            "tn": 287
+          }
+        },
+        "by_shape": {
+          "FLAT": {
+            "precision": 0.6888888888888889,
+            "recall": 0.38271604938271603,
+            "f1": 0.49206349206349204,
+            "false_positive_rate": 0.08641975308641975,
+            "tp": 31,
+            "fp": 14,
+            "fn": 50,
+            "tn": 148
+          },
+          "TREND": {
+            "precision": 0.6,
+            "recall": 0.18518518518518517,
+            "f1": 0.2830188679245283,
+            "false_positive_rate": 0.06172839506172839,
+            "tp": 15,
+            "fp": 10,
+            "fn": 66,
+            "tn": 152
+          },
+          "SEASONAL": {
+            "precision": 0.47058823529411764,
+            "recall": 0.09876543209876543,
+            "f1": 0.163265306122449,
+            "false_positive_rate": 0.05555555555555555,
+            "tp": 8,
+            "fp": 9,
+            "fn": 73,
+            "tn": 153
+          },
+          "TREND_SEASONAL": {
+            "precision": 0.5714285714285714,
             "recall": 0.14814814814814814,
-            "f1": 0.21428571428571427,
-            "false_positive_rate": 0.11728395061728394,
+            "f1": 0.23529411764705882,
+            "false_positive_rate": 0.05555555555555555,
             "tp": 12,
-            "fp": 19,
+            "fp": 9,
             "fn": 69,
-            "tn": 143
+            "tn": 153
+          }
+        },
+        "series_with_any_warning": {
+          "NORMAL": 0.046296296296296294,
+          "SHIFT": 0.23148148148148148,
+          "SPIKE_LAST": 0.1574074074074074
+        }
+      },
+      "COMBINED": {
+        "overall": {
+          "precision": 0.6645569620253164,
+          "recall": 0.32407407407407407,
+          "f1": 0.43568464730290457,
+          "false_positive_rate": 0.08179012345679013,
+          "tp": 105,
+          "fp": 53,
+          "fn": 219,
+          "tn": 595
+        },
+        "by_scenario": {
+          "NORMAL": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "false_positive_rate": 0.021604938271604937,
+            "tp": 0,
+            "fp": 7,
+            "fn": 0,
+            "tn": 317
+          },
+          "SHIFT": {
+            "precision": 1.0,
+            "recall": 0.32407407407407407,
+            "f1": 0.48951048951048953,
+            "false_positive_rate": null,
+            "tp": 105,
+            "fp": 0,
+            "fn": 219,
+            "tn": 0
+          },
+          "SPIKE_LAST": {
+            "precision": 0.0,
+            "recall": null,
+            "f1": 0.0,
+            "false_positive_rate": 0.1419753086419753,
+            "tp": 0,
+            "fp": 46,
+            "fn": 0,
+            "tn": 278
+          }
+        },
+        "by_shape": {
+          "FLAT": {
+            "precision": 0.7464788732394366,
+            "recall": 0.654320987654321,
+            "f1": 0.6973684210526315,
+            "false_positive_rate": 0.1111111111111111,
+            "tp": 53,
+            "fp": 18,
+            "fn": 28,
+            "tn": 144
+          },
+          "TREND": {
+            "precision": 0.6585365853658537,
+            "recall": 0.3333333333333333,
+            "f1": 0.4426229508196721,
+            "false_positive_rate": 0.08641975308641975,
+            "tp": 27,
+            "fp": 14,
+            "fn": 54,
+            "tn": 148
+          },
+          "SEASONAL": {
+            "precision": 0.55,
+            "recall": 0.13580246913580246,
+            "f1": 0.21782178217821782,
+            "false_positive_rate": 0.05555555555555555,
+            "tp": 11,
+            "fp": 9,
+            "fn": 70,
+            "tn": 153
           },
           "TREND_SEASONAL": {
             "precision": 0.5384615384615384,
@@ -921,18 +921,18 @@
           }
         },
         "series_with_any_warning": {
-          "NORMAL": 0.046296296296296294,
-          "SHIFT": 0.39814814814814814,
-          "SPIKE_LAST": 0.25
+          "NORMAL": 0.05555555555555555,
+          "SHIFT": 0.3611111111111111,
+          "SPIKE_LAST": 0.19444444444444445
         }
       },
       "_series": 324,
       "_models": {
-        "SEASONAL_NAIVE": 43,
-        "EXPONENTIAL_SMOOTHING": 51,
-        "NAIVE": 93,
+        "SEASONAL_NAIVE": 75,
+        "EXPONENTIAL_SMOOTHING": 52,
+        "NAIVE": 106,
         "LINEAR_REGRESSION": 40,
-        "SARIMA": 97
+        "SARIMA": 51
       }
     }
   },
@@ -1410,57 +1410,57 @@
     "predictive": {
       "STATIC": {
         "overall": {
-          "precision": 0.644808743169399,
-          "recall": 0.36419753086419754,
-          "f1": 0.46548323471400394,
-          "false_positive_rate": 0.10030864197530864,
-          "tp": 118,
-          "fp": 65,
-          "fn": 206,
-          "tn": 583
+          "precision": 0.6802325581395349,
+          "recall": 0.3611111111111111,
+          "f1": 0.4717741935483871,
+          "false_positive_rate": 0.08487654320987655,
+          "tp": 117,
+          "fp": 55,
+          "fn": 207,
+          "tn": 593
         },
         "by_scenario": {
           "NORMAL": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.012345679012345678,
+            "false_positive_rate": 0.006172839506172839,
             "tp": 0,
-            "fp": 4,
+            "fp": 2,
             "fn": 0,
-            "tn": 320
+            "tn": 322
           },
           "SHIFT": {
             "precision": 1.0,
-            "recall": 0.36419753086419754,
-            "f1": 0.5339366515837104,
+            "recall": 0.3611111111111111,
+            "f1": 0.5306122448979591,
             "false_positive_rate": null,
-            "tp": 118,
+            "tp": 117,
             "fp": 0,
-            "fn": 206,
+            "fn": 207,
             "tn": 0
           },
           "SPIKE_LAST": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.1882716049382716,
+            "false_positive_rate": 0.16358024691358025,
             "tp": 0,
-            "fp": 61,
+            "fp": 53,
             "fn": 0,
-            "tn": 263
+            "tn": 271
           }
         },
         "by_shape": {
           "FLAT": {
-            "precision": 0.7075471698113207,
-            "recall": 0.9259259259259259,
-            "f1": 0.8021390374331551,
-            "false_positive_rate": 0.19135802469135801,
-            "tp": 75,
-            "fp": 31,
-            "fn": 6,
-            "tn": 131
+            "precision": 0.7659574468085106,
+            "recall": 0.8888888888888888,
+            "f1": 0.8228571428571428,
+            "false_positive_rate": 0.13580246913580246,
+            "tp": 72,
+            "fp": 22,
+            "fn": 9,
+            "tn": 140
           },
           "TREND": {
             "precision": 0.6842105263157895,
@@ -1473,85 +1473,85 @@
             "tn": 150
           },
           "SEASONAL": {
-            "precision": 0.8,
-            "recall": 0.19753086419753085,
-            "f1": 0.31683168316831684,
-            "false_positive_rate": 0.024691358024691357,
-            "tp": 16,
-            "fp": 4,
-            "fn": 65,
-            "tn": 158
+            "precision": 0.8333333333333334,
+            "recall": 0.18518518518518517,
+            "f1": 0.303030303030303,
+            "false_positive_rate": 0.018518518518518517,
+            "tp": 15,
+            "fp": 3,
+            "fn": 66,
+            "tn": 159
           },
           "TREND_SEASONAL": {
-            "precision": 0.05263157894736842,
-            "recall": 0.012345679012345678,
-            "f1": 0.02,
+            "precision": 0.18181818181818182,
+            "recall": 0.04938271604938271,
+            "f1": 0.07766990291262135,
             "false_positive_rate": 0.1111111111111111,
-            "tp": 1,
+            "tp": 4,
             "fp": 18,
-            "fn": 80,
+            "fn": 77,
             "tn": 144
           }
         },
         "series_with_any_warning": {
-          "NORMAL": 0.018518518518518517,
-          "SHIFT": 0.37962962962962965,
-          "SPIKE_LAST": 0.21296296296296297
+          "NORMAL": 0.009259259259259259,
+          "SHIFT": 0.37037037037037035,
+          "SPIKE_LAST": 0.17592592592592593
         }
       },
       "COMBINED_NO_STL": {
         "overall": {
-          "precision": 0.6304347826086957,
-          "recall": 0.35802469135802467,
-          "f1": 0.4566929133858268,
-          "false_positive_rate": 0.10493827160493827,
-          "tp": 116,
-          "fp": 68,
-          "fn": 208,
-          "tn": 580
+          "precision": 0.653179190751445,
+          "recall": 0.3487654320987654,
+          "f1": 0.45472837022132795,
+          "false_positive_rate": 0.09259259259259259,
+          "tp": 113,
+          "fp": 60,
+          "fn": 211,
+          "tn": 588
         },
         "by_scenario": {
           "NORMAL": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.015432098765432098,
+            "false_positive_rate": 0.006172839506172839,
             "tp": 0,
-            "fp": 5,
+            "fp": 2,
             "fn": 0,
-            "tn": 319
+            "tn": 322
           },
           "SHIFT": {
             "precision": 1.0,
-            "recall": 0.35802469135802467,
-            "f1": 0.5272727272727272,
+            "recall": 0.3487654320987654,
+            "f1": 0.517162471395881,
             "false_positive_rate": null,
-            "tp": 116,
+            "tp": 113,
             "fp": 0,
-            "fn": 208,
+            "fn": 211,
             "tn": 0
           },
           "SPIKE_LAST": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.19444444444444445,
+            "false_positive_rate": 0.17901234567901234,
             "tp": 0,
-            "fp": 63,
+            "fp": 58,
             "fn": 0,
-            "tn": 261
+            "tn": 266
           }
         },
         "by_shape": {
           "FLAT": {
-            "precision": 0.7047619047619048,
-            "recall": 0.9135802469135802,
-            "f1": 0.7956989247311829,
-            "false_positive_rate": 0.19135802469135801,
-            "tp": 74,
-            "fp": 31,
-            "fn": 7,
-            "tn": 131
+            "precision": 0.7634408602150538,
+            "recall": 0.8765432098765432,
+            "f1": 0.8160919540229884,
+            "false_positive_rate": 0.13580246913580246,
+            "tp": 71,
+            "fp": 22,
+            "fn": 10,
+            "tn": 140
           },
           "TREND": {
             "precision": 0.6511627906976745,
@@ -1564,85 +1564,85 @@
             "tn": 147
           },
           "SEASONAL": {
-            "precision": 0.7058823529411765,
+            "precision": 0.8,
             "recall": 0.14814814814814814,
-            "f1": 0.24489795918367346,
-            "false_positive_rate": 0.030864197530864196,
+            "f1": 0.25,
+            "false_positive_rate": 0.018518518518518517,
             "tp": 12,
-            "fp": 5,
+            "fp": 3,
             "fn": 69,
-            "tn": 157
+            "tn": 159
           },
           "TREND_SEASONAL": {
-            "precision": 0.10526315789473684,
+            "precision": 0.09090909090909091,
             "recall": 0.024691358024691357,
-            "f1": 0.04,
-            "false_positive_rate": 0.10493827160493827,
+            "f1": 0.038834951456310676,
+            "false_positive_rate": 0.12345679012345678,
             "tp": 2,
-            "fp": 17,
+            "fp": 20,
             "fn": 79,
-            "tn": 145
+            "tn": 142
           }
         },
         "series_with_any_warning": {
-          "NORMAL": 0.018518518518518517,
-          "SHIFT": 0.37962962962962965,
-          "SPIKE_LAST": 0.2222222222222222
+          "NORMAL": 0.009259259259259259,
+          "SHIFT": 0.37037037037037035,
+          "SPIKE_LAST": 0.19444444444444445
         }
       },
       "IQR": {
         "overall": {
-          "precision": 0.5814977973568282,
-          "recall": 0.4074074074074074,
-          "f1": 0.4791288566243194,
-          "false_positive_rate": 0.14660493827160495,
-          "tp": 132,
-          "fp": 95,
-          "fn": 192,
-          "tn": 553
+          "precision": 0.6648351648351648,
+          "recall": 0.3734567901234568,
+          "f1": 0.47826086956521735,
+          "false_positive_rate": 0.0941358024691358,
+          "tp": 121,
+          "fp": 61,
+          "fn": 203,
+          "tn": 587
         },
         "by_scenario": {
           "NORMAL": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.037037037037037035,
+            "false_positive_rate": 0.006172839506172839,
             "tp": 0,
-            "fp": 12,
+            "fp": 2,
             "fn": 0,
-            "tn": 312
+            "tn": 322
           },
           "SHIFT": {
             "precision": 1.0,
-            "recall": 0.4074074074074074,
-            "f1": 0.5789473684210525,
+            "recall": 0.3734567901234568,
+            "f1": 0.5438202247191011,
             "false_positive_rate": null,
-            "tp": 132,
+            "tp": 121,
             "fp": 0,
-            "fn": 192,
+            "fn": 203,
             "tn": 0
           },
           "SPIKE_LAST": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.25617283950617287,
+            "false_positive_rate": 0.18209876543209877,
             "tp": 0,
-            "fp": 83,
+            "fp": 59,
             "fn": 0,
-            "tn": 241
+            "tn": 265
           }
         },
         "by_shape": {
           "FLAT": {
-            "precision": 0.7047619047619048,
-            "recall": 0.9135802469135802,
-            "f1": 0.7956989247311829,
-            "false_positive_rate": 0.19135802469135801,
-            "tp": 74,
-            "fp": 31,
-            "fn": 7,
-            "tn": 131
+            "precision": 0.7634408602150538,
+            "recall": 0.8765432098765432,
+            "f1": 0.8160919540229884,
+            "false_positive_rate": 0.13580246913580246,
+            "tp": 71,
+            "fp": 22,
+            "fn": 10,
+            "tn": 140
           },
           "TREND": {
             "precision": 0.6428571428571429,
@@ -1655,85 +1655,85 @@
             "tn": 147
           },
           "SEASONAL": {
-            "precision": 0.4523809523809524,
-            "recall": 0.2345679012345679,
-            "f1": 0.3089430894308943,
-            "false_positive_rate": 0.1419753086419753,
-            "tp": 19,
-            "fp": 23,
-            "fn": 62,
-            "tn": 139
+            "precision": 0.75,
+            "recall": 0.14814814814814814,
+            "f1": 0.24742268041237112,
+            "false_positive_rate": 0.024691358024691357,
+            "tp": 12,
+            "fp": 4,
+            "fn": 69,
+            "tn": 158
           },
           "TREND_SEASONAL": {
-            "precision": 0.3157894736842105,
-            "recall": 0.14814814814814814,
-            "f1": 0.20168067226890757,
-            "false_positive_rate": 0.16049382716049382,
-            "tp": 12,
-            "fp": 26,
-            "fn": 69,
-            "tn": 136
+            "precision": 0.3548387096774194,
+            "recall": 0.13580246913580246,
+            "f1": 0.19642857142857142,
+            "false_positive_rate": 0.12345679012345678,
+            "tp": 11,
+            "fp": 20,
+            "fn": 70,
+            "tn": 142
           }
         },
         "series_with_any_warning": {
-          "NORMAL": 0.05555555555555555,
-          "SHIFT": 0.4444444444444444,
-          "SPIKE_LAST": 0.2962962962962963
+          "NORMAL": 0.018518518518518517,
+          "SHIFT": 0.39814814814814814,
+          "SPIKE_LAST": 0.21296296296296297
         }
       },
       "ZSCORE": {
         "overall": {
-          "precision": 0.5743589743589743,
-          "recall": 0.345679012345679,
-          "f1": 0.4315992292870905,
-          "false_positive_rate": 0.12808641975308643,
-          "tp": 112,
-          "fp": 83,
-          "fn": 212,
-          "tn": 565
+          "precision": 0.64375,
+          "recall": 0.31790123456790126,
+          "f1": 0.42561983471074377,
+          "false_positive_rate": 0.08796296296296297,
+          "tp": 103,
+          "fp": 57,
+          "fn": 221,
+          "tn": 591
         },
         "by_scenario": {
           "NORMAL": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.046296296296296294,
+            "false_positive_rate": 0.009259259259259259,
             "tp": 0,
-            "fp": 15,
+            "fp": 3,
             "fn": 0,
-            "tn": 309
+            "tn": 321
           },
           "SHIFT": {
             "precision": 1.0,
-            "recall": 0.345679012345679,
-            "f1": 0.5137614678899083,
+            "recall": 0.31790123456790126,
+            "f1": 0.48243559718969553,
             "false_positive_rate": null,
-            "tp": 112,
+            "tp": 103,
             "fp": 0,
-            "fn": 212,
+            "fn": 221,
             "tn": 0
           },
           "SPIKE_LAST": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.20987654320987653,
+            "false_positive_rate": 0.16666666666666666,
             "tp": 0,
-            "fp": 68,
+            "fp": 54,
             "fn": 0,
-            "tn": 256
+            "tn": 270
           }
         },
         "by_shape": {
           "FLAT": {
-            "precision": 0.7093023255813954,
-            "recall": 0.7530864197530864,
-            "f1": 0.7305389221556886,
-            "false_positive_rate": 0.15432098765432098,
-            "tp": 61,
-            "fp": 25,
-            "fn": 20,
-            "tn": 137
+            "precision": 0.7567567567567568,
+            "recall": 0.691358024691358,
+            "f1": 0.7225806451612903,
+            "false_positive_rate": 0.1111111111111111,
+            "tp": 56,
+            "fp": 18,
+            "fn": 25,
+            "tn": 144
           },
           "TREND": {
             "precision": 0.6176470588235294,
@@ -1746,85 +1746,85 @@
             "tn": 149
           },
           "SEASONAL": {
-            "precision": 0.38461538461538464,
-            "recall": 0.18518518518518517,
-            "f1": 0.25,
-            "false_positive_rate": 0.14814814814814814,
-            "tp": 15,
-            "fp": 24,
-            "fn": 66,
-            "tn": 138
+            "precision": 0.6,
+            "recall": 0.14814814814814814,
+            "f1": 0.2376237623762376,
+            "false_positive_rate": 0.04938271604938271,
+            "tp": 12,
+            "fp": 8,
+            "fn": 69,
+            "tn": 154
           },
           "TREND_SEASONAL": {
-            "precision": 0.4166666666666667,
-            "recall": 0.18518518518518517,
-            "f1": 0.2564102564102564,
-            "false_positive_rate": 0.12962962962962962,
-            "tp": 15,
-            "fp": 21,
-            "fn": 66,
-            "tn": 141
+            "precision": 0.4375,
+            "recall": 0.1728395061728395,
+            "f1": 0.24778761061946905,
+            "false_positive_rate": 0.1111111111111111,
+            "tp": 14,
+            "fp": 18,
+            "fn": 67,
+            "tn": 144
           }
         },
         "series_with_any_warning": {
-          "NORMAL": 0.06481481481481481,
-          "SHIFT": 0.39814814814814814,
-          "SPIKE_LAST": 0.25925925925925924
+          "NORMAL": 0.027777777777777776,
+          "SHIFT": 0.3611111111111111,
+          "SPIKE_LAST": 0.19444444444444445
         }
       },
       "COMBINED": {
         "overall": {
-          "precision": 0.5811965811965812,
-          "recall": 0.41975308641975306,
-          "f1": 0.4874551971326165,
-          "false_positive_rate": 0.15123456790123457,
-          "tp": 136,
-          "fp": 98,
-          "fn": 188,
-          "tn": 550
+          "precision": 0.6530612244897959,
+          "recall": 0.3950617283950617,
+          "f1": 0.49230769230769234,
+          "false_positive_rate": 0.10493827160493827,
+          "tp": 128,
+          "fp": 68,
+          "fn": 196,
+          "tn": 580
         },
         "by_scenario": {
           "NORMAL": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.046296296296296294,
+            "false_positive_rate": 0.009259259259259259,
             "tp": 0,
-            "fp": 15,
+            "fp": 3,
             "fn": 0,
-            "tn": 309
+            "tn": 321
           },
           "SHIFT": {
             "precision": 1.0,
-            "recall": 0.41975308641975306,
-            "f1": 0.5913043478260869,
+            "recall": 0.3950617283950617,
+            "f1": 0.5663716814159292,
             "false_positive_rate": null,
-            "tp": 136,
+            "tp": 128,
             "fp": 0,
-            "fn": 188,
+            "fn": 196,
             "tn": 0
           },
           "SPIKE_LAST": {
             "precision": 0.0,
             "recall": null,
             "f1": 0.0,
-            "false_positive_rate": 0.25617283950617287,
+            "false_positive_rate": 0.2006172839506173,
             "tp": 0,
-            "fp": 83,
+            "fp": 65,
             "fn": 0,
-            "tn": 241
+            "tn": 259
           }
         },
         "by_shape": {
           "FLAT": {
-            "precision": 0.7047619047619048,
-            "recall": 0.9135802469135802,
-            "f1": 0.7956989247311829,
-            "false_positive_rate": 0.19135802469135801,
-            "tp": 74,
-            "fp": 31,
-            "fn": 7,
-            "tn": 131
+            "precision": 0.7634408602150538,
+            "recall": 0.8765432098765432,
+            "f1": 0.8160919540229884,
+            "false_positive_rate": 0.13580246913580246,
+            "tp": 71,
+            "fp": 22,
+            "fn": 10,
+            "tn": 140
           },
           "TREND": {
             "precision": 0.6511627906976745,
@@ -1837,39 +1837,39 @@
             "tn": 147
           },
           "SEASONAL": {
-            "precision": 0.4222222222222222,
-            "recall": 0.2345679012345679,
-            "f1": 0.30158730158730157,
-            "false_positive_rate": 0.16049382716049382,
-            "tp": 19,
-            "fp": 26,
-            "fn": 62,
-            "tn": 136
+            "precision": 0.6521739130434783,
+            "recall": 0.18518518518518517,
+            "f1": 0.2884615384615385,
+            "false_positive_rate": 0.04938271604938271,
+            "tp": 15,
+            "fp": 8,
+            "fn": 66,
+            "tn": 154
           },
           "TREND_SEASONAL": {
-            "precision": 0.36585365853658536,
-            "recall": 0.18518518518518517,
-            "f1": 0.24590163934426226,
-            "false_positive_rate": 0.16049382716049382,
-            "tp": 15,
-            "fp": 26,
-            "fn": 66,
-            "tn": 136
+            "precision": 0.3783783783783784,
+            "recall": 0.1728395061728395,
+            "f1": 0.23728813559322032,
+            "false_positive_rate": 0.1419753086419753,
+            "tp": 14,
+            "fp": 23,
+            "fn": 67,
+            "tn": 139
           }
         },
         "series_with_any_warning": {
-          "NORMAL": 0.06481481481481481,
-          "SHIFT": 0.4537037037037037,
-          "SPIKE_LAST": 0.2962962962962963
+          "NORMAL": 0.027777777777777776,
+          "SHIFT": 0.4166666666666667,
+          "SPIKE_LAST": 0.23148148148148148
         }
       },
       "_series": 324,
       "_models": {
-        "SEASONAL_NAIVE": 44,
+        "SEASONAL_NAIVE": 72,
         "EXPONENTIAL_SMOOTHING": 56,
-        "NAIVE": 99,
+        "NAIVE": 118,
         "LINEAR_REGRESSION": 34,
-        "SARIMA": 91
+        "SARIMA": 44
       }
     }
   }

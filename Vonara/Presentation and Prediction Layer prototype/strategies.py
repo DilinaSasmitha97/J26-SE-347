@@ -31,6 +31,7 @@ from result_profiler import extract_grouped_series, parse_date, parse_number
 from schemas import Granularity, PredictionStrategy, SEASONAL_PERIOD
 
 MAX_CATEGORIES = 12
+OTHER_LABEL = "Other"
 RECENT_WINDOW = 3            # an anomaly in the last N periods counts as "recent"
 MIN_DISTRIBUTION_PERIODS = 6
 
@@ -85,7 +86,8 @@ def forecast_values(values: list, dates: list, profile, analysis, horizon: int,
         "model": proj["model"],
         "points": points,
         "low_signal": bool(test.get("assessed")
-                           and test["expected_relative_error"] > prediction.MAX_EXPECTED_ERROR),
+                           and test["expected_relative_error"]
+                           > prediction.max_expected_error(profile.granularity)),
         "n": len(values),
     }
 
@@ -123,16 +125,38 @@ def category_trajectory(profile, rows, analysis, horizon=3, confidence=0.95) -> 
             continue
         categories.append({"category": name, "last_label": prediction._format_label(
             dates[-1], profile.granularity), "last_actual": round(values[-1], 4), **fc})
-    if len(categories) < 2:
+    # The rest are summed into one "Other" series instead of being dropped:
+    # shares of the total (DISTRIBUTION_SHIFT) are only right if the total is
+    # (Stage 8 - before, 15 vendors gave shares of the top 12's total). "Other"
+    # is never ranked or named as a leader; it is not a category.
+    rest = ranked[MAX_CATEGORIES:]
+    other_members = [name for name, _ in rest]
+    if rest:
+        by_date = {}
+        for _, (dates, values) in rest:
+            for d, v in zip(dates, values):
+                by_date[d] = by_date.get(d, 0.0) + v
+        other_dates = sorted(by_date)
+        other_values = [by_date[d] for d in other_dates]
+        fc = forecast_values(other_values, other_dates, profile, analysis, horizon, confidence)
+        if fc is not None:
+            categories.append({"category": f"{OTHER_LABEL} ({len(other_members)} more)",
+                               "is_other": True,
+                               "members": len(other_members),
+                               "last_label": prediction._format_label(
+                                   other_dates[-1], profile.granularity),
+                               "last_actual": round(other_values[-1], 4), **fc})
+    named = [c for c in categories if not c.get("is_other")]
+    if len(named) < 2:
         result.skipped_reason = (
             f"Fewer than two {profile.group_column} values have the "
             f"{prediction.MIN_POINTS_ANY}+ periods needed to forecast and compare them."
         )
         return result
 
-    now = sorted(categories, key=lambda c: -c["last_actual"])
-    nxt = sorted(categories, key=lambda c: -c["points"][0]["predicted"])
-    end = sorted(categories, key=lambda c: -c["points"][-1]["predicted"])
+    now = sorted(named, key=lambda c: -c["last_actual"])
+    nxt = sorted(named, key=lambda c: -c["points"][0]["predicted"])
+    end = sorted(named, key=lambda c: -c["points"][-1]["predicted"])
     leader, runner_up = nxt[0], nxt[1]
     clear_lead = leader["points"][0]["lower"] > runner_up["points"][0]["upper"]
     rank_now = {c["category"]: i + 1 for i, c in enumerate(now)}
@@ -146,6 +170,7 @@ def category_trajectory(profile, rows, analysis, horizon=3, confidence=0.95) -> 
         "measure": measure,
         "categories": categories,
         "skipped_categories": skipped,
+        "grouped_into_other": other_members,
         "current_leader": {"category": now[0]["category"], "value": now[0]["last_actual"],
                            "label": now[0]["last_label"]},
         "projected_leader": {"category": leader["category"],
@@ -159,7 +184,7 @@ def category_trajectory(profile, rows, analysis, horizon=3, confidence=0.95) -> 
         "leader_changes": now[0]["category"] != leader["category"],
         "clear_lead": clear_lead,
         "rank_changes": rank_changes,
-        "low_signal_categories": [c["category"] for c in categories if c["low_signal"]],
+        "low_signal_categories": [c["category"] for c in named if c["low_signal"]],
     }
     return result
 
@@ -200,14 +225,17 @@ def distribution_shift(profile, rows, analysis, horizon=3, confidence=0.95,
             nxt = 100.0 * c["points"][0]["predicted"] / total_next
             shares.append({"category": c["category"], "share_now_pct": round(now, 2),
                            "share_next_pct": round(nxt, 2),
-                           "change_pp": round(nxt - now, 2)})
+                           "change_pp": round(nxt - now, 2),
+                           "is_other": bool(c.get("is_other"))})
         shares.sort(key=lambda s: -s["change_pp"])
+        # "Other" counts towards the total but is never named as a mover.
+        movers = [s for s in shares if not s["is_other"]]
         result.executed = True
         result.executed_as = "SHARE_SHIFT"
         result.details = {
             "group_column": profile.group_column, "measure": measure, "shares": shares,
             "from_label": cats[0]["last_label"], "to_label": cats[0]["points"][0]["label"],
-            "largest_gain": shares[0], "largest_loss": shares[-1],
+            "largest_gain": movers[0], "largest_loss": movers[-1],
             "categories_forecast": trajectory.details["categories"],
         }
         return result

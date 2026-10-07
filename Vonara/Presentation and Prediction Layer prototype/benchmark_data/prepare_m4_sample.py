@@ -63,7 +63,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build an M4 monthly sample")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--size", type=int, default=SAMPLE_SIZE)
-    parser.add_argument("--exclude", help="existing sample CSV whose series must not be reused")
+    parser.add_argument("--exclude", action="append", default=[],
+                        help="existing sample CSV whose series must not be reused (repeatable)")
+    parser.add_argument("--ids-from", help="reuse exactly the series of this sample CSV "
+                        "(e.g. the development series at a different length)")
+    parser.add_argument("--truncate", type=int, default=TRUNCATE_TO,
+                        help=f"keep the last N observations (default {TRUNCATE_TO})")
     parser.add_argument("--out", default=str(OUT))
     args = parser.parse_args()
     out_path = Path(args.out)
@@ -87,11 +92,15 @@ def main() -> int:
             info[row["M4id"]] = row
 
     excluded = set()
-    if args.exclude:
-        with open(args.exclude, encoding="utf-8", newline="") as fh:
-            excluded = {row["series_id"] for row in csv.DictReader(fh)}
+    for path in args.exclude:
+        with open(path, encoding="utf-8", newline="") as fh:
+            excluded |= {row["series_id"] for row in csv.DictReader(fh)}
     ids = sorted((s for s in train if s not in excluded), key=lambda s: int(s[1:]))
-    sample = sorted(random.Random(args.seed).sample(ids, args.size), key=lambda s: int(s[1:]))
+    if args.ids_from:
+        with open(args.ids_from, encoding="utf-8", newline="") as fh:
+            sample = sorted((row["series_id"] for row in csv.DictReader(fh)), key=lambda s: int(s[1:]))
+    else:
+        sample = sorted(random.Random(args.seed).sample(ids, args.size), key=lambda s: int(s[1:]))
 
     with out_path.open("w", encoding="utf-8", newline="") as fh:
         writer = csv.writer(fh)
@@ -101,7 +110,7 @@ def main() -> int:
             meta = info.get(sid, {})
             writer.writerow([sid, meta.get("category", ""), len(full),
                              meta.get("StartingDate", ""),
-                             " ".join(f"{v:g}" for v in full[-TRUNCATE_TO:])])
+                             " ".join(f"{v:g}" for v in full[-args.truncate:])])
 
     categories = {}
     for sid in sample:
@@ -109,7 +118,7 @@ def main() -> int:
         categories[c] = categories.get(c, 0) + 1
     print(f"Wrote {out_path.name}: {len(sample)} of {len(ids)} monthly series (seed {args.seed}"
           f"{f', excluding {len(excluded)} already used' if excluded else ''}), "
-          f"last {TRUNCATE_TO} observations each. Categories: {categories}")
+          f"last {args.truncate} observations each. Categories: {categories}")
     return 0
 
 

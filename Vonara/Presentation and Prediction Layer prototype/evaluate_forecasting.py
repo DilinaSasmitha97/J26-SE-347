@@ -40,7 +40,8 @@ The source of every forecasting claim. Protocol:
              least MIN_GATE_PRECISION of the time. It is then applied unchanged
              to M4_TEST.
 
-Run:   python evaluate_forecasting.py            (writes data_and_reports/)
+Run:   python evaluate_forecasting.py               (writes data_and_reports/, ~15 min)
+       python evaluate_forecasting.py --skip-large  (without the 1,000-series group)
        python evaluate_forecasting.py --quick    (synthetic only, fewer series)
 """
 
@@ -69,6 +70,7 @@ profiler.VERBOSE = False
 HERE = Path(__file__).resolve().parent
 M4_DEV = HERE / "benchmark_data" / "m4_monthly_sample.csv"
 M4_TEST = HERE / "benchmark_data" / "m4_monthly_test_seed2027.csv"
+M4_TEST_LARGE = HERE / "benchmark_data" / "m4_monthly_test_seed2028_n1000.csv"
 REPORT_MD = HERE / "data_and_reports" / "forecast_benchmark.md"
 REPORT_JSON = HERE / "data_and_reports" / "forecast_benchmark_results.json"
 
@@ -84,11 +86,16 @@ TAU_GRID = [round(0.05 * i, 2) for i in range(1, 15)]  # 0.05 .. 0.70
 
 FIXED = ["NAIVE", "SEASONAL_NAIVE", "WEIGHTED_MOVING_AVERAGE",
          "LINEAR_REGRESSION", "EXPONENTIAL_SMOOTHING", "SARIMA"]
+# Stage 8: the standard M4 benchmarks, as comparisons only (never deployed).
+# THETA: statsmodels ThetaModel (Assimakopoulos & Nikolopoulos 2000), the M3
+# winner and an official M4 benchmark. AUTO_ETS: additive-error ETS with the
+# trend / damping / seasonality chosen per window by AICc (Hyndman et al. 2002).
+BASELINES = ["THETA", "AUTO_ETS"]
 ADAPTIVE = "ADAPTIVE"
 GUARDED = "ADAPTIVE_GUARDED"
-STRATEGIES = FIXED + [ADAPTIVE, GUARDED]
+STRATEGIES = FIXED + BASELINES + [ADAPTIVE, GUARDED]
 DEPLOYED = GUARDED
-GROUPS = ("SYNTHETIC", "M4_DEV", "M4_TEST")
+GROUPS = ("SYNTHETIC", "M4_DEV", "M4_TEST", "M4_TEST_LARGE")
 
 
 # ==========================================================================
@@ -191,8 +198,71 @@ def _ready(n: int):
                                       granularity=Granularity.MONTH.value)
 
 
+def _clip(train, forecasts, lower, upper):
+    """The deployed layer's non-negative rule, applied to the baselines too."""
+    if prediction.CLIP_NON_NEGATIVE and min(train) >= 0:
+        forecasts = [max(0.0, f) for f in forecasts]
+        lower = [max(0.0, x) for x in lower]
+        upper = [max(u, f) for u, f in zip(upper, forecasts)]
+    return forecasts, lower, upper
+
+
+def _baseline(train: list, strategy: str) -> dict:
+    """THETA or AUTO_ETS with their own 95% intervals; naive if the fit fails."""
+    import warnings
+
+    import numpy as np
+
+    y = np.asarray(train, dtype=float)
+    n = len(y)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            if strategy == "THETA":
+                from statsmodels.tsa.forecasting.theta import ThetaModel
+
+                res = ThetaModel(y, period=PERIOD, deseasonalize=n >= 2 * PERIOD).fit()
+                mean = [float(v) for v in res.forecast(HORIZON)]
+                pi = res.prediction_intervals(HORIZON, alpha=1 - CONFIDENCE)
+                lower, upper = [float(v) for v in pi["lower"]], [float(v) for v in pi["upper"]]
+            else:
+                import pandas as pd
+                from statsmodels.tsa.exponential_smoothing.ets import ETSModel
+
+                # ETS prediction intervals need an indexed (pandas) series.
+                y = pd.Series(y)
+                best = None
+                for trend in (None, "add"):
+                    for damped in ((False,) if trend is None else (False, True)):
+                        for seasonal in ((None, "add") if n >= 2 * PERIOD + 2 else (None,)):
+                            try:
+                                fit = ETSModel(y, error="add", trend=trend, damped_trend=damped,
+                                               seasonal=seasonal,
+                                               seasonal_periods=PERIOD if seasonal else None
+                                               ).fit(disp=False)
+                            except Exception:  # noqa: BLE001
+                                continue
+                            if np.isfinite(fit.aicc) and (best is None or fit.aicc < best.aicc):
+                                best = fit
+                if best is None:
+                    raise ValueError("no ETS candidate fitted")
+                frame = best.get_prediction(start=n, end=n + HORIZON - 1).summary_frame(
+                    alpha=1 - CONFIDENCE)
+                mean = [float(v) for v in frame["mean"]]
+                lower, upper = [float(v) for v in frame["pi_lower"]], [float(v) for v in frame["pi_upper"]]
+        model = strategy
+    except Exception:  # noqa: BLE001
+        proj = prediction.project_series(train, "NAIVE", HORIZON, CONFIDENCE, PERIOD)
+        mean, lower, upper, model = proj["forecasts"], proj["lower"], proj["upper"], "NAIVE"
+    mean, lower, upper = _clip(train, mean, lower, upper)
+    return {"model": model, "guard_override": False, "forecasts": mean,
+            "lower": lower, "upper": upper}
+
+
 def forecast_window(train: list, strategy: str) -> dict:
     """One forecast from one origin with one strategy."""
+    if strategy in BASELINES:
+        return _baseline(train, strategy)
     if strategy in (ADAPTIVE, GUARDED):
         selection = prediction.select_model(_ANALYSIS, _ready(len(train)), train,
                                             guard=(strategy == GUARDED))
@@ -295,7 +365,7 @@ def summarise(windows: list) -> dict:
             "coverage95": sum(covered) / len(covered),
             "by_horizon": by_h,
         }
-        if strategy in (ADAPTIVE, GUARDED):
+        if strategy in (ADAPTIVE, GUARDED) or strategy in BASELINES:
             models = [w["strategies"][strategy]["model"] for w in windows]
             out[strategy]["models_used"] = {m: models.count(m) for m in sorted(set(models))}
             out[strategy]["guard_overrides"] = sum(
@@ -354,15 +424,35 @@ def wilcoxon(windows: list, a: str, b: str) -> dict:
     return result
 
 
-def gate_table(windows: list, tau: float = None, legacy: bool = False) -> dict:
-    """How a Gate 3 rule splits windows, scored by the deployed forecast's sMAPE."""
+def wilson(successes: int, n: int, z: float = 1.96):
+    """95% Wilson score interval for a proportion (None if n is 0)."""
+    if not n:
+        return None
+    p = successes / n
+    centre = (p + z * z / (2 * n)) / (1 + z * z / n)
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
+    return [round(centre - half, 4), round(centre + half, 4)]
+
+
+def gate_table(windows: list, tau: float = None, legacy: bool = False,
+               tau_conflict: float = None) -> dict:
+    """
+    How a readiness rule splits windows, scored by the deployed forecast's sMAPE.
+    `tau=None` (and no legacy) means no gate at all - the ablation baseline.
+    `tau_conflict` adds the Stage 8 rule: also refuse a window whose training
+    data shows an ADF/KPSS conflict and whose in-history error exceeds it.
+    """
     rows = []
     for w in windows:
         if legacy:
             refused = not w["gate_legacy_pass"]
+        elif tau is None:
+            refused = False
         else:
             err = w["gate_expected_error"]
-            refused = err is not None and err > tau
+            refused = err is not None and (err > tau or (
+                tau_conflict is not None and w["stationarity"] == "CONFLICT"
+                and err > tau_conflict))
         window_smape = statistics.mean(w["strategies"][DEPLOYED]["smape"])
         rows.append((refused, window_smape, window_smape > UNRELIABLE_SMAPE))
     refused = [r for r in rows if r[0]]
@@ -372,8 +462,12 @@ def gate_table(windows: list, tau: float = None, legacy: bool = False) -> dict:
     precision = tp / len(refused) if refused else None
     recall = tp / len(unreliable) if unreliable else None
     f1 = (2 * precision * recall / (precision + recall)) if precision and recall else 0.0
+    shown_unreliable = sum(1 for r in accepted if r[2])
     return {
-        "tau": tau, "legacy": legacy, "windows": len(rows),
+        "tau": tau, "tau_conflict": tau_conflict, "legacy": legacy, "windows": len(rows),
+        "refusals": len(refused), "true_refusals": tp,
+        "precision_ci95": wilson(tp, len(refused)),
+        "unreliable_shown_rate": shown_unreliable / len(accepted) if accepted else None,
         "refusal_rate": len(refused) / len(rows) if rows else 0.0,
         "smape_accepted": statistics.mean(r[1] for r in accepted) if accepted else None,
         "smape_refused": statistics.mean(r[1] for r in refused) if refused else None,
@@ -428,26 +522,48 @@ def horizon_table(summary: dict) -> list:
     return lines
 
 
+def _gate_md_row(group: str, label: str, r: dict) -> str:
+    ci = r.get("precision_ci95")
+    ci_text = f" ({ci[0]:.2f}-{ci[1]:.2f})" if ci else ""
+    rate = r.get("unreliable_shown_rate")
+    shown = "-" if rate is None else f"{rate * 100:.1f}%"
+    return (f"| {group} | {label} | {r['refusal_rate'] * 100:.1f}% ({r['refusals']}) | "
+            f"{_f(r['smape_accepted'], '.1f')} | {_f(r['smape_refused'], '.1f')} | "
+            f"{shown} | "
+            f"{_f(r['precision'], '.2f')}{ci_text} | {_f(r['recall'], '.2f')} | {_f(r['f1'], '.3f')} |")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Rolling-origin forecasting benchmark")
     parser.add_argument("--quick", action="store_true", help="small synthetic run only")
+    parser.add_argument("--skip-large", action="store_true",
+                        help="leave out the 1,000-series held-out group (faster)")
+    parser.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     args = parser.parse_args()
     started = time.perf_counter()
 
     data = {"SYNTHETIC": synthetic_series(args.quick)}
     if not args.quick:
-        for name, path in (("M4_DEV", M4_DEV), ("M4_TEST", M4_TEST)):
+        groups = [("M4_DEV", M4_DEV), ("M4_TEST", M4_TEST)]
+        if not args.skip_large:
+            groups.append(("M4_TEST_LARGE", M4_TEST_LARGE))
+        for name, path in groups:
             if not path.exists():
                 print(f"Missing {path.name}: run benchmark_data/prepare_m4_sample.py")
                 return 2
             data[name] = m4_series(path, name)
 
-    windows = {}
-    for name, series in data.items():
-        print(f"Running {name}: {len(series)} series x {ORIGINS} origins x "
-              f"{len(STRATEGIES)} strategies...", flush=True)
-        windows[name] = [w for s in series for w in run_series(s)]
+    windows = {name: [] for name in data}
+    jobs = [s for series in data.values() for s in series]
+    print(f"Running {len(jobs)} series x {ORIGINS} origins x {len(STRATEGIES)} strategies "
+          f"on {args.workers} workers...", flush=True)
+    from concurrent.futures import ProcessPoolExecutor
+
+    with ProcessPoolExecutor(max_workers=args.workers) as pool:
+        for series, result in zip(jobs, pool.map(run_series, jobs, chunksize=4)):
+            windows[series["group"]].extend(result)
     development = windows["SYNTHETIC"] + windows.get("M4_DEV", [])
+    held_out = [g for g in ("M4_TEST", "M4_TEST_LARGE") if g in windows]
 
     results = {"protocol": {
         "seed_synthetic": SEED, "horizon": HORIZON, "origins": ORIGINS,
@@ -458,8 +574,19 @@ def main() -> int:
                   "monthly series of the M4 competition dataset (100,000 series in total), "
                   "each truncated to its last 36 observations; development data",
         "m4_test": "100 further monthly series (seed 2027) drawn from the 47,900 M4 monthly "
-                   "series not in M4_DEV, same truncation; held out, evaluated once",
+                   "series not in M4_DEV, same truncation; held out in Stage 2 and evaluated "
+                   "then; re-run here with the Stage 8 code, so it is no longer unseen",
+        "m4_test_large": "1,000 further monthly series (seed 2028) drawn from the 47,800 M4 "
+                         "monthly series in neither earlier sample, same truncation; drawn "
+                         "after the Stage 8 design was frozen and evaluated once",
         "sarima_order": f"{prediction.SARIMA_ORDER}x{prediction.SARIMA_SEASONAL_ORDER}_{PERIOD}",
+        "policy_version": prediction.CONFIG["version"],
+        "deployed_settings": {"guard_sarima": prediction.GUARD_SARIMA,
+                              "fitted_smoothing_min_points": prediction.FITTED_SMOOTHING_MIN_POINTS,
+                              "band_method": prediction.BAND_METHOD,
+                              "clip_non_negative": prediction.CLIP_NON_NEGATIVE,
+                              "noise_limit": prediction.MAX_EXPECTED_ERROR,
+                              "conflict_noise_limit": prediction.CONFLICT_NOISE_LIMIT},
         "environment": environment(),
     }}
 
@@ -469,20 +596,38 @@ def main() -> int:
             "regimes": regime_table(ws),
             "stationarity": stationarity_table(ws),
             "tests": [wilcoxon(ws, ADAPTIVE, "NAIVE"), wilcoxon(ws, GUARDED, "NAIVE"),
-                      wilcoxon(ws, GUARDED, ADAPTIVE), wilcoxon(ws, GUARDED, "SARIMA")],
+                      wilcoxon(ws, GUARDED, ADAPTIVE), wilcoxon(ws, GUARDED, "SARIMA"),
+                      wilcoxon(ws, GUARDED, "THETA"), wilcoxon(ws, GUARDED, "AUTO_ETS")],
         }
 
-    # Gate: choose tau on DEVELOPMENT windows, then score it once on M4_TEST.
+    # Gate: tau chosen on DEVELOPMENT windows (as in Stage 2), then applied
+    # unchanged to the held-out groups together with the Stage 8 conflict rule.
     sweep = [gate_table(development, tau) for tau in TAU_GRID]
     eligible = [r for r in sweep if (r["precision"] or 0) >= MIN_GATE_PRECISION] or sweep
     best = max(eligible, key=lambda r: (r["f1"], -r["refusal_rate"]))
     tau = best["tau"]
+    conflict = prediction.CONFLICT_NOISE_LIMIT
     results["gate"] = {
         "tau_chosen_on_development": tau,
         "tau_in_code": prediction.MAX_EXPECTED_ERROR,
+        "conflict_limit_in_code": conflict,
         "tau_sweep_development": sweep,
-        "by_group": {name: {"legacy": gate_table(ws, legacy=True), "new": gate_table(ws, tau)}
-                     for name, ws in windows.items()},
+        # Ablation: each readiness rule added in turn. "deployed" is what
+        # users get with forecast_config.json as shipped.
+        "ablation": {name: {
+            "no_gate": gate_table(ws, None),
+            "stage1_cv_rule": gate_table(ws, legacy=True),
+            "noise_gate_stage2": gate_table(ws, tau),
+            "deployed_noise_plus_conflict": gate_table(ws, tau, tau_conflict=conflict),
+        } for name, ws in windows.items()},
+        # Sensitivity, reported after the fact: how the held-out result would
+        # change had a different limit been chosen. Nothing here was used to
+        # choose anything.
+        "sensitivity_held_out": {name: {
+            "noise_limit": [gate_table(windows[name], t, tau_conflict=conflict) for t in TAU_GRID],
+            "conflict_limit": [gate_table(windows[name], tau, tau_conflict=c)
+                               for c in (None, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16)],
+        } for name in held_out},
     }
     results["runtime_seconds"] = round(time.perf_counter() - started, 1)
 
@@ -494,10 +639,16 @@ def main() -> int:
           "- Series: " + ", ".join(f"{n} {g}" for g, n in p["series"].items()),
           f"- M4_DEV: {p['m4_dev']}" if not args.quick else "- M4: skipped (--quick)",
           f"- M4_TEST: {p['m4_test']}" if not args.quick else "",
+          f"- M4_TEST_LARGE: {p['m4_test_large']}" if "M4_TEST_LARGE" in windows else None,
           f"- {ORIGINS} origins per series, {ORIGIN_STEP} periods apart, horizon {HORIZON}; "
           "every forecast uses only data before its origin",
           "- MASE is scaled by the in-sample one-step naive MAE of each training window",
           f"- SARIMA order: {p['sarima_order']}",
+          f"- Deployed settings (forecast_config.json {p['policy_version']}): "
+          + ", ".join(f"{k} {v}" for k, v in p["deployed_settings"].items()),
+          "- THETA and AUTO_ETS are statsmodels comparison baselines with their own 95% "
+          "intervals, clipped at zero like the deployed layer; they fall back to naive when "
+          "a fit fails",
           f"- An UNRELIABLE window has sMAPE > {UNRELIABLE_SMAPE:.0f}%",
           "- Environment: " + ", ".join(f"{k} {v}" for k, v in p["environment"].items()), ""]
     for name in windows:
@@ -507,6 +658,9 @@ def main() -> int:
         for strategy in (ADAPTIVE, GUARDED):
             md.append(f"- {strategy} models used: {acc[strategy]['models_used']}; "
                       f"guard overrides: {acc[strategy]['guard_overrides']}")
+        for strategy in BASELINES:
+            md.append(f"- {strategy} fits (NAIVE = fit failed, naive used): "
+                      f"{acc[strategy]['models_used']}")
         md += ["", "| Paired test (per-series MASE) | A better in | median diff | Wilcoxon p |",
                "|---|---|---|---|"]
         for t in results[name]["tests"]:
@@ -530,26 +684,39 @@ def main() -> int:
         md.append("")
 
     g = results["gate"]
-    md += ["## Readiness Gate 3 - old rule vs forecastability test", "",
-           f"Deployed strategy scored: {DEPLOYED}. Threshold chosen on DEVELOPMENT windows "
-           f"(SYNTHETIC + M4_DEV; best F1 with precision >= {MIN_GATE_PRECISION}): "
-           f"tau = {g['tau_chosen_on_development']} (value in code: {g['tau_in_code']}).", "",
-           "| Group | Gate | Refusal rate | sMAPE accepted | sMAPE refused | "
-           "Unreliable windows | Precision | Recall |", "|---|---|---|---|---|---|---|---|"]
-    for name, pair in g["by_group"].items():
-        for label in ("legacy", "new"):
-            r = pair[label]
-            md.append(f"| {name} | {'old CV/R² rule' if label == 'legacy' else 'forecastability'} | "
-                      f"{r['refusal_rate'] * 100:.1f}% | {_f(r['smape_accepted'], '.1f')} | "
-                      f"{_f(r['smape_refused'], '.1f')} | {r['unreliable_windows']} | "
-                      f"{_f(r['precision'], '.2f')} | {_f(r['recall'], '.2f')} |")
-    md += ["", "Threshold sweep (DEVELOPMENT):", "",
+    header = ["| Group | Rule | Refused | sMAPE accepted | sMAPE refused | Unreliable among shown | "
+              "Precision (95% CI) | Recall | F1 |", "|---|---|---|---|---|---|---|---|---|"]
+    md += ["## Readiness gate: ablation", "",
+           f"Deployed strategy scored: {DEPLOYED}. Noise limit chosen on DEVELOPMENT windows "
+           f"(best F1 with precision >= {MIN_GATE_PRECISION}): tau = {g['tau_chosen_on_development']} "
+           f"(value in code: {g['tau_in_code']}); Stage 8 conflict limit: {conflict}.", ""] + header
+    labels = {"no_gate": "no gate", "stage1_cv_rule": "Stage 1 CV/R² rule",
+              "noise_gate_stage2": "noise gate (Stage 2)",
+              "deployed_noise_plus_conflict": "noise + conflict (deployed)"}
+    for name, rules in g["ablation"].items():
+        for key, label in labels.items():
+            md.append(_gate_md_row(name, label, rules[key]))
+    md += ["", "Noise-limit sweep (DEVELOPMENT), used to choose tau:", "",
            "| tau | Refusal rate | sMAPE accepted | Precision | Recall | F1 |",
            "|---|---|---|---|---|---|"]
     for r in sweep:
         md.append(f"| {r['tau']} | {r['refusal_rate'] * 100:.1f}% | "
                   f"{_f(r['smape_accepted'], '.1f')} | {_f(r['precision'], '.2f')} | "
                   f"{_f(r['recall'], '.2f')} | {_f(r['f1'], '.2f')} |")
+    for name, sens in g["sensitivity_held_out"].items():
+        md += ["", f"Sensitivity on {name} (after the fact; not used to choose anything):", "",
+               "| Noise limit | Refused | Precision | Recall | F1 | sMAPE accepted |",
+               "|---|---|---|---|---|---|"]
+        for r in sens["noise_limit"]:
+            md.append(f"| {r['tau']} | {r['refusal_rate'] * 100:.1f}% | {_f(r['precision'], '.2f')} | "
+                      f"{_f(r['recall'], '.2f')} | {_f(r['f1'], '.3f')} | "
+                      f"{_f(r['smape_accepted'], '.1f')} |")
+        md += ["", "| Conflict limit (noise limit fixed) | Refused | Precision | Recall | F1 |",
+               "|---|---|---|---|---|"]
+        for r in sens["conflict_limit"]:
+            md.append(f"| {r['tau_conflict'] if r['tau_conflict'] is not None else 'off'} | "
+                      f"{r['refusal_rate'] * 100:.1f}% | {_f(r['precision'], '.2f')} | "
+                      f"{_f(r['recall'], '.2f')} | {_f(r['f1'], '.3f')} |")
     md += ["", f"Runtime: {results['runtime_seconds']} s"]
 
     text = "\n".join(line for line in md if line is not None) + "\n"

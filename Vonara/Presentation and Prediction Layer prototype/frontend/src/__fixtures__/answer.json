@@ -137,7 +137,7 @@
    "completion_tokens": 0,
    "total_tokens": 0,
    "schema_tables_considered": 4,
-   "execution_time_ms": 15.02,
+   "execution_time_ms": 69.7,
    "tenant_id": "tenant_a",
    "user_role": ""
   }
@@ -281,7 +281,10 @@
    "reason": "No forecast was requested for this query.",
    "checks": [
     "readiness gates not evaluated: No forecast was requested for this query."
-   ]
+   ],
+   "input_truncated": false,
+   "noise_limit": null,
+   "policy_version": ""
   },
   "stage_3_model_selection": {
    "model": "NONE",
@@ -441,13 +444,13 @@
   "key": "21948e342d0e8287"
  },
  "profiling": {
-  "total_execution_ms": 17.04,
+  "total_execution_ms": 79.32,
   "stage_breakdown_ms": {
-   "Part 1: Query Understanding": 15.06,
-   "Result Profiling": 1.57,
-   "Part 3: Summarization": 0.18,
-   "Part 5: Response Shaping": 0.05,
-   "Part 4: Prediction": 0.01,
+   "Part 1: Query Understanding": 69.83,
+   "Result Profiling": 8.47,
+   "Part 3: Summarization": 0.46,
+   "Part 5: Response Shaping": 0.11,
+   "Part 4: Prediction": 0.03,
    "Part 2: Visualization": 0.0
   }
  }

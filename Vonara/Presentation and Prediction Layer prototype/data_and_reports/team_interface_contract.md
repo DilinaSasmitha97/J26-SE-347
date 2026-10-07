@@ -64,8 +64,11 @@ What it handles, so Member 2 does not have to change anything:
 | Duplicate names (`a.id`, `b.id` both arrive as `id`) | Second copy renamed (`id_3` if `id_2` exists), warning `DUPLICATE_COLUMN_NAMES_RENAMED` |
 | DECIMAL (every `SUM`/`AVG` over money) arrives as a string | Measure columns converted to numbers after profiling |
 | Dates arrive as `YYYY-MM-DD` strings | Parsed by the profiler as before |
-| `truncated: true` (row cap hit) | Warning `INPUT_TRUNCATED`; totals and forecasts describe the cap, not the data |
+| `truncated: true`, or `rowCount` larger than the rows sent (row cap hit) | Warning `INPUT_TRUNCATED`. Since Stage 8, **no forecast or category projection is made** (readiness verdict `TRUNCATED`): which rows were cut depends on the query's `ORDER BY`, so the latest periods may be missing. The user is asked for a coarser period or a shorter range. Configurable (`refuse_truncated_input` in `forecast_config.json`). |
 | `masking.columns` | Recorded in the envelope's `input.masked_columns`, warning `MASKED_COLUMNS_PRESENT` |
+| `masking.columns` names a column the result does not have | Warning `MASKED_COLUMN_NOT_FOUND` (Stage 8): the two layers disagree about the result's columns |
+| `rows` present but `columns` empty | Rejected with `INPUT_FORMAT_ERROR` (Stage 8); before, every value was dropped silently |
+| `rowCount` not a number | Warning `INVALID_ROW_COUNT`; the received row count is used (Stage 8) |
 
 The legacy shape below is still accepted as `raw_results`, for tests and
 callers that already hold row dicts:
@@ -293,10 +296,14 @@ raises `ORDERING_DIRECTION_AMBIGUOUS`; resolve it with schema knowledge.
     and verdict; `missing_value_ratio`, `missing_period_ratio` and
     `filled_periods` report completeness.
   - `stage_2_readiness.verdict` can also be `MULTI_SERIES` (forecast per
-    category instead), `NOT_AGGREGATED` (raw rows, no value per period) or
-    `INCOMPLETE` (too many unreadable values or empty periods);
-    `expected_relative_error`, `skill_vs_naive` and `signal_test` report the
-    forecastability test.
+    category instead), `NOT_AGGREGATED` (raw rows, no value per period),
+    `INCOMPLETE` (too many unreadable values or empty periods) or, since
+    Stage 8, `TRUNCATED` (reason code `INPUT_TRUNCATED`: the result was cut at
+    the row limit); `expected_relative_error`, `skill_vs_naive` and
+    `signal_test` report the forecastability test, and `noise_limit` the limit
+    applied. `LOW_SIGNAL` is also given when the ADF and KPSS tests conflict
+    and the in-history error exceeds 8% (Stage 8). `policy_version` names the
+    `forecast_config.json` version that made the decision.
   - `stage_4_forecast.diagnostics.interpolated_periods` lists the history
     positions that were filled for the model; they are never shown as
     observations or flagged as anomalies.
@@ -391,12 +398,21 @@ raises `ORDERING_DIRECTION_AMBIGUOUS`; resolve it with schema knowledge.
     "reason_codes": ["MISSING_PERIODS_INTERPOLATED"],
     "model": "LINEAR_REGRESSION",
     "horizon": 3,
+    "horizon_source": "DEFAULT",  // QUESTION, REQUEST_PARAMETER or DEFAULT (Stage 8)
+    "horizon_requested": 3,       // before any shortening (Stage 8)
+    "notes": [{"code": "RANGE_CLIPPED_AT_ZERO",
+               "message": "This measure has never been negative, so ..."}],
     "shown_in": ["TABLE"]         // blocks that already display the forecast
   }
   ```
   Render `message` as a caption when `shown_in` is empty (a donut, a KPI card,
   or a refusal); it may be hidden when the chart or table already carries the
   forecast. `message` is a verified claim, never free text.
+  `notes` (Stage 8, SHOWN only) are facts about how the forecast was made,
+  separate from the readiness `warnings`: `HORIZON_SHORTENED` (never longer
+  than half the history), `MODEL_FALLBACK` (e.g. SARIMA over its time limit)
+  and `RANGE_CLIPPED_AT_ZERO` (a never-negative measure's range is cut at 0).
+  Show them with the notice.
 - When a forecast was requested, the blocks carry it themselves:
   `table.rows` gain rows with `row_type: "FORECAST"` plus `lower_bound` /
   `upper_bound` columns (historical rows are `row_type: "ACTUAL"`;
@@ -424,7 +440,10 @@ Returns `{status, scenario, visualization, summary}`.
 { "status": "ERROR", "error_code": "PRESENTATION_FAILED", "detail": "..." }
 ```
 
-Codes: `ANALYSIS_FAILED`, `PRESENTATION_FAILED`, `SIMULATION_FAILED`.
+Codes: `ANALYSIS_FAILED`, `PRESENTATION_FAILED`, `SIMULATION_FAILED`, and
+`INPUT_FORMAT_ERROR` (Stage 8) when `member2_result` itself is malformed (rows
+without columns, rows that are not arrays, `columns`/`rows` not arrays). That
+one is a caller-side problem: fix the payload, do not retry.
 
 Note that most degradations are **not** errors: an empty result set, an
 unforecastable series or an uninterpretable scenario all return `SUCCESS` with

@@ -1,0 +1,37 @@
+{
+  "version": "2026-10-07.1",
+  "_note": "Readiness and forecasting policy for prediction.py. Every value here was set on DEVELOPMENT data or by stated policy (see data_and_reports/stage2_technical_details.md). Changing one changes which forecasts users receive: re-run evaluate_forecasting.py and evaluate_readiness.py afterwards. Point C4_FORECAST_CONFIG at another file to override.",
+  "readiness": {
+    "min_points_any": 4,
+    "min_points_trend": 6,
+    "min_points_seasonal": 24,
+    "min_points_signal_test": 8,
+    "signal_test_origins": 6,
+    "max_expected_error": {
+      "_note": "Noise limit of the forecastability gate. 'default' was chosen on monthly development data; the per-granularity keys exist so a limit can be set once there is daily or weekly evidence. Until then they all equal the default.",
+      "default": 0.2,
+      "DAY": 0.2,
+      "WEEK": 0.2,
+      "MONTH": 0.2,
+      "QUARTER": 0.2,
+      "YEAR": 0.2
+    },
+    "max_missing_value_ratio": 0.2,
+    "max_missing_period_ratio": 0.25,
+    "near_constant_cv": 0.01,
+    "min_points_stationarity": 12,
+    "refuse_truncated_input": true,
+    "holidays": [],
+    "conflict_noise_limit": 0.08,
+    "_conflict_note": "Stage 8 E4: also refuse when ADF/KPSS conflict and the in-history error exceeds 8% (chosen on development data: F1 0.667 -> 0.695, precision 0.82). null switches it off."
+  },
+  "forecast": {
+    "max_horizon": 24,
+    "clip_non_negative": true,
+    "sarima_timeout_seconds": 5.0,
+    "guard_sarima": true,
+    "fitted_smoothing_min_points": 48,
+    "band_method": "normal",
+    "_note": "Stage 8: guard_sarima (E1, safety fix for SARIMA blow-ups), fitted_smoothing_min_points 48 (E2), band_method 'normal' (E3 empirical rejected). Evidence: data_and_reports/stage8_candidates.md."
+  }
+}

@@ -534,6 +534,31 @@ def build_strategy_answer_block(strategy_result, summary) -> dict:
     }
 
 
+def forecast_notes(forecast) -> list:
+    """
+    What happened while the forecast was made, beyond the readiness cautions
+    (Stage 8): each is something the user would otherwise not know.
+    """
+    diag = getattr(forecast, "diagnostics", None) or {}
+    notes = []
+    clamped = diag.get("horizon_clamped_from")
+    if clamped:
+        notes.append({"code": "HORIZON_SHORTENED", "message": (
+            f"{clamped} periods were asked for; {forecast.horizon} are shown, because a "
+            "forecast is never longer than half the history it is built from.")})
+    if "fell back" in (getattr(forecast, "model_reason", "") or ""):
+        start = forecast.model_reason.rfind("[")
+        detail = forecast.model_reason[start + 1:].rstrip("]") if start >= 0 else ""
+        notes.append({"code": "MODEL_FALLBACK",
+                      "message": f"{detail[:1].upper()}{detail[1:]}." if detail else
+                      "The chosen model could not be used; a simpler one was."})
+    if diag.get("clipped_at_zero"):
+        notes.append({"code": "RANGE_CLIPPED_AT_ZERO", "message": (
+            "This measure has never been negative, so the forecast range is cut at zero "
+            f"for {diag['clipped_at_zero']} of {forecast.horizon} periods.")})
+    return notes
+
+
 def build_forecast_notice(forecast, readiness, summary, shown_in: list,
                           strategy_result=None) -> dict:
     """
@@ -551,6 +576,8 @@ def build_forecast_notice(forecast, readiness, summary, shown_in: list,
     strategy_done = strategy_result is not None and getattr(strategy_result, "executed", False)
     if (forecast is not None and forecast.generated) or strategy_done:
         headline = claim_text("STRATEGY_HEADLINE")
+        made = forecast is not None and forecast.generated
+        diag = (getattr(forecast, "diagnostics", None) or {}) if made else {}
         return {
             "requested": True,
             "status": "SHOWN",
@@ -564,6 +591,9 @@ def build_forecast_notice(forecast, readiness, summary, shown_in: list,
             "model": forecast.model if forecast is not None and forecast.generated
             else "PER_CATEGORY",
             "horizon": forecast.horizon if forecast is not None and forecast.generated else 0,
+            "horizon_source": diag.get("horizon_source", ""),
+            "horizon_requested": diag.get("horizon_requested", 0),
+            "notes": forecast_notes(forecast) if made else [],
             "shown_in": shown_in,
         }
     reason = (getattr(forecast, "skipped_reason", "") if forecast is not None else "") \
