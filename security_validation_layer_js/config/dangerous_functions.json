@@ -1,0 +1,26 @@
+{
+  "dangerous_functions": {
+    "LOAD_FILE": "Reads arbitrary files from the database server's filesystem.",
+    "SLEEP": "Deliberately stalls execution — used for time-based blind SQL injection or denial-of-service.",
+    "BENCHMARK": "Forces expensive repeated computation — a denial-of-service vector.",
+    "GET_LOCK": "Acquires a named lock, which can stall other database connections.",
+    "RELEASE_LOCK": "Releases a named lock; paired with GET_LOCK-based abuse.",
+    "INTO_OUTFILE": "Writes query results out to a file on the server's filesystem (structural clause, also checked directly).",
+    "INTO_DUMPFILE": "Writes a single row/blob to a file on the server's filesystem (structural clause, also checked directly).",
+    "EXTRACTVALUE": "XML function abused for error-based injection — a malformed XPath echoes query results inside the error message.",
+    "UPDATEXML": "XML function abused for error-based injection — a malformed XPath echoes query results inside the error message.",
+    "NAME_CONST": "Used in error-based injection to force duplicate-column errors that leak values.",
+    "SYS_EXEC": "Common malicious user-defined function (lib_mysqludf_sys) that runs operating-system commands.",
+    "SYS_EVAL": "Common malicious user-defined function (lib_mysqludf_sys) that runs OS commands and returns their output."
+  },
+  "system_info_functions": {
+    "USER": "Reveals the connected database user — used for reconnaissance/fingerprinting.",
+    "CURRENT_USER": "Reveals the effective database user and host — used for reconnaissance.",
+    "VERSION": "Reveals the database server version — used to target version-specific exploits.",
+    "DATABASE": "Reveals the name of the current database — used for reconnaissance.",
+    "SCHEMA": "MySQL synonym for DATABASE() — reveals the current database name.",
+    "SESSION_USER": "Reveals the session's authenticated user — used for reconnaissance.",
+    "SYSTEM_USER": "Synonym for USER() — reveals the connected database user.",
+    "CONNECTION_ID": "Reveals the server connection/thread id — used for reconnaissance."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "_comment": "Declared PII per database: table -> column -> PII type. The strongest classification signal; column-name heuristics, value sampling and NER only fill in for columns not listed here. Types: PERSON, EMAIL, PHONE, NIC, CREDIT_CARD, IBAN, IP_ADDRESS, ADDRESS, DATE_OF_BIRTH, SECRET. Use NONE for text columns reviewed as not personal data: NER then skips them (regex checks still run), which avoids false positives such as the city 'Kandy' being read as a name.",
+  "svl_demo": {
+    "customers": {
+      "name": "PERSON",
+      "email": "EMAIL",
+      "phone": "PHONE",
+      "password_hash": "SECRET",
+      "city": "NONE"
+    },
+    "orders": {
+      "product": "NONE",
+      "status": "NONE"
+    }
+  }
+}
