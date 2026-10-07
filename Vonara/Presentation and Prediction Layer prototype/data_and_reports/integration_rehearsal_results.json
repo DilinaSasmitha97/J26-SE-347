@@ -1,0 +1,49 @@
+{
+ "health": {
+  "status": "UP",
+  "component": "Presentation & Prediction Layer",
+  "pipeline_version": "1.0",
+  "llm_provider": "none",
+  "llm_available": false,
+  "active_model": "deterministic-fallback",
+  "capabilities": {
+   "sarima": true,
+   "deterministic_fallback": true,
+   "grounded_summary_verification": true
+  }
+ },
+ "cases": 77,
+ "pii_values_checked": 7647,
+ "problems": {
+  "contract": [],
+  "privacy": [],
+  "http": []
+ },
+ "denylist_ok": true,
+ "tenant_cache_hits": [
+  false,
+  true,
+  false
+ ],
+ "tenant_isolation_ok": true,
+ "latency_ms": {
+  "analyze": {
+   "calls": 77,
+   "median": 36.724299992783926,
+   "p95": 48.743200008175336,
+   "max": 113.82199999934528
+  },
+  "present": {
+   "calls": 77,
+   "median": 62.338700008695014,
+   "p95": 1554.108800002723,
+   "max": 2319.6814999973867
+  },
+  "simulate": {
+   "calls": 3,
+   "median": 132.16359999205451,
+   "p95": 2228.6631999886595,
+   "max": 2228.6631999886595
+  }
+ }
+}

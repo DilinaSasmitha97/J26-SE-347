@@ -1,0 +1,1205 @@
+{
+  "summary": {
+    "cases": 90,
+    "case_types": 18,
+    "seeds_per_type": 5,
+    "three_level_accuracy": 1.0,
+    "two_level_accuracy": 1.0,
+    "false_ready_rate": 0.0,
+    "false_refusal_rate": 0.0,
+    "reason_code_accuracy": 1.0,
+    "confusion": {
+      "NOT_READY -> NOT_READY": 40,
+      "READY -> READY": 30,
+      "READY_WITH_WARNING -> READY_WITH_WARNING": 20
+    },
+    "unneeded_warning_codes_on_clean_series": {}
+  },
+  "records": [
+    {
+      "case": "clean monthly 24",
+      "seed": 0,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean monthly 24",
+      "seed": 1,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean monthly 24",
+      "seed": 2,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean monthly 24",
+      "seed": 3,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean monthly 24",
+      "seed": 4,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean monthly 36",
+      "seed": 0,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean monthly 36",
+      "seed": 1,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean monthly 36",
+      "seed": 2,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean monthly 36",
+      "seed": 3,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean monthly 36",
+      "seed": 4,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean quarterly 16",
+      "seed": 0,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean quarterly 16",
+      "seed": 1,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean quarterly 16",
+      "seed": 2,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean quarterly 16",
+      "seed": 3,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean quarterly 16",
+      "seed": 4,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean weekly 52",
+      "seed": 0,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean weekly 52",
+      "seed": 1,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean weekly 52",
+      "seed": 2,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean weekly 52",
+      "seed": 3,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean weekly 52",
+      "seed": 4,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean business-daily 60",
+      "seed": 0,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean business-daily 60",
+      "seed": 1,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean business-daily 60",
+      "seed": 2,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean business-daily 60",
+      "seed": 3,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean business-daily 60",
+      "seed": 4,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "clean yearly 10",
+      "seed": 0,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "clean yearly 10",
+      "seed": 1,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "clean yearly 10",
+      "seed": 2,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "clean yearly 10",
+      "seed": 3,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "clean yearly 10",
+      "seed": 4,
+      "expected": "READY",
+      "expected_code": null,
+      "decision": "READY",
+      "verdict": "READY",
+      "reason_codes": [],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "2-3 missing months of 24",
+      "seed": 0,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "MISSING_PERIODS_INTERPOLATED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "MISSING_PERIODS_INTERPOLATED",
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "2-3 missing months of 24",
+      "seed": 1,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "MISSING_PERIODS_INTERPOLATED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "MISSING_PERIODS_INTERPOLATED",
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "2-3 missing months of 24",
+      "seed": 2,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "MISSING_PERIODS_INTERPOLATED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "MISSING_PERIODS_INTERPOLATED",
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "2-3 missing months of 24",
+      "seed": 3,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "MISSING_PERIODS_INTERPOLATED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "MISSING_PERIODS_INTERPOLATED",
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "2-3 missing months of 24",
+      "seed": 4,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "MISSING_PERIODS_INTERPOLATED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "MISSING_PERIODS_INTERPOLATED",
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "2-3 unreadable values of 24",
+      "seed": 0,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "MISSING_VALUES_DROPPED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "MISSING_VALUES_DROPPED",
+        "MISSING_PERIODS_INTERPOLATED",
+        "STATIONARITY_CONFLICT"
+      ],
+      "code_ok": true,
+      "stationarity": "CONFLICT"
+    },
+    {
+      "case": "2-3 unreadable values of 24",
+      "seed": 1,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "MISSING_VALUES_DROPPED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "MISSING_VALUES_DROPPED",
+        "MISSING_PERIODS_INTERPOLATED",
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "2-3 unreadable values of 24",
+      "seed": 2,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "MISSING_VALUES_DROPPED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "MISSING_VALUES_DROPPED",
+        "MISSING_PERIODS_INTERPOLATED",
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "2-3 unreadable values of 24",
+      "seed": 3,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "MISSING_VALUES_DROPPED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "MISSING_VALUES_DROPPED",
+        "MISSING_PERIODS_INTERPOLATED",
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "2-3 unreadable values of 24",
+      "seed": 4,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "MISSING_VALUES_DROPPED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "MISSING_VALUES_DROPPED",
+        "MISSING_PERIODS_INTERPOLATED",
+        "STATIONARITY_NON_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "NON_STATIONARY"
+    },
+    {
+      "case": "near-constant monthly 24",
+      "seed": 0,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "NEAR_CONSTANT",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "NEAR_CONSTANT",
+        "STATIONARITY_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "STATIONARY"
+    },
+    {
+      "case": "near-constant monthly 24",
+      "seed": 1,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "NEAR_CONSTANT",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "NEAR_CONSTANT",
+        "STATIONARITY_INCONCLUSIVE"
+      ],
+      "code_ok": true,
+      "stationarity": "INCONCLUSIVE"
+    },
+    {
+      "case": "near-constant monthly 24",
+      "seed": 2,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "NEAR_CONSTANT",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "NEAR_CONSTANT",
+        "STATIONARITY_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "STATIONARY"
+    },
+    {
+      "case": "near-constant monthly 24",
+      "seed": 3,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "NEAR_CONSTANT",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "NEAR_CONSTANT",
+        "STATIONARITY_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "STATIONARY"
+    },
+    {
+      "case": "near-constant monthly 24",
+      "seed": 4,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "NEAR_CONSTANT",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "NEAR_CONSTANT",
+        "STATIONARITY_INCONCLUSIVE"
+      ],
+      "code_ok": true,
+      "stationarity": "INCONCLUSIVE"
+    },
+    {
+      "case": "short monthly 5-7",
+      "seed": 0,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "SIGNAL_NOT_ASSESSED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "SIGNAL_NOT_ASSESSED"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "short monthly 5-7",
+      "seed": 1,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "SIGNAL_NOT_ASSESSED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "SIGNAL_NOT_ASSESSED"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "short monthly 5-7",
+      "seed": 2,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "SIGNAL_NOT_ASSESSED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "SIGNAL_NOT_ASSESSED"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "short monthly 5-7",
+      "seed": 3,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "SIGNAL_NOT_ASSESSED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "SIGNAL_NOT_ASSESSED"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "short monthly 5-7",
+      "seed": 4,
+      "expected": "READY_WITH_WARNING",
+      "expected_code": "SIGNAL_NOT_ASSESSED",
+      "decision": "READY_WITH_WARNING",
+      "verdict": "READY",
+      "reason_codes": [
+        "SIGNAL_NOT_ASSESSED"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "no time axis",
+      "seed": 0,
+      "expected": "NOT_READY",
+      "expected_code": "NO_TIME_AXIS",
+      "decision": "NOT_READY",
+      "verdict": "NOT_TEMPORAL",
+      "reason_codes": [
+        "NO_TIME_AXIS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "no time axis",
+      "seed": 1,
+      "expected": "NOT_READY",
+      "expected_code": "NO_TIME_AXIS",
+      "decision": "NOT_READY",
+      "verdict": "NOT_TEMPORAL",
+      "reason_codes": [
+        "NO_TIME_AXIS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "no time axis",
+      "seed": 2,
+      "expected": "NOT_READY",
+      "expected_code": "NO_TIME_AXIS",
+      "decision": "NOT_READY",
+      "verdict": "NOT_TEMPORAL",
+      "reason_codes": [
+        "NO_TIME_AXIS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "no time axis",
+      "seed": 3,
+      "expected": "NOT_READY",
+      "expected_code": "NO_TIME_AXIS",
+      "decision": "NOT_READY",
+      "verdict": "NOT_TEMPORAL",
+      "reason_codes": [
+        "NO_TIME_AXIS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "no time axis",
+      "seed": 4,
+      "expected": "NOT_READY",
+      "expected_code": "NO_TIME_AXIS",
+      "decision": "NOT_READY",
+      "verdict": "NOT_TEMPORAL",
+      "reason_codes": [
+        "NO_TIME_AXIS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "3 observations",
+      "seed": 0,
+      "expected": "NOT_READY",
+      "expected_code": "INSUFFICIENT_POINTS",
+      "decision": "NOT_READY",
+      "verdict": "INSUFFICIENT_POINTS",
+      "reason_codes": [
+        "INSUFFICIENT_POINTS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "3 observations",
+      "seed": 1,
+      "expected": "NOT_READY",
+      "expected_code": "INSUFFICIENT_POINTS",
+      "decision": "NOT_READY",
+      "verdict": "INSUFFICIENT_POINTS",
+      "reason_codes": [
+        "INSUFFICIENT_POINTS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "3 observations",
+      "seed": 2,
+      "expected": "NOT_READY",
+      "expected_code": "INSUFFICIENT_POINTS",
+      "decision": "NOT_READY",
+      "verdict": "INSUFFICIENT_POINTS",
+      "reason_codes": [
+        "INSUFFICIENT_POINTS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "3 observations",
+      "seed": 3,
+      "expected": "NOT_READY",
+      "expected_code": "INSUFFICIENT_POINTS",
+      "decision": "NOT_READY",
+      "verdict": "INSUFFICIENT_POINTS",
+      "reason_codes": [
+        "INSUFFICIENT_POINTS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "3 observations",
+      "seed": 4,
+      "expected": "NOT_READY",
+      "expected_code": "INSUFFICIENT_POINTS",
+      "decision": "NOT_READY",
+      "verdict": "INSUFFICIENT_POINTS",
+      "reason_codes": [
+        "INSUFFICIENT_POINTS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "constant series",
+      "seed": 0,
+      "expected": "NOT_READY",
+      "expected_code": "CONSTANT_SERIES",
+      "decision": "NOT_READY",
+      "verdict": "DEGENERATE",
+      "reason_codes": [
+        "CONSTANT_SERIES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "constant series",
+      "seed": 1,
+      "expected": "NOT_READY",
+      "expected_code": "CONSTANT_SERIES",
+      "decision": "NOT_READY",
+      "verdict": "DEGENERATE",
+      "reason_codes": [
+        "CONSTANT_SERIES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "constant series",
+      "seed": 2,
+      "expected": "NOT_READY",
+      "expected_code": "CONSTANT_SERIES",
+      "decision": "NOT_READY",
+      "verdict": "DEGENERATE",
+      "reason_codes": [
+        "CONSTANT_SERIES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "constant series",
+      "seed": 3,
+      "expected": "NOT_READY",
+      "expected_code": "CONSTANT_SERIES",
+      "decision": "NOT_READY",
+      "verdict": "DEGENERATE",
+      "reason_codes": [
+        "CONSTANT_SERIES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "constant series",
+      "seed": 4,
+      "expected": "NOT_READY",
+      "expected_code": "CONSTANT_SERIES",
+      "decision": "NOT_READY",
+      "verdict": "DEGENERATE",
+      "reason_codes": [
+        "CONSTANT_SERIES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "8+ of 24 values unreadable",
+      "seed": 0,
+      "expected": "NOT_READY",
+      "expected_code": "TOO_MANY_MISSING_VALUES",
+      "decision": "NOT_READY",
+      "verdict": "INCOMPLETE",
+      "reason_codes": [
+        "TOO_MANY_MISSING_VALUES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "8+ of 24 values unreadable",
+      "seed": 1,
+      "expected": "NOT_READY",
+      "expected_code": "TOO_MANY_MISSING_VALUES",
+      "decision": "NOT_READY",
+      "verdict": "INCOMPLETE",
+      "reason_codes": [
+        "TOO_MANY_MISSING_VALUES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "8+ of 24 values unreadable",
+      "seed": 2,
+      "expected": "NOT_READY",
+      "expected_code": "TOO_MANY_MISSING_VALUES",
+      "decision": "NOT_READY",
+      "verdict": "INCOMPLETE",
+      "reason_codes": [
+        "TOO_MANY_MISSING_VALUES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "8+ of 24 values unreadable",
+      "seed": 3,
+      "expected": "NOT_READY",
+      "expected_code": "TOO_MANY_MISSING_VALUES",
+      "decision": "NOT_READY",
+      "verdict": "INCOMPLETE",
+      "reason_codes": [
+        "TOO_MANY_MISSING_VALUES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "8+ of 24 values unreadable",
+      "seed": 4,
+      "expected": "NOT_READY",
+      "expected_code": "TOO_MANY_MISSING_VALUES",
+      "decision": "NOT_READY",
+      "verdict": "INCOMPLETE",
+      "reason_codes": [
+        "TOO_MANY_MISSING_VALUES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "8+ of 24 months missing",
+      "seed": 0,
+      "expected": "NOT_READY",
+      "expected_code": "IRREGULAR_INTERVALS",
+      "decision": "NOT_READY",
+      "verdict": "INCOMPLETE",
+      "reason_codes": [
+        "IRREGULAR_INTERVALS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "8+ of 24 months missing",
+      "seed": 1,
+      "expected": "NOT_READY",
+      "expected_code": "IRREGULAR_INTERVALS",
+      "decision": "NOT_READY",
+      "verdict": "INCOMPLETE",
+      "reason_codes": [
+        "IRREGULAR_INTERVALS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "8+ of 24 months missing",
+      "seed": 2,
+      "expected": "NOT_READY",
+      "expected_code": "IRREGULAR_INTERVALS",
+      "decision": "NOT_READY",
+      "verdict": "INCOMPLETE",
+      "reason_codes": [
+        "IRREGULAR_INTERVALS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "8+ of 24 months missing",
+      "seed": 3,
+      "expected": "NOT_READY",
+      "expected_code": "IRREGULAR_INTERVALS",
+      "decision": "NOT_READY",
+      "verdict": "INCOMPLETE",
+      "reason_codes": [
+        "IRREGULAR_INTERVALS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "8+ of 24 months missing",
+      "seed": 4,
+      "expected": "NOT_READY",
+      "expected_code": "IRREGULAR_INTERVALS",
+      "decision": "NOT_READY",
+      "verdict": "INCOMPLETE",
+      "reason_codes": [
+        "IRREGULAR_INTERVALS"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "pure noise (50%)",
+      "seed": 0,
+      "expected": "NOT_READY",
+      "expected_code": "LOW_SIGNAL",
+      "decision": "NOT_READY",
+      "verdict": "LOW_SIGNAL",
+      "reason_codes": [
+        "LOW_SIGNAL",
+        "STATIONARITY_INCONCLUSIVE"
+      ],
+      "code_ok": true,
+      "stationarity": "INCONCLUSIVE"
+    },
+    {
+      "case": "pure noise (50%)",
+      "seed": 1,
+      "expected": "NOT_READY",
+      "expected_code": "LOW_SIGNAL",
+      "decision": "NOT_READY",
+      "verdict": "LOW_SIGNAL",
+      "reason_codes": [
+        "LOW_SIGNAL",
+        "STATIONARITY_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "STATIONARY"
+    },
+    {
+      "case": "pure noise (50%)",
+      "seed": 2,
+      "expected": "NOT_READY",
+      "expected_code": "LOW_SIGNAL",
+      "decision": "NOT_READY",
+      "verdict": "LOW_SIGNAL",
+      "reason_codes": [
+        "LOW_SIGNAL",
+        "STATIONARITY_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "STATIONARY"
+    },
+    {
+      "case": "pure noise (50%)",
+      "seed": 3,
+      "expected": "NOT_READY",
+      "expected_code": "LOW_SIGNAL",
+      "decision": "NOT_READY",
+      "verdict": "LOW_SIGNAL",
+      "reason_codes": [
+        "LOW_SIGNAL",
+        "STATIONARITY_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "STATIONARY"
+    },
+    {
+      "case": "pure noise (50%)",
+      "seed": 4,
+      "expected": "NOT_READY",
+      "expected_code": "LOW_SIGNAL",
+      "decision": "NOT_READY",
+      "verdict": "LOW_SIGNAL",
+      "reason_codes": [
+        "LOW_SIGNAL",
+        "STATIONARITY_STATIONARY"
+      ],
+      "code_ok": true,
+      "stationarity": "STATIONARY"
+    },
+    {
+      "case": "result cut at the row limit",
+      "seed": 0,
+      "expected": "NOT_READY",
+      "expected_code": "INPUT_TRUNCATED",
+      "decision": "NOT_READY",
+      "verdict": "TRUNCATED",
+      "reason_codes": [
+        "INPUT_TRUNCATED"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "result cut at the row limit",
+      "seed": 1,
+      "expected": "NOT_READY",
+      "expected_code": "INPUT_TRUNCATED",
+      "decision": "NOT_READY",
+      "verdict": "TRUNCATED",
+      "reason_codes": [
+        "INPUT_TRUNCATED"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "result cut at the row limit",
+      "seed": 2,
+      "expected": "NOT_READY",
+      "expected_code": "INPUT_TRUNCATED",
+      "decision": "NOT_READY",
+      "verdict": "TRUNCATED",
+      "reason_codes": [
+        "INPUT_TRUNCATED"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "result cut at the row limit",
+      "seed": 3,
+      "expected": "NOT_READY",
+      "expected_code": "INPUT_TRUNCATED",
+      "decision": "NOT_READY",
+      "verdict": "TRUNCATED",
+      "reason_codes": [
+        "INPUT_TRUNCATED"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "result cut at the row limit",
+      "seed": 4,
+      "expected": "NOT_READY",
+      "expected_code": "INPUT_TRUNCATED",
+      "decision": "NOT_READY",
+      "verdict": "TRUNCATED",
+      "reason_codes": [
+        "INPUT_TRUNCATED"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "one series per region",
+      "seed": 0,
+      "expected": "NOT_READY",
+      "expected_code": "MULTI_SERIES",
+      "decision": "NOT_READY",
+      "verdict": "MULTI_SERIES",
+      "reason_codes": [
+        "MULTI_SERIES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "one series per region",
+      "seed": 1,
+      "expected": "NOT_READY",
+      "expected_code": "MULTI_SERIES",
+      "decision": "NOT_READY",
+      "verdict": "MULTI_SERIES",
+      "reason_codes": [
+        "MULTI_SERIES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "one series per region",
+      "seed": 2,
+      "expected": "NOT_READY",
+      "expected_code": "MULTI_SERIES",
+      "decision": "NOT_READY",
+      "verdict": "MULTI_SERIES",
+      "reason_codes": [
+        "MULTI_SERIES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "one series per region",
+      "seed": 3,
+      "expected": "NOT_READY",
+      "expected_code": "MULTI_SERIES",
+      "decision": "NOT_READY",
+      "verdict": "MULTI_SERIES",
+      "reason_codes": [
+        "MULTI_SERIES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    },
+    {
+      "case": "one series per region",
+      "seed": 4,
+      "expected": "NOT_READY",
+      "expected_code": "MULTI_SERIES",
+      "decision": "NOT_READY",
+      "verdict": "MULTI_SERIES",
+      "reason_codes": [
+        "MULTI_SERIES"
+      ],
+      "code_ok": true,
+      "stationarity": null
+    }
+  ]
+}

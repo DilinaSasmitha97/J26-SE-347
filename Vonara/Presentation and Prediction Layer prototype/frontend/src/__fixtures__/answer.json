@@ -1,0 +1,457 @@
+{
+ "status": "SUCCESS",
+ "pipeline_version": "1.0",
+ "input": {
+  "source_format": "MEMBER2_COLUMNAR",
+  "columns": [
+   "total_travel"
+  ],
+  "row_count": 1,
+  "rows_received": 1,
+  "truncated": false,
+  "masked_columns": {},
+  "renamed_columns": {},
+  "warnings": []
+ },
+ "analysis": {
+  "analysis_schema_version": "1.0",
+  "query_understanding": {
+   "user_query": "What is the total amount spent on travel?",
+   "normalized_query": "what is the total amount spent on travel?"
+  },
+  "intent": {
+   "primary_intent": "KPI_SINGLE_VALUE",
+   "secondary_intents": [],
+   "confidence": 0.9583,
+   "intent_source": "RULE",
+   "rationale": "Matched 'what is the total', 'total' (evidence 5 vs next 1)."
+  },
+  "response_intent": {
+   "intent": "SINGLE_ANSWER",
+   "confidence": 0.9375,
+   "source": "RULE",
+   "rationale": "Lexical evidence 6.0 for SINGLE_ANSWER vs 0.0 for MIXED_SUMMARY ('\\bwhat (?:is|was) the (?:total|sum|average|mean|median|count)\\b', '\\btotal\\b', '\\bwhat is\\b'). R5 mixed damping: no decisive combined-output phrasing",
+   "blocks": [
+    "ANSWER"
+   ],
+   "answer_focus": "VALUE",
+   "is_data_request": true,
+   "not_a_request_reason": "",
+   "evidence_grade": "DIRECT",
+   "evidence": {
+    "scores": {
+     "SINGLE_ANSWER": 6.0,
+     "SHORT_SUMMARY": 0.0,
+     "TABLE_CONTENT": 0.0,
+     "CHART": 0.0,
+     "MIXED_SUMMARY": 0.0
+    },
+    "matched_markers": {
+     "SINGLE_ANSWER": [
+      "\\bwhat (?:is|was) the (?:total|sum|average|mean|median|count)\\b",
+      "\\btotal\\b",
+      "\\bwhat is\\b"
+     ]
+    },
+    "runner_up": "MIXED_SUMMARY",
+    "margin": 1.0
+   }
+  },
+  "prediction_request": {
+   "prediction_required": false,
+   "prediction_trigger": "NONE",
+   "horizon": {
+    "value": 0,
+    "unit": "NONE",
+    "source": "NONE"
+   },
+   "what_if": {
+    "present": false,
+    "raw_clause": "",
+    "parameter": "",
+    "direction": "",
+    "magnitude_pct": 0.0
+   }
+  },
+  "schema_binding": {
+   "affected_tables": [
+    {
+     "table": "expenses",
+     "role": "FACT",
+     "confidence": 0.72,
+     "matched_terms": []
+    }
+   ],
+   "affected_columns": [
+    {
+     "table": "expenses",
+     "column": "amount",
+     "role": "MEASURE",
+     "data_type": "DECIMAL(12,2)",
+     "is_pii": false,
+     "confidence": 0.9,
+     "matched_terms": [
+      "amount"
+     ]
+    }
+   ],
+   "unresolved_terms": [
+    "spent",
+    "travel"
+   ]
+  },
+  "semantic_roles": {
+   "metrics": [
+    {
+     "column": "amount",
+     "aggregation": "SUM",
+     "table": "expenses"
+    }
+   ],
+   "dimensions": [],
+   "temporal_field": "invoice_date",
+   "temporal_granularity": "NONE",
+   "filters": [],
+   "ordering": "",
+   "limit": 0,
+   "limit_source": "NONE"
+  },
+  "visualization_hint": {
+   "recommended_chart": "kpi_card",
+   "alternatives": [],
+   "rationale": "Response intent SINGLE_ANSWER renders as 'kpi_card'; the analytical encoding 'kpi_card' is not used."
+  },
+  "governance": {
+   "pii_columns_referenced": [],
+   "read_only": true
+  },
+  "warnings": [
+   "UNRESOLVED_TERMS"
+  ],
+  "metadata": {
+   "injection_markers": [],
+   "mode": "RULE_ONLY",
+   "model": "deterministic-fallback",
+   "provider": "none",
+   "prompt_tokens": 0,
+   "completion_tokens": 0,
+   "total_tokens": 0,
+   "schema_tables_considered": 4,
+   "execution_time_ms": 69.7,
+   "tenant_id": "tenant_a",
+   "user_role": ""
+  }
+ },
+ "result_profile": {
+  "row_count": 1,
+  "column_count": 1,
+  "columns": [
+   {
+    "name": "total_travel",
+    "role": "MEASURE",
+    "inferred_type": "number",
+    "non_null": 1,
+    "null_count": 0,
+    "distinct_count": 1,
+    "is_monotonic": true,
+    "min_value": 150741.23,
+    "max_value": 150741.23,
+    "mean": 150741.23,
+    "std": 0.0,
+    "sample_values": [
+     "150741.23"
+    ]
+   }
+  ],
+  "temporal_column": "",
+  "granularity": "NONE",
+  "measure_columns": [
+   "total_travel"
+  ],
+  "dimension_columns": [],
+  "is_time_series": false,
+  "is_regular_interval": false,
+  "has_gaps": false,
+  "layout": "CROSS_SECTIONAL",
+  "group_column": "",
+  "period_count": 0,
+  "warnings": []
+ },
+ "response": {
+  "response_intent": {
+   "intent": "SINGLE_ANSWER",
+   "confidence": 0.9375,
+   "source": "RULE",
+   "rationale": "Lexical evidence 6.0 for SINGLE_ANSWER vs 0.0 for MIXED_SUMMARY ('\\bwhat (?:is|was) the (?:total|sum|average|mean|median|count)\\b', '\\btotal\\b', '\\bwhat is\\b'). R5 mixed damping: no decisive combined-output phrasing",
+   "blocks": [
+    "ANSWER"
+   ],
+   "answer_focus": "VALUE",
+   "is_data_request": true,
+   "not_a_request_reason": "",
+   "evidence_grade": "DIRECT",
+   "evidence": {
+    "scores": {
+     "SINGLE_ANSWER": 6.0,
+     "SHORT_SUMMARY": 0.0,
+     "TABLE_CONTENT": 0.0,
+     "CHART": 0.0,
+     "MIXED_SUMMARY": 0.0
+    },
+    "matched_markers": {
+     "SINGLE_ANSWER": [
+      "\\bwhat (?:is|was) the (?:total|sum|average|mean|median|count)\\b",
+      "\\btotal\\b",
+      "\\bwhat is\\b"
+     ]
+    },
+    "runner_up": "MIXED_SUMMARY",
+    "margin": 1.0
+   },
+   "guardrails_applied": [],
+   "original_intent": "SINGLE_ANSWER",
+   "warnings": []
+  },
+  "blocks_emitted": [
+   "ANSWER"
+  ],
+  "blocks_declared": [
+   "ANSWER"
+  ],
+  "answer": {
+   "block": "ANSWER",
+   "label": "Sum of Total Travel",
+   "value": 150741.23,
+   "display_value": "150,741",
+   "value_type": "number",
+   "focus": "VALUE",
+   "qualifier": "",
+   "qualifier_label": "",
+   "qualifier_column": "",
+   "source_column": "total_travel",
+   "supporting_row": {
+    "total_travel": 150741.23
+   }
+  }
+ },
+ "visualization": {
+  "_meta": {
+   "chart_type": "none",
+   "selection_reason": "No chart built: response intent SINGLE_ANSWER emits ANSWER.",
+   "rationale": "",
+   "skipped": true
+  }
+ },
+ "prediction": {
+  "stage_1_strategy": {
+   "intent": "KPI_SINGLE_VALUE",
+   "strategy": "NONE",
+   "rationale": "A single scalar has no series to extend.",
+   "promoted_by_explicit_request": false,
+   "prediction_requested": false
+  },
+  "stage_1_strategy_result": {
+   "requested": "NONE",
+   "executed_as": "",
+   "executed": false,
+   "skipped_reason": "No forecast was requested for this query.",
+   "details": {}
+  },
+  "stage_2_readiness": {
+   "verdict": "NOT_REQUESTED",
+   "is_ready": false,
+   "temporal_valid": false,
+   "statistically_sufficient": false,
+   "signal_adequate": false,
+   "n_points": 0,
+   "dropped_rows": 0,
+   "granularity": "NONE",
+   "coefficient_of_variation": 0.0,
+   "trend_r2": 0.0,
+   "expected_relative_error": null,
+   "skill_vs_naive": null,
+   "signal_test": {},
+   "decision": "NOT_EVALUATED",
+   "reason_codes": [],
+   "warnings": [],
+   "stationarity": {},
+   "missing_value_ratio": 0.0,
+   "missing_period_ratio": 0.0,
+   "filled_periods": 0,
+   "reason": "No forecast was requested for this query.",
+   "checks": [
+    "readiness gates not evaluated: No forecast was requested for this query."
+   ],
+   "input_truncated": false,
+   "noise_limit": null,
+   "policy_version": ""
+  },
+  "stage_3_model_selection": {
+   "model": "NONE",
+   "reason": "",
+   "seasonal_period": 1,
+   "signals": {}
+  },
+  "stage_4_forecast": {
+   "generated": false,
+   "model": "NONE",
+   "model_reason": "",
+   "value_column": "",
+   "time_column": "",
+   "granularity": "NONE",
+   "horizon": 0,
+   "confidence_level": 0.95,
+   "points": [],
+   "in_sample_rmse": 0.0,
+   "in_sample_mae": 0.0,
+   "in_sample_mape": 0.0,
+   "residual_std": 0.0,
+   "historical_dates": [],
+   "historical_values": [],
+   "fitted_values": [],
+   "skipped_reason": "No forecast was requested for this query.",
+   "diagnostics": {}
+  },
+  "stage_5_anomaly": {
+   "evaluated": false,
+   "method": "ADAPTIVE_IQR_ZSCORE",
+   "detrended": false,
+   "trend_r2": 0.0,
+   "seasonal": false,
+   "seasonal_strength": 0.0,
+   "period": 0,
+   "predictive_space": "",
+   "lower_threshold": 0.0,
+   "upper_threshold": 0.0,
+   "median": 0.0,
+   "mean": 0.0,
+   "std": 0.0,
+   "iqr": 0.0,
+   "q1": 0.0,
+   "q3": 0.0,
+   "volatility_regime": "STABLE",
+   "iqr_multiplier": 1.5,
+   "z_threshold": 3.0,
+   "historical_anomalies": [],
+   "predictive_warnings": [],
+   "skipped_reason": "No numeric series available."
+  },
+  "stage_6_scenario": {
+   "simulated": false,
+   "spec": {},
+   "baseline_points": [],
+   "scenario_points": [],
+   "deltas": [],
+   "baseline_total": 0.0,
+   "scenario_total": 0.0,
+   "total_delta": 0.0,
+   "total_delta_pct": 0.0,
+   "anomaly_report": {},
+   "skipped_reason": "No what-if scenario supplied."
+  }
+ },
+ "summary": {
+  "text": "The query returned 1 rows. Total travel across the returned rows is 150,741. The average total travel per row is 150,741. The highest value was 150,741, 1.00x the average. The lowest value was 150,741.\n\nNo forecast was produced: No forecast was requested for this query.",
+  "mode": "DETERMINISTIC",
+  "claim_count": 6,
+  "claims": [
+   {
+    "claim_id": "H0",
+    "dimension": "HISTORICAL",
+    "kind": "ROW_COUNT",
+    "text": "The query returned 1 rows.",
+    "value": 1.0,
+    "unit": "",
+    "source": "result set",
+    "derivation": "len(rows)",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H1",
+    "dimension": "HISTORICAL",
+    "kind": "TOTAL",
+    "text": "Total travel across the returned rows is 150,741.",
+    "value": 150741.23,
+    "unit": "",
+    "source": "column 'total_travel'",
+    "derivation": "sum of 1 values",
+    "supporting_values": [
+     150741.23
+    ]
+   },
+   {
+    "claim_id": "H2",
+    "dimension": "HISTORICAL",
+    "kind": "MEAN",
+    "text": "The average total travel per row is 150,741.",
+    "value": 150741.23,
+    "unit": "",
+    "source": "column 'total_travel'",
+    "derivation": "150,741 / 1",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H3",
+    "dimension": "HISTORICAL",
+    "kind": "PEAK",
+    "text": "The highest value was 150,741, 1.00x the average.",
+    "value": 150741.23,
+    "unit": "",
+    "source": "column 'total_travel'",
+    "derivation": "max of the series",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "H4",
+    "dimension": "HISTORICAL",
+    "kind": "TROUGH",
+    "text": "The lowest value was 150,741.",
+    "value": 150741.23,
+    "unit": "",
+    "source": "column 'total_travel'",
+    "derivation": "min of the series",
+    "supporting_values": []
+   },
+   {
+    "claim_id": "F0",
+    "dimension": "PREDICTIVE",
+    "kind": "SKIPPED",
+    "text": "No forecast was produced: No forecast was requested for this query.",
+    "value": 0.0,
+    "unit": "",
+    "source": "readiness classifier",
+    "derivation": "gate failure",
+    "supporting_values": []
+   }
+  ],
+  "verification": {
+   "numbers_in_summary": 6,
+   "verified": 6,
+   "unverified_values": [],
+   "passed": true,
+   "rule": "PRECISION_AWARE",
+   "tolerance": null,
+   "claims_available": 6
+  },
+  "warnings": [],
+  "rejected_narration": ""
+ },
+ "warnings": [
+  "UNRESOLVED_TERMS"
+ ],
+ "cache": {
+  "hit": false,
+  "key": "21948e342d0e8287"
+ },
+ "profiling": {
+  "total_execution_ms": 79.32,
+  "stage_breakdown_ms": {
+   "Part 1: Query Understanding": 69.83,
+   "Result Profiling": 8.47,
+   "Part 3: Summarization": 0.46,
+   "Part 5: Response Shaping": 0.11,
+   "Part 4: Prediction": 0.03,
+   "Part 2: Visualization": 0.0
+  }
+ }
+}

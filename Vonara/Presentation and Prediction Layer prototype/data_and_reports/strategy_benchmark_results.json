@@ -1,0 +1,81 @@
+{
+  "seed": 2026,
+  "category_trajectory_and_shares": {
+    "sets": 200,
+    "leader_next_accuracy": 0.9,
+    "leader_next_naive": 0.88,
+    "leader_end_accuracy": 0.9,
+    "leader_end_naive": 0.86,
+    "sets_where_leader_changes": 24,
+    "leader_next_accuracy_when_changes": 0.2916666666666667,
+    "clear_lead_sets": 88,
+    "leader_next_accuracy_when_clear": 1.0,
+    "share_mae_pp": 1.6229662992124645,
+    "share_mae_naive_pp": 1.7412444338870912,
+    "share_better_than_naive_in": 114,
+    "share_wilcoxon_p": 0.0025901992602238243
+  },
+  "anomaly_persistence": {
+    "cases": 300,
+    "detected_as_recent_anomaly": 261,
+    "accuracy": 0.5862068965517241,
+    "baseline_always_persists": 0.6590038314176245,
+    "baseline_always_recovers": 0.34099616858237547,
+    "truth_persisting_cases": 172,
+    "by_kind": {
+      "SPIKE": {
+        "detected": 87,
+        "accuracy": 0.9540229885057471,
+        "verdicts": {
+          "RECOVERING": 86,
+          "PERSISTING": 1,
+          "WORSENING": 0
+        },
+        "truth_persists": 3,
+        "patterns": {
+          "SPIKE": 0,
+          "SUSTAINED": 0,
+          "UNCONFIRMED": 87
+        }
+      },
+      "SHIFT": {
+        "detected": 82,
+        "accuracy": 0.8292682926829268,
+        "verdicts": {
+          "RECOVERING": 17,
+          "PERSISTING": 48,
+          "WORSENING": 17
+        },
+        "truth_persists": 77,
+        "patterns": {
+          "SPIKE": 8,
+          "SUSTAINED": 66,
+          "UNCONFIRMED": 8
+        }
+      },
+      "SHIFT_LAST": {
+        "detected": 92,
+        "accuracy": 0.021739130434782608,
+        "verdicts": {
+          "RECOVERING": 90,
+          "PERSISTING": 2,
+          "WORSENING": 0
+        },
+        "truth_persists": 92,
+        "patterns": {
+          "SPIKE": 0,
+          "SUSTAINED": 0,
+          "UNCONFIRMED": 92
+        }
+      }
+    },
+    "models_used": {
+      "NAIVE": 89,
+      "LINEAR_REGRESSION": 71,
+      "EXPONENTIAL_SMOOTHING": 77,
+      "SEASONAL_NAIVE": 23,
+      "SARIMA": 1
+    },
+    "accuracy_spike_and_shift": 0.893491124260355
+  }
+}

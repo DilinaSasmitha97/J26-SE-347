@@ -1,0 +1,95 @@
+{
+  "protocol": {
+    "series": 100,
+    "rates": [
+      0.0,
+      0.1,
+      0.2,
+      0.25,
+      0.3,
+      0.4,
+      0.5
+    ],
+    "repeats": 5,
+    "history": 33,
+    "horizon": 3,
+    "unreliable_smape": 20.0,
+    "policy_limits": {
+      "max_missing_period_ratio": 0.25,
+      "max_missing_value_ratio": 0.2
+    }
+  },
+  "table": [
+    {
+      "missing_rate": 0.0,
+      "forecasts": 100,
+      "smape_mean": 10.546668784207245,
+      "smape_median": 4.228599296165534,
+      "smape_increase_mean": 0.0,
+      "worse_than_complete_by_5pp": 0.0,
+      "unreliable_rate": 0.15,
+      "coverage95": 0.95
+    },
+    {
+      "missing_rate": 0.1,
+      "forecasts": 500,
+      "smape_mean": 10.537043753608108,
+      "smape_median": 4.224919694883529,
+      "smape_increase_mean": -0.009625030599136672,
+      "worse_than_complete_by_5pp": 0.022,
+      "unreliable_rate": 0.144,
+      "coverage95": 0.942
+    },
+    {
+      "missing_rate": 0.2,
+      "forecasts": 500,
+      "smape_mean": 10.51536660143155,
+      "smape_median": 4.082251166358526,
+      "smape_increase_mean": -0.03130218277569571,
+      "worse_than_complete_by_5pp": 0.026,
+      "unreliable_rate": 0.144,
+      "coverage95": 0.932
+    },
+    {
+      "missing_rate": 0.25,
+      "forecasts": 500,
+      "smape_mean": 10.509363369219898,
+      "smape_median": 4.205256045581461,
+      "smape_increase_mean": -0.037305414987347595,
+      "worse_than_complete_by_5pp": 0.034,
+      "unreliable_rate": 0.148,
+      "coverage95": 0.932
+    },
+    {
+      "missing_rate": 0.3,
+      "forecasts": 500,
+      "smape_mean": 10.426025622919143,
+      "smape_median": 4.1370647638291445,
+      "smape_increase_mean": -0.12064316128810275,
+      "worse_than_complete_by_5pp": 0.024,
+      "unreliable_rate": 0.146,
+      "coverage95": 0.932
+    },
+    {
+      "missing_rate": 0.4,
+      "forecasts": 500,
+      "smape_mean": 10.954518667643137,
+      "smape_median": 4.224919694883529,
+      "smape_increase_mean": 0.4078498834358923,
+      "worse_than_complete_by_5pp": 0.036,
+      "unreliable_rate": 0.158,
+      "coverage95": 0.9266666666666666
+    },
+    {
+      "missing_rate": 0.5,
+      "forecasts": 500,
+      "smape_mean": 11.223926741830537,
+      "smape_median": 4.472804639458461,
+      "smape_increase_mean": 0.6772579576232922,
+      "worse_than_complete_by_5pp": 0.05,
+      "unreliable_rate": 0.158,
+      "coverage95": 0.9046666666666666
+    }
+  ],
+  "runtime_seconds": 257.8
+}

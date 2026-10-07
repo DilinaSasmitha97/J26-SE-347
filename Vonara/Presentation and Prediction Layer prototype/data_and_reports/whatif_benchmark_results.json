@@ -1,0 +1,3938 @@
+{
+  "DEV": {
+    "CLAUSE": {
+      "cases": 64,
+      "correct": 64,
+      "accuracy": 1.0,
+      "wrong_simulations": 0,
+      "errors": {},
+      "by_tag": {
+        "absolute": {
+          "correct": 3,
+          "cases": 3
+        },
+        "bare_number": {
+          "correct": 1,
+          "cases": 1
+        },
+        "basic": {
+          "correct": 10,
+          "cases": 10
+        },
+        "clause": {
+          "correct": 5,
+          "cases": 5
+        },
+        "comparative": {
+          "correct": 3,
+          "cases": 3
+        },
+        "conflict": {
+          "correct": 3,
+          "cases": 3
+        },
+        "multiplier": {
+          "correct": 6,
+          "cases": 6
+        },
+        "negation": {
+          "correct": 3,
+          "cases": 3
+        },
+        "no_direction": {
+          "correct": 2,
+          "cases": 2
+        },
+        "other_numbers": {
+          "correct": 3,
+          "cases": 3
+        },
+        "ramp": {
+          "correct": 5,
+          "cases": 5
+        },
+        "range": {
+          "correct": 2,
+          "cases": 2
+        },
+        "signed": {
+          "correct": 2,
+          "cases": 2
+        },
+        "substring_trap": {
+          "correct": 10,
+          "cases": 10
+        },
+        "target_level": {
+          "correct": 3,
+          "cases": 3
+        },
+        "vague": {
+          "correct": 3,
+          "cases": 3
+        }
+      },
+      "detail": [
+        {
+          "text": "what if I reduce spending by 20%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 20% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we increase marketing by 15 percent",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 15,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 15.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 15% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "suppose we double the budget",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 100% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we halve travel costs",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 50% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue grows by 8%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 8,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 8.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 8% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if expenses drop 12%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 12,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 12.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 12% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we cut payroll by 7.5%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 7.5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 7.5,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 7.5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "assuming sales rise 5%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 5.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we boost ad spend by 30%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 30,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 30.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 30% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "suppose costs fall by 10 percent",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue grows by 10% unless we change suppliers",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we increase prices by 5% regardless of demand",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 5.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if spending by each group goes up by 10%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we execute the plan and revenue rises 4%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 4,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 4.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 4% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if shipping to every address costs 6% more",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 6% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the update raises costs by 3%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 3,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 3.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 3% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we drop the supplier and costs rise 9%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 9,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 9.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 9% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if, nevertheless, revenue increases 6%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 6% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if our wireless revenue grows 10%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the downtown store's sales increase by 12%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 12,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 12.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 12% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the supplier price changes by 10%",
+          "split": "DEV",
+          "tag": "no_direction",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No word says which way the change goes (e.g. 'increase', 'cut', 'rise', 'fall')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if each group budget is adjusted by 5%",
+          "split": "DEV",
+          "tag": "no_direction",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No word says which way the change goes (e.g. 'increase', 'cut', 'rise', 'fall')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we don't cut spending by 10%",
+          "split": "DEV",
+          "tag": "negation",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario is negated ('don't', 'not', 'never'), so it describes no change to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we do not increase prices by 5%",
+          "split": "DEV",
+          "tag": "negation",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario is negated ('don't', 'not', 'never'), so it describes no change to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we never reduce headcount",
+          "split": "DEV",
+          "tag": "negation",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we increase prices by 10% and cut costs by 5%",
+          "split": "DEV",
+          "tag": "conflict",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario contains more than one change; simulate one change at a time."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue rises 5% but costs fall 3%",
+          "split": "DEV",
+          "tag": "conflict",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario contains more than one change; simulate one change at a time."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we raise prices by 5% and grow volume by 8%",
+          "split": "DEV",
+          "tag": "conflict",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario contains more than one change; simulate one change at a time."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we cut spending by $500",
+          "split": "DEV",
+          "tag": "absolute",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The change is an absolute amount; only percentage changes can be simulated."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue grows by 2000 dollars",
+          "split": "DEV",
+          "tag": "absolute",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The change is an absolute amount; only percentage changes can be simulated."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we add 3 new staff",
+          "split": "DEV",
+          "tag": "absolute",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The change is an absolute amount; only percentage changes can be simulated."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we reduce spending by 15",
+          "split": "DEV",
+          "tag": "bare_number",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15.0,
+            "mode": "IMMEDIATE",
+            "note": "'by 15' read as 15%."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we cut spending to 80% of current",
+          "split": "DEV",
+          "tag": "target_level",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20.0,
+            "mode": "IMMEDIATE",
+            "note": "Read as a target level: decrease of 20%."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs rise to 110%",
+          "split": "DEV",
+          "tag": "target_level",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Read as a target level: increase of 10%."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue falls to half",
+          "split": "DEV",
+          "tag": "target_level",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 50% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we triple marketing spend",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 200,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 200.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 200% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if sales double",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 100% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs are cut in half",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 50% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if spending is halved",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 50% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue were 10% higher",
+          "split": "DEV",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs were 15% lower",
+          "split": "DEV",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 15% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if prices were 5 percent cheaper",
+          "split": "DEV",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue changes by -8%",
+          "split": "DEV",
+          "tag": "signed",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 8,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 8.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 8% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs change by +4%",
+          "split": "DEV",
+          "tag": "signed",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 4,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 4.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 4% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we gradually reduce spending by 20%",
+          "split": "DEV",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20,
+            "mode": "RAMPED"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20.0,
+            "mode": "RAMPED",
+            "note": "Parsed as DECREASE of 20% (Effect phases in linearly across the forecast horizon.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we phase in a 10% price increase",
+          "split": "DEV",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "RAMPED"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "RAMPED",
+            "note": "Parsed as INCREASE of 10% (Effect phases in linearly across the forecast horizon.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we slowly grow headcount costs by 6%",
+          "split": "DEV",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6,
+            "mode": "RAMPED"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6.0,
+            "mode": "RAMPED",
+            "note": "Parsed as INCREASE of 6% (Effect phases in linearly across the forecast horizon.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we cut spending by 20% straight away",
+          "split": "DEV",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 20% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if sales grow 10-15%",
+          "split": "DEV",
+          "tag": "range",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario gives a range; give one percentage to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs fall between 5 and 10 percent",
+          "split": "DEV",
+          "tag": "range",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario gives a range; give one percentage to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if margins improve by 2.5%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 2.5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 2.5,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 2.5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue declines by 3.25%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 3.25,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 3.25,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 3.25% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if things change somehow",
+          "split": "DEV",
+          "tag": "vague",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the market shifts",
+          "split": "DEV",
+          "tag": "vague",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we increase spending",
+          "split": "DEV",
+          "tag": "vague",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if in 2026 we cut costs by 10%",
+          "split": "DEV",
+          "tag": "other_numbers",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we reduce the 3 biggest expenses by 10%",
+          "split": "DEV",
+          "tag": "other_numbers",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if over the next 6 months spending drops by 5%",
+          "split": "DEV",
+          "tag": "other_numbers",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if spending drops by 5% over time",
+          "split": "DEV",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5,
+            "mode": "RAMPED"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5.0,
+            "mode": "RAMPED",
+            "note": "Parsed as DECREASE of 5% (Effect phases in linearly across the forecast horizon.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "reduce by 20%",
+          "split": "DEV",
+          "tag": "clause",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 20% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "+10%",
+          "split": "DEV",
+          "tag": "clause",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "cut 15 percent",
+          "split": "DEV",
+          "tag": "clause",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 15% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "double it",
+          "split": "DEV",
+          "tag": "clause",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 100% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "unless costs go up 5%",
+          "split": "DEV",
+          "tag": "clause",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 5.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        }
+      ]
+    },
+    "QUESTION": {
+      "cases": 59,
+      "correct": 59,
+      "accuracy": 1.0,
+      "wrong_simulations": 0,
+      "errors": {},
+      "by_tag": {
+        "absolute": {
+          "correct": 3,
+          "cases": 3
+        },
+        "bare_number": {
+          "correct": 1,
+          "cases": 1
+        },
+        "basic": {
+          "correct": 10,
+          "cases": 10
+        },
+        "comparative": {
+          "correct": 3,
+          "cases": 3
+        },
+        "conflict": {
+          "correct": 3,
+          "cases": 3
+        },
+        "multiplier": {
+          "correct": 6,
+          "cases": 6
+        },
+        "negation": {
+          "correct": 3,
+          "cases": 3
+        },
+        "no_direction": {
+          "correct": 2,
+          "cases": 2
+        },
+        "other_numbers": {
+          "correct": 3,
+          "cases": 3
+        },
+        "ramp": {
+          "correct": 5,
+          "cases": 5
+        },
+        "range": {
+          "correct": 2,
+          "cases": 2
+        },
+        "signed": {
+          "correct": 2,
+          "cases": 2
+        },
+        "substring_trap": {
+          "correct": 10,
+          "cases": 10
+        },
+        "target_level": {
+          "correct": 3,
+          "cases": 3
+        },
+        "vague": {
+          "correct": 3,
+          "cases": 3
+        }
+      },
+      "detail": [
+        {
+          "text": "what if I reduce spending by 20%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 20% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we increase marketing by 15 percent",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 15,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 15.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 15% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "suppose we double the budget",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 100% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we halve travel costs",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 50% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue grows by 8%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 8,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 8.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 8% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if expenses drop 12%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 12,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 12.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 12% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we cut payroll by 7.5%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 7.5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 7.5,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 7.5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "assuming sales rise 5%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 5.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we boost ad spend by 30%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 30,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 30.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 30% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "suppose costs fall by 10 percent",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue grows by 10% unless we change suppliers",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we increase prices by 5% regardless of demand",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 5.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if spending by each group goes up by 10%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we execute the plan and revenue rises 4%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 4,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 4.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 4% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if shipping to every address costs 6% more",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 6% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the update raises costs by 3%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 3,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 3.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 3% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we drop the supplier and costs rise 9%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 9,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 9.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 9% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if, nevertheless, revenue increases 6%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 6% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if our wireless revenue grows 10%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the downtown store's sales increase by 12%",
+          "split": "DEV",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 12,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 12.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 12% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the supplier price changes by 10%",
+          "split": "DEV",
+          "tag": "no_direction",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No word says which way the change goes (e.g. 'increase', 'cut', 'rise', 'fall')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if each group budget is adjusted by 5%",
+          "split": "DEV",
+          "tag": "no_direction",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No word says which way the change goes (e.g. 'increase', 'cut', 'rise', 'fall')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we don't cut spending by 10%",
+          "split": "DEV",
+          "tag": "negation",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario is negated ('don't', 'not', 'never'), so it describes no change to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we do not increase prices by 5%",
+          "split": "DEV",
+          "tag": "negation",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario is negated ('don't', 'not', 'never'), so it describes no change to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we never reduce headcount",
+          "split": "DEV",
+          "tag": "negation",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we increase prices by 10% and cut costs by 5%",
+          "split": "DEV",
+          "tag": "conflict",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario contains more than one change; simulate one change at a time."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue rises 5% but costs fall 3%",
+          "split": "DEV",
+          "tag": "conflict",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario contains more than one change; simulate one change at a time."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we raise prices by 5% and grow volume by 8%",
+          "split": "DEV",
+          "tag": "conflict",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario contains more than one change; simulate one change at a time."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we cut spending by $500",
+          "split": "DEV",
+          "tag": "absolute",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The change is an absolute amount; only percentage changes can be simulated."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue grows by 2000 dollars",
+          "split": "DEV",
+          "tag": "absolute",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The change is an absolute amount; only percentage changes can be simulated."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we add 3 new staff",
+          "split": "DEV",
+          "tag": "absolute",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The change is an absolute amount; only percentage changes can be simulated."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we reduce spending by 15",
+          "split": "DEV",
+          "tag": "bare_number",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15.0,
+            "mode": "IMMEDIATE",
+            "note": "'by 15' read as 15%."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we cut spending to 80% of current",
+          "split": "DEV",
+          "tag": "target_level",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20.0,
+            "mode": "IMMEDIATE",
+            "note": "Read as a target level: decrease of 20%."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs rise to 110%",
+          "split": "DEV",
+          "tag": "target_level",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Read as a target level: increase of 10%."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue falls to half",
+          "split": "DEV",
+          "tag": "target_level",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 50% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we triple marketing spend",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 200,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 200.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 200% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if sales double",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 100% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs are cut in half",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 50% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if spending is halved",
+          "split": "DEV",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 50.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 50% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue were 10% higher",
+          "split": "DEV",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs were 15% lower",
+          "split": "DEV",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 15% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if prices were 5 percent cheaper",
+          "split": "DEV",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue changes by -8%",
+          "split": "DEV",
+          "tag": "signed",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 8,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 8.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 8% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs change by +4%",
+          "split": "DEV",
+          "tag": "signed",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 4,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 4.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 4% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we gradually reduce spending by 20%",
+          "split": "DEV",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20,
+            "mode": "RAMPED"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20.0,
+            "mode": "RAMPED",
+            "note": "Parsed as DECREASE of 20% (Effect phases in linearly across the forecast horizon.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we phase in a 10% price increase",
+          "split": "DEV",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "RAMPED"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "RAMPED",
+            "note": "Parsed as INCREASE of 10% (Effect phases in linearly across the forecast horizon.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we slowly grow headcount costs by 6%",
+          "split": "DEV",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6,
+            "mode": "RAMPED"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 6.0,
+            "mode": "RAMPED",
+            "note": "Parsed as INCREASE of 6% (Effect phases in linearly across the forecast horizon.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we cut spending by 20% straight away",
+          "split": "DEV",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 20.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 20% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if sales grow 10-15%",
+          "split": "DEV",
+          "tag": "range",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario gives a range; give one percentage to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs fall between 5 and 10 percent",
+          "split": "DEV",
+          "tag": "range",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario gives a range; give one percentage to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if margins improve by 2.5%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 2.5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 2.5,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 2.5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue declines by 3.25%",
+          "split": "DEV",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 3.25,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 3.25,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 3.25% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if things change somehow",
+          "split": "DEV",
+          "tag": "vague",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the market shifts",
+          "split": "DEV",
+          "tag": "vague",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we increase spending",
+          "split": "DEV",
+          "tag": "vague",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if in 2026 we cut costs by 10%",
+          "split": "DEV",
+          "tag": "other_numbers",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we reduce the 3 biggest expenses by 10%",
+          "split": "DEV",
+          "tag": "other_numbers",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if over the next 6 months spending drops by 5%",
+          "split": "DEV",
+          "tag": "other_numbers",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if spending drops by 5% over time",
+          "split": "DEV",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5,
+            "mode": "RAMPED"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 5.0,
+            "mode": "RAMPED",
+            "note": "Parsed as DECREASE of 5% (Effect phases in linearly across the forecast horizon.)"
+          },
+          "correct": true,
+          "error": ""
+        }
+      ]
+    }
+  },
+  "TEST": {
+    "CLAUSE": {
+      "cases": 30,
+      "correct": 30,
+      "accuracy": 1.0,
+      "wrong_simulations": 0,
+      "errors": {},
+      "by_tag": {
+        "absolute": {
+          "correct": 1,
+          "cases": 1
+        },
+        "basic": {
+          "correct": 10,
+          "cases": 10
+        },
+        "comparative": {
+          "correct": 3,
+          "cases": 3
+        },
+        "conflict": {
+          "correct": 1,
+          "cases": 1
+        },
+        "multiplier": {
+          "correct": 2,
+          "cases": 2
+        },
+        "negation": {
+          "correct": 2,
+          "cases": 2
+        },
+        "no_direction": {
+          "correct": 1,
+          "cases": 1
+        },
+        "other_numbers": {
+          "correct": 1,
+          "cases": 1
+        },
+        "ramp": {
+          "correct": 1,
+          "cases": 1
+        },
+        "range": {
+          "correct": 1,
+          "cases": 1
+        },
+        "substring_trap": {
+          "correct": 5,
+          "cases": 5
+        },
+        "target_level": {
+          "correct": 1,
+          "cases": 1
+        },
+        "vague": {
+          "correct": 1,
+          "cases": 1
+        }
+      },
+      "detail": [
+        {
+          "text": "what if our cloud bill shrinks by 18%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 18,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 18.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 18% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "suppose headcount costs climb 7%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 7,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 7.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 7% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the budget is slashed by 25%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 25,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 25.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 25% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we trim overheads by 4 percent",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 4,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 4.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 4% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if sales jump 12%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 12,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 12.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 12% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue goes up by 3% unless churn rises",
+          "split": "TEST",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 3,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 3.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 3% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we don't raise prices by 8%",
+          "split": "TEST",
+          "tag": "negation",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario is negated ('don't', 'not', 'never'), so it describes no change to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we spend 10% less on travel",
+          "split": "TEST",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we spend 10% more on travel",
+          "split": "TEST",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs are reduced to 75%",
+          "split": "TEST",
+          "tag": "target_level",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 25,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 25.0,
+            "mode": "IMMEDIATE",
+            "note": "Read as a target level: decrease of 25%."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue were twice as high",
+          "split": "TEST",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 100% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if expenses grow by 400 dollars",
+          "split": "TEST",
+          "tag": "absolute",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The change is an absolute amount; only percentage changes can be simulated."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we raise wages by 5% and lower prices by 5%",
+          "split": "TEST",
+          "tag": "conflict",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario contains changes in opposite directions; simulate one change at a time."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue sinks 9%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 9,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 9.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 9% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if pricing is adjusted by 6%",
+          "split": "TEST",
+          "tag": "no_direction",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No word says which way the change goes (e.g. 'increase', 'cut', 'rise', 'fall')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the regional groups see spending up by 11%",
+          "split": "TEST",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 11,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 11.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 11% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we gradually increase spend by 40%",
+          "split": "TEST",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 40,
+            "mode": "RAMPED"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 40.0,
+            "mode": "RAMPED",
+            "note": "Parsed as INCREASE of 40% (Effect phases in linearly across the forecast horizon.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs plunge by 30 percent",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 30,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 30.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 30% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "assuming a 15% decline in orders",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 15% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "assuming a 20% increase in marketing",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 20,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 20.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 20% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if spend fell between 10 and 20%",
+          "split": "TEST",
+          "tag": "range",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario gives a range; give one percentage to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if wireless sales grow 9 percent",
+          "split": "TEST",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 9,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 9.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 9% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the budget is quadrupled",
+          "split": "TEST",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 300,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 300.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 300% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we never cut costs",
+          "split": "TEST",
+          "tag": "negation",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if spending rose 8% in 2027",
+          "split": "TEST",
+          "tag": "other_numbers",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 8,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 8.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 8% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue is 12% lower than forecast",
+          "split": "TEST",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 12,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 12.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 12% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs went down by 2.5%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 2.5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 2.5,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 2.5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the downturn cuts sales by 14%",
+          "split": "TEST",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 14,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 14.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 14% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if regardless of season sales rise 7%",
+          "split": "TEST",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 7,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 7.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 7% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we reduce costs",
+          "split": "TEST",
+          "tag": "vague",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        }
+      ]
+    },
+    "QUESTION": {
+      "cases": 30,
+      "correct": 30,
+      "accuracy": 1.0,
+      "wrong_simulations": 0,
+      "errors": {},
+      "by_tag": {
+        "absolute": {
+          "correct": 1,
+          "cases": 1
+        },
+        "basic": {
+          "correct": 10,
+          "cases": 10
+        },
+        "comparative": {
+          "correct": 3,
+          "cases": 3
+        },
+        "conflict": {
+          "correct": 1,
+          "cases": 1
+        },
+        "multiplier": {
+          "correct": 2,
+          "cases": 2
+        },
+        "negation": {
+          "correct": 2,
+          "cases": 2
+        },
+        "no_direction": {
+          "correct": 1,
+          "cases": 1
+        },
+        "other_numbers": {
+          "correct": 1,
+          "cases": 1
+        },
+        "ramp": {
+          "correct": 1,
+          "cases": 1
+        },
+        "range": {
+          "correct": 1,
+          "cases": 1
+        },
+        "substring_trap": {
+          "correct": 5,
+          "cases": 5
+        },
+        "target_level": {
+          "correct": 1,
+          "cases": 1
+        },
+        "vague": {
+          "correct": 1,
+          "cases": 1
+        }
+      },
+      "detail": [
+        {
+          "text": "what if our cloud bill shrinks by 18%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 18,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 18.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 18% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "suppose headcount costs climb 7%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 7,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 7.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 7% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the budget is slashed by 25%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 25,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 25.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 25% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we trim overheads by 4 percent",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 4,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 4.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 4% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if sales jump 12%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 12,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 12.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 12% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue goes up by 3% unless churn rises",
+          "split": "TEST",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 3,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 3.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 3% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we don't raise prices by 8%",
+          "split": "TEST",
+          "tag": "negation",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario is negated ('don't', 'not', 'never'), so it describes no change to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we spend 10% less on travel",
+          "split": "TEST",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we spend 10% more on travel",
+          "split": "TEST",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 10.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 10% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs are reduced to 75%",
+          "split": "TEST",
+          "tag": "target_level",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 25,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 25.0,
+            "mode": "IMMEDIATE",
+            "note": "Read as a target level: decrease of 25%."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue were twice as high",
+          "split": "TEST",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 100.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 100% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if expenses grow by 400 dollars",
+          "split": "TEST",
+          "tag": "absolute",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The change is an absolute amount; only percentage changes can be simulated."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we raise wages by 5% and lower prices by 5%",
+          "split": "TEST",
+          "tag": "conflict",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario contains changes in opposite directions; simulate one change at a time."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue sinks 9%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 9,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 9.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 9% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if pricing is adjusted by 6%",
+          "split": "TEST",
+          "tag": "no_direction",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No word says which way the change goes (e.g. 'increase', 'cut', 'rise', 'fall')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the regional groups see spending up by 11%",
+          "split": "TEST",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 11,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 11.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 11% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we gradually increase spend by 40%",
+          "split": "TEST",
+          "tag": "ramp",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 40,
+            "mode": "RAMPED"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 40.0,
+            "mode": "RAMPED",
+            "note": "Parsed as INCREASE of 40% (Effect phases in linearly across the forecast horizon.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs plunge by 30 percent",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 30,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 30.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 30% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "assuming a 15% decline in orders",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 15.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 15% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "assuming a 20% increase in marketing",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 20,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 20.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 20% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if spend fell between 10 and 20%",
+          "split": "TEST",
+          "tag": "range",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "The scenario gives a range; give one percentage to simulate."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if wireless sales grow 9 percent",
+          "split": "TEST",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 9,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 9.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 9% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the budget is quadrupled",
+          "split": "TEST",
+          "tag": "multiplier",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 300,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 300.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 300% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we never cut costs",
+          "split": "TEST",
+          "tag": "negation",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if spending rose 8% in 2027",
+          "split": "TEST",
+          "tag": "other_numbers",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 8,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 8.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 8% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if revenue is 12% lower than forecast",
+          "split": "TEST",
+          "tag": "comparative",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 12,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 12.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 12% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if costs went down by 2.5%",
+          "split": "TEST",
+          "tag": "basic",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 2.5,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 2.5,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 2.5% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if the downturn cuts sales by 14%",
+          "split": "TEST",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 14,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "DECREASE",
+            "magnitude": 14.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as DECREASE of 14% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if regardless of season sales rise 7%",
+          "split": "TEST",
+          "tag": "substring_trap",
+          "expected": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 7,
+            "mode": "IMMEDIATE"
+          },
+          "got": {
+            "valid": true,
+            "direction": "INCREASE",
+            "magnitude": 7.0,
+            "mode": "IMMEDIATE",
+            "note": "Parsed as INCREASE of 7% (Full effect applied from the first forecast period.)"
+          },
+          "correct": true,
+          "error": ""
+        },
+        {
+          "text": "what if we reduce costs",
+          "split": "TEST",
+          "tag": "vague",
+          "expected": {
+            "valid": false,
+            "direction": null,
+            "magnitude": null,
+            "mode": null
+          },
+          "got": {
+            "valid": false,
+            "direction": "",
+            "magnitude": 0.0,
+            "mode": "IMMEDIATE",
+            "note": "No percentage found (expected e.g. '20%', 'by 15', 'double')."
+          },
+          "correct": true,
+          "error": ""
+        }
+      ]
+    }
+  }
+}

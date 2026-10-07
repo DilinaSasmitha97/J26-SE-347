@@ -1,0 +1,241 @@
+{
+  "seed": 2026,
+  "injection": {
+    "AS_IS": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 12,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "NO_SEPARATORS": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 12,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "ROUNDED_3SF": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 12,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "SCALE_WORDS": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 12,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "HYPHEN_RANGE": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 12,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "DATE_FORMATS": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 12,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "NUMBER_WORDS": {
+      "group": "FAITHFUL",
+      "cases": 6,
+      "passed": 6,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "INVENTED": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 58,
+      "detection_rate": 0.9666666666666667,
+      "collides_with_a_claim_number": 0
+    },
+    "OFF_5": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 59,
+      "detection_rate": 0.9833333333333333,
+      "collides_with_a_claim_number": 31
+    },
+    "OFF_10": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 60,
+      "detection_rate": 1.0,
+      "collides_with_a_claim_number": 20
+    },
+    "OFF_25": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 60,
+      "detection_rate": 1.0,
+      "collides_with_a_claim_number": 18
+    },
+    "X10": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 59,
+      "detection_rate": 0.9833333333333333,
+      "collides_with_a_claim_number": 1
+    },
+    "TRANSPOSED": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 60,
+      "detection_rate": 1.0,
+      "collides_with_a_claim_number": 23
+    },
+    "WORD_INVENTED": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 59,
+      "detection_rate": 0.9833333333333333,
+      "collides_with_a_claim_number": 0
+    },
+    "OFF_1_5": {
+      "group": "BLIND",
+      "cases": 60,
+      "rejected": 56,
+      "detection_rate": 0.9333333333333333,
+      "collides_with_a_claim_number": 52
+    },
+    "SWAPPED": {
+      "group": "BLIND",
+      "cases": 60,
+      "rejected": 5,
+      "detection_rate": 0.08333333333333333,
+      "collides_with_a_claim_number": 60
+    },
+    "DIRECTION": {
+      "group": "BLIND",
+      "cases": 12,
+      "rejected": 0,
+      "detection_rate": 0.0,
+      "collides_with_a_claim_number": 12
+    }
+  },
+  "live": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "scenarios": [
+      {
+        "scenario": "finance_linear_growth",
+        "mode": "LLM_VERIFIED",
+        "numbers": 39,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 24 rows. The total amount across the returned period is 118,735. The average amount per period is 4,947, the highest value was 6,351 at 2025-12-01, 1.28x the average, and the lowest value was 3,420 at 2024-01-01. Over the period the value increased from 3,420 to 6,351, a change of 85.7%, values vary with a standard deviation of 872.97, and anomalies were measured with a normal deviation range of -524.27 to 502.85 because the series carries a strong trend (R\u00b2 = 0.95). No values, historical or projected, fall outside the adaptive normal range, a linear regression model was selected and projects 3 month periods ahead, and the amount for Jan 2026 is projected at 6,454, within a 95% confidence range of 6,040 to 6,869. The amount for Feb 2026 is projected at 6,575, within a 95% confidence range of 5,989 to 7,161, the amount for Mar 2026 is projected at 6,695, within a 95% confidence range of 5,978 to 7,413, and across the full 3-period horizon the projected total is 19,725. The Mar 2026 projection of 6,695 sits 35.3% above the historical average of 4,947, forecast uncertainty widens with distance: the interval at the final period is 1.73x as wide as at the first, and on the observed data the model's mean absolute percentage error is 3.1%. This forecast carries a caution: The ADF and KPSS stationarity tests disagree, which usually means a level shift or changing variability; treat the forecast range with care."
+      },
+      {
+        "scenario": "finance_seasonal",
+        "mode": "LLM_VERIFIED",
+        "numbers": 27,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 36 rows. Total amount across the returned period is 778,466 and the average amount per period is 21,624. The highest value was 27,951 at 2025-05-01, 1.29x the average, while the lowest value was 15,340 at 2024-11-01. Over the period the value decreased from 20,826 to 20,781, a change of -0.2%, and values vary with a standard deviation of 4,135. Anomaly thresholds were adapted to this series' stable volatility, giving a normal range of -2,951 to 2,705, and no values, historical or projected, fall outside the adaptive normal range. A sarima model was selected and projects 1 month periods ahead, with the amount for Jan 2027 projected at 24,675 within a 95% confidence range of 20,368 to 28,982. Across the full 1-period horizon the projected total is 24,675, and the Jan 2027 projection of 24,675 sits 14.1% above the historical average of 21,624. On the observed data the model's mean absolute percentage error is 6.9%."
+      },
+      {
+        "scenario": "sales_volatile_trend",
+        "mode": "LLM_VERIFIED",
+        "numbers": 34,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 24 rows.\nTotal amount across the returned period is 1.51M.\nThe average amount per period is 63,069 and the highest value was 89,414 at 2025-10-01, 1.42x the average.\nThe lowest value was 35,259 at 2024-04-01 and the value increased from 53,865 to 56,699, a change of 5.3%.\nValues vary with a standard deviation of 14,710 and, because the series carries a strong trend (R\u00b2 = 0.62), anomalies were measured as deviations from that trend with a normal deviation range of -20,974 to 22,005.\nDec 2025 is a moderate low outlier at 56,699, 10.1% from the mean, and the projection for Jan 2026 at 56,699 is expected to breach the low threshold, 10.1% from the historical mean.\nA naive model was selected and projects 1 month periods ahead; amount for Jan 2026 is projected at 56,699, within a 95% confidence range of 32,094 to 81,303; across the full 1-period horizon the projected total is 56,699; the Jan 2026 projection of 56,699 sits 10.1% below the historical average of 63,069.\nOn the observed data the model's mean absolute percentage error is 13.9%."
+      },
+      {
+        "scenario": "sales_flat_noisy",
+        "mode": "LLM_VERIFIED",
+        "numbers": 38,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 24 rows, and the total amount across the returned period is 731,422. The average amount per period is 30,476, while the highest value was 37,068 at 2024-01-01, 1.22x the average. The lowest value was 26,339 at 2025-07-01, and over the period the value decreased from 37,068 to 29,370, a change of -20.8%. Values vary with a standard deviation of 3,506, and anomaly thresholds were adapted to this series' stable volatility, giving a normal range of 18,056 to 42,957. No values, historical or projected, fall outside the adaptive normal range, and an exponential smoothing model was selected and projects 3 month periods ahead. Amount for Jan 2026 is projected at 29,057, within a 95% confidence range of 17,567 to 40,547; for Feb 2026 the projection is 29,214, within a 95% confidence range of 12,965 to 45,462; and for Mar 2026 the projection is 29,355, within a 95% confidence range of 9,454 to 49,255. Across the full 3-period horizon the projected total is 87,626, the Mar 2026 projection of 29,355 sits 3.7% below the historical average of 30,476, and forecast uncertainty widens with distance: the interval at the final period is 1.73x as wide as at the first. On the observed data the model's mean absolute percentage error is 12.6%."
+      },
+      {
+        "scenario": "short_series_five",
+        "mode": "LLM_VERIFIED",
+        "numbers": 28,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 5 rows. Total amount across the returned period is 40,955. The average amount per period is 8,191. The highest value was 8,662 at 2024-03-01, 1.06x the average, and the lowest value was 7,576 at 2024-04-01. Over the period the value increased from 8,267 to 8,513, a change of 3.0%, and values vary with a standard deviation of 439.81. Anomaly thresholds were adapted to this series' stable volatility, giving a normal range of 7,072 to 9,378, and no values, historical or projected, fall outside the adaptive normal range. A weighted moving average model was selected and projects 1 month periods ahead; amount for Jun 2024 is projected at 8,226, within a 95% confidence range of 6,417 to 10,035; across the full 1-period horizon the projected total is 8,226; the Jun 2024 projection of 8,226 sits 0.4% above the historical average of 8,191. On the observed data the model's mean absolute percentage error is 5.5%, and this forecast carries a caution: only 5 periods of history: too few to test how predictable the series is, so the forecast uses a conservative moving average."
+      },
+      {
+        "scenario": "anomaly_spikes",
+        "mode": "LLM_VERIFIED",
+        "numbers": 24,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 30 rows. Total amount across the returned period is 495,375. The average amount per period is 16,513. The highest value was 22,534 at 2026-02-01, 1.36x the average, and the lowest value was 11,017 at 2024-02-01. Over the period the value increased from 11,684 to 22,257, a change of 90.5%, with values varying with a standard deviation of 3,025. Because the series carries a strong trend (R\u00b2 = 0.85), anomalies were measured as deviations from that trend rather than from a flat average, with a normal deviation range of -2,604 to 2,314. Sep 2024 is a moderate high outlier at 17,292, 4.7% from the mean; Jun 2025 is a moderate low outlier at 14,582, 11.7% from the mean; Feb 2026 is a moderate high outlier at 22,534, 36.5% from the mean. No forecast was produced: No forecast was requested for this query."
+      },
+      {
+        "scenario": "anomaly_seasonal_spikes",
+        "mode": "LLM_VERIFIED",
+        "numbers": 17,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 36 rows. Total amount across the returned period is 35,621. The average amount per period is 989.47. The highest value was 1,352 at 2026-04-01, 1.37x the average. The lowest value was 681.77 at 2024-10-01. Over the period the value decreased from 901.84 to 835.04, a change of -7.4%. Values vary with a standard deviation of 166.01, and anomaly thresholds were adapted to this series' stable volatility, giving a normal range of -245.24 to 240.00. Jun 2026 is a moderate low outlier at 867.67, 12.3% from the mean, and No forecast was produced: No forecast was requested for this query."
+      },
+      {
+        "scenario": "whatif_reduction",
+        "mode": "LLM_VERIFIED",
+        "numbers": 76,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 24 rows and total amount across the returned period is 171,017. The average amount per period is 7,126, the highest value was 8,821 at 2025-11-01, 1.24x the average, and the lowest value was 5,314 at 2024-01-01. Over the period the value increased from 5,314 to 8,314, a change of 56.5%, values vary with a standard deviation of 1,136, and because the series carries a strong trend (R\u00b2 = 0.93), anomalies were measured as deviations from that trend with a normal deviation range of -492.36 to 436.30. Oct 2024 is a moderate high outlier at 7,240, 1.6% from the mean; Jan 2025 is a moderate high outlier at 7,878, 10.6% from the mean; May 2025 is a moderate high outlier at 8,271, 16.1% from the mean; and Dec 2025 is a moderate low outlier at 8,314, 16.7% from the mean. The projection for Jan 2026 at 8,314 is expected to breach the low threshold, 16.7% from the historical mean; the projection for Feb 2026 at 8,314 is expected to breach the low threshold, 16.7% from the historical mean; the projection for Mar 2026 at 8,314 is expected to breach the low threshold, 16.7% from the historical mean; and a naive model was selected and projects 3 month periods ahead. Amount for Jan 2026 is projected at 8,314, within a 95% confidence range of 7,387 to 9,242; amount for Feb 2026 is projected at 8,314, within a 95% confidence range of 7,003 to 9,626; amount for Mar 2026 is projected at 8,314, within a 95% confidence range of 6,708 to 9,921; across the full 3-period horizon the projected total is 24,943; and the Mar 2026 projection of 8,314 sits 16.7% above the historical average of 7,126. Forecast uncertainty widens with distance: the interval at the final period is 1.73x as wide as at the first; on the observed data the model's mean absolute percentage error is 4.7%; simulating a 20% decrease applied to the forecast; under this scenario the horizon total moves from 24,943 to 19,955, a change of -20.0%. Jan 2026 moves from 8,314 to 6,652 (-20.0%); Feb 2026 moves from 8,314 to 6,652 (-20.0%); and Mar 2026 moves from 8,314 to 6,652 (-20.0%)."
+      },
+      {
+        "scenario": "high_volatility",
+        "mode": "LLM_VERIFIED",
+        "numbers": 16,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 24 rows. Total amount across the returned period is 108,044. The average amount per period is 4,502. The highest value was 8,600 at 2024-12-01, 1.91x the average, while the lowest value was -1,536 at 2024-05-01. Over the period the value increased from 3,549 to 7,451, a change of 109.9%. Values vary with a standard deviation of 2,584. Anomaly thresholds were adapted to this series' moderate volatility, giving a normal range of -3,839 to 13,450, and no values, historical or projected, fall outside the adaptive normal range. No forecast was produced because the series is dominated by noise; on its own history, the best simple forecast missed by 51% of the typical value on average (limit 20%), so a forecast would not be meaningful."
+      },
+      {
+        "scenario": "quarterly_seasonal",
+        "mode": "LLM_VERIFIED",
+        "numbers": 62,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 48 rows, the total amount across the returned period is 4.03M, and the average amount per period is 83,882. The highest value was 112,163 at 2026-03-01, 1.34x the average, the lowest value was 62,255 at 2024-09-01, and over the period the value increased from 79,085 to 86,751, a change of 9.7%, with values varying with a standard deviation of 11,234. Anomaly thresholds were adapted to this series' stable volatility, giving a normal range of -10,152 to 9,898, and Nov 2024 is a moderate high outlier at 73,063, 12.9% from the mean, Nov 2025 is a severe high outlier at 80,621, 3.9% from the mean, and Mar 2026 is a moderate high outlier at 112,163, 33.7% from the mean. A sarima model was selected and projects 6 month periods ahead, with the amount for Jan 2028 projected at 95,810, within a 95% confidence range of 77,207 to 114,414, the amount for Feb 2028 projected at 102,957, within a 95% confidence range of 76,647 to 129,267, and the amount for Mar 2028 projected at 115,479, within a 95% confidence range of 83,256 to 147,702. The amount for Apr 2028 is projected at 98,026, within a 95% confidence range of 60,818 to 135,234, the amount for May 2028 is projected at 109,322, within a 95% confidence range of 67,722 to 150,922, and the amount for Jun 2028 is projected at 103,214, within a 95% confidence range of 57,644 to 148,785. Across the full 6-period horizon the projected total is 624,809, and the Jun 2028 projection of 103,214 sits 23.0% above the historical average of 83,882. Forecast uncertainty widens with distance: the interval at the final period is 2.45x as wide as at the first. On the observed data the model's mean absolute percentage error is 7.7%."
+      },
+      {
+        "scenario": "declining_linear",
+        "mode": "LLM_VERIFIED",
+        "numbers": 28,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 24 rows. The total amount across the returned period is 950,372 and the average amount per period is 39,599. The highest value was 50,645 at 2024-01-01, 1.28x the average, while the lowest value was 28,798 at 2025-12-01. Over the period the value decreased from 50,645 to 28,798, a change of -43.1%, and values vary with a standard deviation of 6,628. Because the series carries a strong trend (R\u00b2 = 0.97), anomalies were measured as deviations from that trend rather than from a flat average, with a normal deviation range of -3,153 to 2,966, and no values, historical or projected, fall outside the adaptive normal range. A linear regression model was selected and projects 1 month periods ahead, and the amount for Jan 2026 is projected at 28,061, within a 95% confidence range of 25,512 to 30,609. Across the full 1-period horizon the projected total is 28,061, and the Jan 2026 projection of 28,061 sits 29.1% below the historical average of 39,599. On the observed data the model's mean absolute percentage error is 2.4%."
+      },
+      {
+        "scenario": "tiny_series_four",
+        "mode": "LLM_VERIFIED",
+        "numbers": 26,
+        "unverified": [],
+        "classes": [],
+        "stage3_rule_would_pass": true,
+        "narration": "The query returned 4 rows. Total amount across the returned period is 61,351. The average amount per period is 15,338 and the highest value was 15,975 at 2024-04-01, 1.04x the average. The lowest value was 14,338 at 2024-01-01, and over the period the value increased from 14,338 to 15,975, a change of 11.4%. Values vary with a standard deviation of 702.13. A weighted moving average model was selected and projects 1 month periods ahead. Amount for May 2024 is projected at 15,737, within a 95% confidence range of 12,851 to 18,623, and across the full 1-period horizon the projected total is 15,737. The May 2024 projection of 15,737 sits 2.6% above the historical average of 15,338, the model's mean absolute percentage error is 3.6%, and this forecast carries a caution: Only 4 periods of history: too few to test how predictable the series is, so the forecast uses a conservative moving average."
+      }
+    ],
+    "verified": 12,
+    "rejected": 0,
+    "unavailable": 0
+  }
+}

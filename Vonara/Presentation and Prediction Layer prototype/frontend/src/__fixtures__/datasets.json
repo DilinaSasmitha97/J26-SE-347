@@ -1,0 +1,157 @@
+{
+ "datasets": [
+  {
+   "id": "expenses_a",
+   "title": "Monthly expenses",
+   "note": "36 months, trend and seasonality",
+   "group": "Time series",
+   "kind": "trend",
+   "tenant": "tenant_a",
+   "sql": "SELECT DATE_FORMAT(invoice_date, '%Y-%m-01') AS month, SUM(amount) AS total_amount FROM expenses WHERE tenant_id = 'tenant_a' GROUP BY month ORDER BY month",
+   "examples": [
+    "Show my monthly expenses over time and forecast the next 3 months",
+    "List my monthly expenses and predict the next 3 months",
+    "Give me a full report on monthly expenses with a forecast for next quarter",
+    "Show my monthly expenses over the last three years",
+    "Are there any unusual spikes in my monthly expenses?"
+   ]
+  },
+  {
+   "id": "expenses_d",
+   "title": "Monthly expenses (steady growth)",
+   "note": "24 months, clean linear growth",
+   "group": "Time series",
+   "kind": "trend",
+   "tenant": "tenant_d",
+   "sql": "SELECT DATE_FORMAT(invoice_date, '%Y-%m-01') AS month, SUM(amount) AS total_amount FROM expenses WHERE tenant_id = 'tenant_d' GROUP BY month ORDER BY month",
+   "examples": [
+    "Show monthly expenses and project the next six months",
+    "What will my expenses be next month?",
+    "Show monthly expenses, predict the next 3 months, and what if I reduce spending by 20%?",
+    "Give me a report on monthly expenses with a forecast"
+   ]
+  },
+  {
+   "id": "expenses_b",
+   "title": "Monthly expenses (short history)",
+   "note": "5 months only",
+   "group": "Time series",
+   "kind": "trend",
+   "tenant": "tenant_b",
+   "sql": "SELECT DATE_FORMAT(invoice_date, '%Y-%m-01') AS month, SUM(amount) AS total_amount FROM expenses WHERE tenant_id = 'tenant_b' GROUP BY month ORDER BY month",
+   "examples": [
+    "Show monthly expenses and forecast the next 3 months",
+    "Show monthly expenses",
+    "Summarise monthly expenses"
+   ]
+  },
+  {
+   "id": "software_a",
+   "title": "Monthly Software spend",
+   "note": "one category, noisy",
+   "group": "Time series",
+   "kind": "trend",
+   "tenant": "tenant_a",
+   "sql": "SELECT DATE_FORMAT(invoice_date, '%Y-%m-01') AS month, SUM(amount) AS software_spend FROM expenses WHERE tenant_id = 'tenant_a' AND category = 'Software' GROUP BY month ORDER BY month",
+   "examples": [
+    "Show monthly spend on Software and forecast the next 3 months",
+    "Show monthly software spend over time"
+   ]
+  },
+  {
+   "id": "tickets_a",
+   "title": "Weekly support tickets",
+   "note": "158 weeks of ticket counts",
+   "group": "Time series",
+   "kind": "trend",
+   "tenant": "tenant_a",
+   "sql": "SELECT DATE_SUB(opened_date, INTERVAL WEEKDAY(opened_date) DAY) AS week_start, COUNT(*) AS tickets FROM support_tickets WHERE tenant_id = 'tenant_a' GROUP BY week_start ORDER BY week_start",
+   "examples": [
+    "Show weekly support tickets opened and predict the next few weeks",
+    "Show weekly support tickets over time",
+    "Were there any unusual weeks for tickets?"
+   ]
+  },
+  {
+   "id": "by_category",
+   "title": "Expenses by category",
+   "note": "one total per category",
+   "group": "Breakdowns",
+   "kind": "bar",
+   "tenant": "tenant_a",
+   "sql": "SELECT category, SUM(amount) AS total_amount FROM expenses WHERE tenant_id = 'tenant_a' GROUP BY category ORDER BY category",
+   "examples": [
+    "Compare total expenses across categories",
+    "Show expenses by category",
+    "Which category has the highest spend?"
+   ]
+  },
+  {
+   "id": "by_vendor",
+   "title": "Spend by vendor",
+   "note": "one total per vendor (15 vendors)",
+   "group": "Breakdowns",
+   "kind": "bar",
+   "tenant": "tenant_c",
+   "sql": "SELECT vendor, SUM(amount) AS total_amount FROM expenses WHERE tenant_id = 'tenant_c' GROUP BY vendor",
+   "examples": [
+    "What percentage of spend goes to each vendor?",
+    "Show spend by vendor",
+    "Who are the top vendors by spend?"
+   ]
+  },
+  {
+   "id": "amounts",
+   "title": "Individual expense amounts",
+   "note": "every invoice, for distributions",
+   "group": "Breakdowns",
+   "kind": "distribution",
+   "tenant": "tenant_a",
+   "sql": "SELECT amount FROM expenses WHERE tenant_id = 'tenant_a'",
+   "examples": [
+    "Show the distribution of individual expense amounts",
+    "How are invoice amounts spread?"
+   ]
+  },
+  {
+   "id": "units_revenue",
+   "title": "Units sold vs revenue",
+   "note": "two measures, for relationships",
+   "group": "Breakdowns",
+   "kind": "scatter",
+   "tenant": "tenant_a",
+   "sql": "SELECT units, revenue FROM sales WHERE tenant_id = 'tenant_a'",
+   "examples": [
+    "Is there a relationship between units sold and revenue?",
+    "Plot revenue against units sold"
+   ]
+  },
+  {
+   "id": "employees",
+   "title": "Finance employees",
+   "note": "names and emails, PII-masked by Member 2",
+   "group": "Records & figures",
+   "kind": "table",
+   "tenant": "tenant_a",
+   "sql": "SELECT full_name, email, department, hire_date, salary FROM employees WHERE tenant_id = 'tenant_a' AND department = 'Finance' ORDER BY full_name",
+   "examples": [
+    "List all employees in the Finance department",
+    "List the finance employees with their emails"
+   ]
+  },
+  {
+   "id": "travel_total",
+   "title": "Total travel spend",
+   "note": "a single figure",
+   "group": "Records & figures",
+   "kind": "figure",
+   "tenant": "tenant_a",
+   "sql": "SELECT SUM(amount) AS total_travel FROM expenses WHERE tenant_id = 'tenant_a' AND category = 'Travel'",
+   "examples": [
+    "What is the total amount spent on travel?",
+    "How much did we spend on travel?"
+   ]
+  }
+ ],
+ "backend": "sqlite"
+}

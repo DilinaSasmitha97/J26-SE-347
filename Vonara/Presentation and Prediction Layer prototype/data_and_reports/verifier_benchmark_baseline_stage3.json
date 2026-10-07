@@ -1,0 +1,202 @@
+{
+  "seed": 2026,
+  "injection": {
+    "AS_IS": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 12,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "NO_SEPARATORS": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 12,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "ROUNDED_3SF": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 12,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "SCALE_WORDS": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 1,
+      "false_rejection_rate": 0.9166666666666666,
+      "examples": [
+        {
+          "scenario": "finance_linear_growth",
+          "unverified": [
+            118.7,
+            19.7
+          ]
+        },
+        {
+          "scenario": "finance_seasonal",
+          "unverified": [
+            778.5,
+            21.6,
+            28.0,
+            15.3,
+            20.8
+          ]
+        },
+        {
+          "scenario": "sales_volatile_trend",
+          "unverified": [
+            63.1,
+            89.4,
+            35.3,
+            53.9,
+            56.7
+          ]
+        }
+      ]
+    },
+    "HYPHEN_RANGE": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 0,
+      "false_rejection_rate": 1.0,
+      "examples": [
+        {
+          "scenario": "finance_linear_growth",
+          "unverified": [
+            -6351.0,
+            -502.85,
+            -6869.0,
+            -7161.0,
+            -7413.0
+          ]
+        },
+        {
+          "scenario": "finance_seasonal",
+          "unverified": [
+            -20781.0,
+            -2705.0,
+            -28982.0
+          ]
+        },
+        {
+          "scenario": "sales_volatile_trend",
+          "unverified": [
+            -56699.0,
+            -22005.0,
+            -81303.0
+          ]
+        }
+      ]
+    },
+    "DATE_FORMATS": {
+      "group": "FAITHFUL",
+      "cases": 12,
+      "passed": 3,
+      "false_rejection_rate": 0.75,
+      "examples": [
+        {
+          "scenario": "finance_linear_growth",
+          "unverified": [
+            -2.0,
+            -3.0,
+            -3.0
+          ]
+        },
+        {
+          "scenario": "sales_volatile_trend",
+          "unverified": [
+            -12.0
+          ]
+        },
+        {
+          "scenario": "sales_flat_noisy",
+          "unverified": [
+            -2.0,
+            -3.0,
+            -3.0
+          ]
+        }
+      ]
+    },
+    "NUMBER_WORDS": {
+      "group": "FAITHFUL",
+      "cases": 6,
+      "passed": 6,
+      "false_rejection_rate": 0.0,
+      "examples": []
+    },
+    "INVENTED": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 58,
+      "detection_rate": 0.9666666666666667,
+      "collides_with_a_claim_number": 0
+    },
+    "OFF_5": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 29,
+      "detection_rate": 0.48333333333333334,
+      "collides_with_a_claim_number": 31
+    },
+    "OFF_10": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 40,
+      "detection_rate": 0.6666666666666666,
+      "collides_with_a_claim_number": 20
+    },
+    "OFF_25": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 41,
+      "detection_rate": 0.6833333333333333,
+      "collides_with_a_claim_number": 18
+    },
+    "X10": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 59,
+      "detection_rate": 0.9833333333333333,
+      "collides_with_a_claim_number": 1
+    },
+    "TRANSPOSED": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 35,
+      "detection_rate": 0.5833333333333334,
+      "collides_with_a_claim_number": 23
+    },
+    "WORD_INVENTED": {
+      "group": "CORRUPTED",
+      "cases": 60,
+      "rejected": 0,
+      "detection_rate": 0.0,
+      "collides_with_a_claim_number": 0
+    },
+    "OFF_1_5": {
+      "group": "BLIND",
+      "cases": 60,
+      "rejected": 0,
+      "detection_rate": 0.0,
+      "collides_with_a_claim_number": 52
+    },
+    "SWAPPED": {
+      "group": "BLIND",
+      "cases": 60,
+      "rejected": 5,
+      "detection_rate": 0.08333333333333333,
+      "collides_with_a_claim_number": 60
+    },
+    "DIRECTION": {
+      "group": "BLIND",
+      "cases": 12,
+      "rejected": 0,
+      "detection_rate": 0.0,
+      "collides_with_a_claim_number": 12
+    }
+  }
+}
