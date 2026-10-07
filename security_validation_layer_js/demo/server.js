@@ -19,6 +19,18 @@ const { validate, securityMiddleware, mask } = require('../src/security-middlewa
 const { detectInText } = require('../src/pii-detectors');
 const { classifyColumns } = require('../src/pii-classifier');
 const { createNerClient, applyNer } = require('../src/pii-ner');
+const { loadPolicy } = require('../src/masking-policy');
+const { createPiiFpe } = require('../src/pii-fpe');
+const { verifyFF1 } = require('../src/fpe-ff1');
+
+// Dynamic masking: per-role actions from config/masking_policy.json.
+const MASKING_POLICY = loadPolicy(path.join(__dirname, '..', 'config', 'masking_policy.json'));
+// Format-preserving encryption. The FF1 self-test runs against the NIST
+// vectors at startup; without a key, 'fpe' actions fall back to redaction.
+verifyFF1();
+const FPE = /^[0-9a-f]{64}$/i.test(process.env.FPE_KEY || '')
+  ? createPiiFpe(process.env.FPE_KEY, { context: process.env.DB_NAME || 'svl_demo' })
+  : null;
 
 // NER side service (pii_service/ner_service.py). If it is down, the pipeline
 // fails closed unless NER_FAIL_MODE=open.
@@ -137,7 +149,9 @@ app.post('/api/query', dbRoute(async (b) => {
   const result = await queries.run(b.sql);
   const classification = classifyColumns(result, { sql: b.sql, piiSchema: PII_SCHEMA });
   const nerRun = await applyNer(result, classification, ner, { failMode: NER_FAIL_MODE });
-  const masked = mask(result, classification, { mode: b.maskMode === 'redact' ? 'redact' : 'partial' });
+  // In the integrated system the role comes from Member 3's validated JWT, never from the request body.
+  const role = typeof b.role === 'string' && b.role ? b.role : MASKING_POLICY.defaultRole;
+  const masked = mask(result, classification, { role, policy: MASKING_POLICY, fpe: FPE });
   masked.classification = classification;
   masked.ner = nerRun;
   if (b.includeRaw) masked.rawRows = result.rows;
@@ -152,6 +166,8 @@ app.post('/api/writes/:id/commit', dbRoute((b, p) => writes.commit(p.id, { sql: 
 
 app.listen(PORT, async () => {
   console.log(`Query validation test UI running at http://localhost:${PORT}`);
+  console.log(FPE ? 'Format-preserving encryption ready (FF1, NIST vectors verified)'
+    : 'FPE_KEY not set - fpe actions fall back to redaction (see .env.example)');
   const h = await ner.health();
   console.log(h.status === 'ok'
     ? `NER service connected (${h.model}) at ${ner.url}`
