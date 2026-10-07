@@ -1,0 +1,27 @@
+{
+  "_comment": "Dynamic masking: what each role sees for each PII type. Actions: clear (real value), partial (n****@example.com), fpe (format-preserving encryption: consistent, reversible pseudonym), redact ([EMAIL]). 'default' applies to types not listed. Unknown roles are always redacted. 'columns' overrides a type rule for one source column and role. SECRET is always redacted regardless of policy.",
+  "defaultRole": "viewer",
+  "roles": {
+    "admin": {
+      "default": "clear"
+    },
+    "analyst": {
+      "default": "fpe",
+      "DATE_OF_BIRTH": "partial",
+      "ADDRESS": "redact",
+      "UNVERIFIED": "redact"
+    },
+    "support": {
+      "default": "partial",
+      "UNVERIFIED": "redact"
+    },
+    "viewer": {
+      "default": "redact"
+    }
+  },
+  "columns": {
+    "customers.phone": {
+      "support": "partial"
+    }
+  }
+}
