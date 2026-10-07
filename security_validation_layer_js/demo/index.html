@@ -163,8 +163,13 @@ FROM customers c JOIN orders o ON o.customer_id = c.id
 WHERE c.tenant_id = 1</textarea>
     <div class="controls">
       <button class="run" id="qrun">Run</button>
-      <label class="check">Masking
-        <select id="qmode"><option value="partial">partial</option><option value="redact">redact</option></select>
+      <label class="check">Viewer role
+        <select id="qmode">
+          <option value="admin">admin — clear</option>
+          <option value="analyst">analyst — FPE pseudonyms</option>
+          <option value="support" selected>support — partial</option>
+          <option value="viewer">viewer — redacted</option>
+        </select>
       </label>
       <label class="check"><input type="checkbox" id="qraw" checked> Show raw values too (demo only)</label>
       <span class="hint">validate → execute read-only → classify → mask</span>
@@ -394,7 +399,7 @@ document.getElementById('qrun').onclick = async () => {
   const showRaw = document.getElementById('qraw').checked;
   const { ok, data } = await call('POST', '/api/query', {
     sql: document.getElementById('qsql').value,
-    maskMode: document.getElementById('qmode').value,
+    role: document.getElementById('qmode').value,
     includeRaw: showRaw,
   });
   if (!ok) {
@@ -404,6 +409,10 @@ document.getElementById('qrun').onclick = async () => {
   out.append(el('p', { className: 'meta', textContent:
     `${data.rowCount} row(s) · ${data.elapsedMs} ms · ${data.masking.maskedCells} cell(s) masked${data.truncated ? ' · truncated' : ''}` }));
   for (const w of (data.ner && data.ner.warnings) || []) out.append(el('p', { className: 'msg err', textContent: w }));
+  const pseudo = data.masking.columns.filter((c) => c.pseudonymised).map((c) => c.name);
+  out.append(el('p', { className: 'meta', textContent: `Role: ${data.masking.role} · `
+    + (data.masking.columns.map((c) => `${c.name} → ${c.action}`).join(', ') || 'no PII columns')
+    + (pseudo.length ? ` · pseudonymised (encrypted look-alikes, not real data): ${pseudo.join(', ')}` : '') }));
   out.append(el('h3', { className: 'sub', textContent: 'Masked — what leaves the security layer' }));
   out.append(resultTable(data.columns, data.rows, data.classification, data.rawRows));
   if (data.rawRows) {
