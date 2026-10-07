@@ -16,6 +16,11 @@ __pycache__/
 .coverage
 htmlcov/
 
+# JavaScript dependencies & build artifacts
+node_modules/
+dist/
+build/
+
 # IDE & Editor artifacts
 .vscode/
 .idea/

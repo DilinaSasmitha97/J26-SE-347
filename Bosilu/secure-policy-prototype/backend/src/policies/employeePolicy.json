@@ -1,0 +1,26 @@
+{
+  "policyId": "policy-employee-001",
+  "version": "1.0",
+  "role": "EMPLOYEE",
+  "allowedTables": [
+    "employees"
+  ],
+  "deniedColumns": [
+    "employees.salary",
+    "employees.date_of_birth"
+  ],
+  "rowRules": [
+    {
+      "table": "employees",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employees",
+      "field": "id",
+      "operator": "=",
+      "valueFrom": "userId"
+    }
+  ]
+}
