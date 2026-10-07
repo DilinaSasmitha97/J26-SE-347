@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+openai
+google-genai
+groq
+scikit-learn
+numpy
+pyodbc
+pymysql
+cryptography
+pyngrok
+httpx

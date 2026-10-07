@@ -1,0 +1,7 @@
+{
+  "userId": "user-101-manager",
+  "tenantId": 101,
+  "role": "MANAGER",
+  "departmentId": 1,
+  "region": "Colombo"
+}

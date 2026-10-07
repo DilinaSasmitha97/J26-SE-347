@@ -1,0 +1,34 @@
+[
+  {
+    "userId": "user-101-manager",
+    "name": "Manager A",
+    "tenantId": 101,
+    "role": "MANAGER",
+    "departmentId": 1,
+    "region": "Colombo"
+  },
+  {
+    "userId": "user-101-employee",
+    "name": "Employee A",
+    "tenantId": 101,
+    "role": "EMPLOYEE",
+    "departmentId": 1,
+    "region": "Colombo"
+  },
+  {
+    "userId": "user-102-manager",
+    "name": "Manager B",
+    "tenantId": 102,
+    "role": "MANAGER",
+    "departmentId": 3,
+    "region": "Kandy"
+  },
+  {
+    "userId": "user-102-employee",
+    "name": "Employee B",
+    "tenantId": 102,
+    "role": "EMPLOYEE",
+    "departmentId": 3,
+    "region": "Kandy"
+  }
+]

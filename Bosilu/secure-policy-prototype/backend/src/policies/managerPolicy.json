@@ -1,0 +1,27 @@
+{
+  "policyId": "policy-manager-001",
+  "version": "1.0",
+  "role": "MANAGER",
+  "allowedTables": [
+    "employees",
+    "departments"
+  ],
+  "deniedColumns": [
+    "employees.salary",
+    "employees.date_of_birth"
+  ],
+  "rowRules": [
+    {
+      "table": "employees",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employees",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    }
+  ]
+}
