@@ -1,1 +1,34 @@
+<<<<<<< HEAD
 Dilina/NL TO SQL prototype/research_protocol.md
+=======
+# Environments & Secrets
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# JavaScript dependencies & build artifacts
+node_modules/
+dist/
+build/
+
+# IDE & Editor artifacts
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+>>>>>>> origin/bosilu-secure-policy-prototype-starge-2
