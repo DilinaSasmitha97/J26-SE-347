@@ -631,13 +631,16 @@ function getMaxSubqueryDepth(ast) {
 
 // Comment markers can truncate or hide the rest of a query. Checked against raw
 // text because the parser silently discards comments — but with string
-// literals blanked out first, so `'item #3'` is not a comment. MySQL only
-// treats `--` as a comment when whitespace (or the end) follows, so `5--3`
-// (five minus minus three) is not flagged either.
+// literals blanked out first, so `'item #3'` is not a comment.
+// Any `--` outside a literal is flagged, even without the whitespace MySQL
+// requires: the parser treats `--'` as a comment and drops the rest of the
+// query (`'admin'--' AND password = 'x'`), so the validator would check a
+// different query from the one MySQL receives. The cost is that `5--3`
+// (five minus minus three) is refused too.
 function hasSqlComment(sql) {
   if (typeof sql !== 'string') return false;
   const code = stripQuoted(sql);
-  return /--(\s|$)/.test(code) || code.includes('#') || code.includes('/*');
+  return code.includes('--') || code.includes('#') || code.includes('/*');
 }
 
 /** True when a SELECT is part of a UNION anywhere in the tree, not just at the top level. */
