@@ -1,19 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '../App.jsx';
 
-// Requests go through the Vite dev proxy (vite.config.js), so the browser
-// never talks to the Python services directly and needs no CORS setup.
-const NL_TRANSLATE_URL = '/nl-api/api/v1/translate';
-const SQLGLOT_INSPECT_URL = '/sqlglot-api/inspect';
-const VERIFY_URL = '/api/verify-sql';
+// The browser calls only the Node backend. It owns the trusted user/policy,
+// then orchestrates NL-to-SQL, Navodya validation, SQLGlot and masked execution.
+const SECURE_QUERY_URL = '/api/secure-query';
+const GENERATE_SQL_URL = '/api/generate-sql';
 
 const MAX_FILE_BYTES = 256 * 1024; // matches the backend's JSON body limit
 const MAX_QUESTION_CHARS = 2000;
-const NL_TIMEOUT_MS = 120000; // LLM calls with self-refinement can be slow
-const SERVICE_TIMEOUT_MS = 30000;
+const PIPELINE_TIMEOUT_MS = 120000; // LLM calls with self-refinement can be slow
 const KNOWN_STATEMENTS = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
 
-const SAMPLE_QUESTION = 'Show the first name, last name and work email of employees in the IT department';
+const SAMPLE_QUESTION = 'Show the first name, last name and work email of employees in my department';
 
 const SAMPLE_POLICY = {
   policyId: 'policy-manager-hr-read',
@@ -38,6 +36,7 @@ const SAMPLE_USER = {
 const SAMPLE_RULES = {
   constraints: [
     'STRICT CONSTRAINT: Filter all results by employees.tenant_id = 101.',
+    'STRICT CONSTRAINT: Filter employees.department_id = 1.',
     'Only use the tables employees and departments.',
     'Never select nic_number, passport_number or personal_email.'
   ]
@@ -139,7 +138,7 @@ function StatusPill({ state }) {
   return <span className={`pl-pill pl-pill-${state === 'invalid' ? 'fail' : state}`}>{state === 'loading' && <i className="pl-dot-spin" />}{labels[state]}</span>;
 }
 
-function JsonUpload({ number, icon, title, description, text, onText, fileName, onFileName, log }) {
+function JsonUpload({ number, icon, title, description, text, onText, fileName, onFileName, log, disabled = false }) {
   const input = useRef(null);
   const parsed = parseObject(title, text);
 
@@ -174,14 +173,14 @@ function JsonUpload({ number, icon, title, description, text, onText, fileName, 
         <div><h2>{title}</h2><p>{description}</p></div>
       </div>
       <div className="pl-upload-row">
-        <button type="button" className="pl-ghost" onClick={() => input.current?.click()}>
+        <button type="button" className="pl-ghost" onClick={() => input.current?.click()} disabled={disabled}>
           <Icon name="file" size={15} /> Upload .json
         </button>
         <span className="pl-file-name">{fileName || 'sample (edit or upload)'}</span>
-        <input ref={input} type="file" accept=".json,application/json" hidden
+        <input ref={input} type="file" accept=".json,application/json" hidden disabled={disabled}
           onChange={(event) => { readFile(event.target.files[0]); event.target.value = ''; }} />
       </div>
-      <textarea className="code-input pl-json-input" value={text} spellCheck="false" aria-label={title}
+      <textarea className="code-input pl-json-input" value={text} spellCheck="false" aria-label={title} disabled={disabled}
         onChange={(event) => { onText(event.target.value); onFileName(fileName ? `${fileName} (edited)` : ''); }} />
       {parsed.error
         ? <p className="field-error"><Icon name="close" size={15} /> {parsed.error}</p>
@@ -297,6 +296,91 @@ function DecisionCard({ verify }) {
   );
 }
 
+function NavodyaCard({ validation }) {
+  if (!validation) return null;
+  return (
+    <div className={`pl-result-card ${validation.safe ? 'is-pass' : 'is-fail'}`}>
+      <div className="pl-result-head">
+        <h3>Navodya security validation</h3>
+        <StatusPill state={validation.safe ? 'pass' : 'fail'} />
+      </div>
+      <dl className="pl-facts">
+        <div><dt>Parser verdict</dt><dd>{validation.safe ? 'Safe to continue' : 'Blocked before execution'}</dd></div>
+        <div><dt>Statement</dt><dd><span className={`pl-chip ${validation.safe ? 'ok' : 'bad'}`}>{validation.statementType}</span></dd></div>
+        <div><dt>Protection</dt><dd>Single statement, read-only operation, dangerous functions, system schemas and policy-derived allowlist</dd></div>
+      </dl>
+      {validation.violations?.length > 0 && (
+        <div className="pl-violation-list">
+          {validation.violations.map((item, index) => (
+            <div key={`${item.type}-${index}`}><strong>{item.type}</strong><span>{item.detail}</span></div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExecutionCard({ execution }) {
+  if (!execution) return null;
+  if (execution.error) {
+    return (
+      <div className="pl-result-card is-fail">
+        <div className="pl-result-head"><h3>Secure execution &amp; masking</h3><StatusPill state="error" /></div>
+        <p className="pl-error-text">{execution.error.message}</p>
+        <p className="pl-mono pl-reason">{execution.error.code}</p>
+        <div className="service-hint">Validation passed, but MySQL execution could not complete. Configure the shared database credentials in demo-application/.env.</div>
+      </div>
+    );
+  }
+
+  const result = execution.result;
+  const columns = result.columns || [];
+  const classifications = result.classification || [];
+  return (
+    <div className="pl-result-card is-pass pl-execution-card">
+      <div className="pl-result-head">
+        <h3>Secure execution &amp; masking</h3>
+        <StatusPill state="done" />
+      </div>
+      <div className="pl-meta-row">
+        <span>Engine: {result.engine || 'mysql'}</span>
+        <span>{result.rowCount} database row(s)</span>
+        <span>{result.rows.length} returned</span>
+        <span>{result.elapsedMs} ms query time</span>
+        <span className="ok">{result.masking?.maskedCells || 0} cell(s) masked</span>
+        <span>NER: {result.ner?.status || 'unknown'}</span>
+      </div>
+      <div className="pl-table-wrap">
+        <table className="pl-data-table">
+          <thead><tr>{columns.map((column, index) => <th key={`${column.name}-${index}`}>{column.name}</th>)}</tr></thead>
+          <tbody>
+            {result.rows.length ? result.rows.map((row, rowIndex) => (
+              <tr key={rowIndex}>{row.map((value, columnIndex) => <td key={columnIndex}>{value == null ? 'NULL' : String(value)}</td>)}</tr>
+            )) : <tr><td colSpan={Math.max(columns.length, 1)}>No rows returned.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <div className="inspection-summary">
+        <div className="summary-heading"><span>PII classification &amp; masking plan</span><span className="source-badge">Navodya</span></div>
+        <div className="pl-classification-grid">
+          {columns.map((column, index) => {
+            const classification = classifications[index] || {};
+            const plan = result.masking?.columns?.find((item) => item.name === column.name);
+            return (
+              <div key={`${column.name}-${index}`}>
+                <strong>{column.name}</strong>
+                <span>{classification.piiType || 'Non-PII'}</span>
+                <small>{plan?.action || 'clear'} · {classification.method || 'schema/values'}</small>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {result.ner?.warnings?.map((warning, index) => <div key={index} className="pl-banner fail">{warning}</div>)}
+    </div>
+  );
+}
+
 function ActivityLog({ entries, onClear }) {
   const end = useRef(null);
   useEffect(() => { end.current?.scrollIntoView({ block: 'nearest' }); }, [entries.length]);
@@ -343,7 +427,14 @@ export default function NlPipeline() {
   const [verifyState, setVerifyState] = useState('idle');
   const [inspect, setInspect] = useState(null);
   const [verify, setVerify] = useState(null);
+  const [navodya, setNavodya] = useState(null);
+  const [execution, setExecution] = useState(null);
   const [verifiedPolicy, setVerifiedPolicy] = useState(null);
+  const busy = genState === 'loading' || verifyState === 'loading';
+
+  const clearVerification = () => {
+    setVerifyState('idle'); setInspect(null); setVerify(null); setNavodya(null); setExecution(null); setVerifiedPolicy(null);
+  };
 
   const [logs, setLogs] = useState([]);
   const nextId = useRef(0);
@@ -360,15 +451,16 @@ export default function NlPipeline() {
     setRulesText(pretty(SAMPLE_RULES));
     setFiles({ policy: '', user: '', rules: '' });
     setGenState('idle'); setGenError(null); setGenerated(null); setSql('');
-    setVerifyState('idle'); setInspect(null); setVerify(null);
+    clearVerification();
     setLogs([]);
   };
 
-  // ---- Step 1: NL question + rules -> NL-to-SQL service -------------------
+  // ---- Step 1: generate an editable draft without executing it ------------
   const submit = async () => {
+    if (busy) return;
     setGenerated(null); setSql(''); setGenError(null);
-    setVerifyState('idle'); setInspect(null); setVerify(null);
-    log('STEP 1', 'info', 'Submit clicked. Validating the question and the three JSON inputs.');
+    clearVerification();
+    log('STEP 1', 'info', 'Generate SQL clicked. Validating the question and the three JSON inputs.');
 
     const q = question.trim();
     const policy = parseObject('User policy', policyText);
@@ -387,56 +479,55 @@ export default function NlPipeline() {
       return;
     }
 
-    const p = policy.value;
     const u = user.value;
-    log('STEP 1', 'success', `Inputs valid. Policy "${p.policyId || 'unnamed'}": ${p.allowedTables.length} allowed table(s), ${(p.deniedColumns || []).length} denied column(s), ${(p.requiredFilters || p.rowRules || []).length} required filter(s).`, p);
-    log('STEP 1', 'info', `Authenticated user ${u.userId || u.sub || '(no userId)'} · role ${u.role || '(none)'} · tenant ${u.tenantId ?? '(none)'}.`, u);
-    log('SECURITY', 'warn', 'Identity claims come from an uploaded JSON file in this demo. In production they must come from a verified JWT, never from user input.');
-    if (u.tenantId === undefined || u.tenantId === null) {
-      log('SECURITY', 'warn', 'The authenticated user has no tenantId, so the tenant isolation check will fail closed.');
+    if (!u.userId) {
+      log('STEP 1', 'error', 'Authenticated user JSON must contain userId. Only that identifier is sent to the backend.');
+      setGenState('invalid');
+      setGenError('Add a valid demo userId, then submit again.');
+      return;
     }
-
-    const injectedRules = rulesToText(rules.value);
-    log('STEP 1', 'info', `Rules converted to injected_rules text (${injectedRules.length} characters).`, injectedRules);
-    if (u.tenantId != null && !/tenant_id/i.test(injectedRules)) {
-      log('SECURITY', 'warn', 'The NL-to-SQL rules do not mention tenant_id. The model may omit the tenant filter; verification will catch it.');
-    }
+    log('STEP 1', 'success', `Inputs valid. Requesting SQL generation for demo identity ${u.userId}.`);
+    log('SECURITY', 'info', 'Only userId is sent. The backend reloads the trusted identity and policy, then derives the NL-to-SQL rules itself.');
+    log('SECURITY', 'info', 'The policy and rules editors remain visible for comparison, but client edits cannot weaken backend enforcement.');
 
     setGenState('loading');
-    const body = { user_query: q, injected_rules: injectedRules };
-    log('NL-TO-SQL', 'info', 'POST /api/v1/translate → NL-to-SQL service (port 8000). Waiting for the LLM…', body);
-    const res = await postJson(NL_TRANSLATE_URL, body, NL_TIMEOUT_MS);
+    const body = { question: q, userId: u.userId };
+    log('NL-TO-SQL', 'info', 'POST /api/generate-sql → backend gateway. Generate a SQL draft for review before validation and execution.', body);
+    const res = await postJson(GENERATE_SQL_URL, body, PIPELINE_TIMEOUT_MS);
 
-    if (!res.ok || !res.data || res.data.status !== 'SUCCESS' || !res.data.predicted_sql) {
-      const message = res.ok ? `Unexpected response: status "${res.data?.status}" without predicted_sql.` : describeError(res, NL_TIMEOUT_MS);
-      log('NL-TO-SQL', 'error', `Generation failed after ${res.ms} ms: ${message}`, res.data || undefined);
-      if (res.status === 0 || !res.data) log('NL-TO-SQL', 'info', 'Hint: start the service with  .\\venv\\Scripts\\python.exe run_server.py  in nl-to-sql-service.');
+    if (!res.ok || !res.data?.sql) {
+      const message = describeError(res, PIPELINE_TIMEOUT_MS);
+      log('PIPELINE', 'error', `Secure generation failed after ${res.ms} ms: ${message}`, res.data || undefined);
+      if (res.status === 0 || !res.data) log('PIPELINE', 'info', 'Start the Node backend and NL-to-SQL service, then retry.');
       setGenState('fail');
       setGenError(message);
       return;
     }
 
-    const { predicted_sql: predicted, metadata = {} } = res.data;
-    log('NL-TO-SQL', 'success', `SQL generated in ${res.ms} ms.`, predicted);
+    const pipeline = res.data;
+    const predicted = pipeline.sql;
+    const metadata = pipeline.generation?.metadata || {};
+    log('NL-TO-SQL', 'success', `SQL generated through the backend gateway in ${res.ms} ms.`, predicted);
     log('NL-TO-SQL', 'info', `Tokens: ${metadata.total_tokens ?? '?'} (prompt ${metadata.prompt_tokens ?? '?'}, completion ${metadata.completion_tokens ?? '?'}) · refinement attempts: ${metadata.refinement_attempts ?? 0} · self-healed: ${metadata.healed ? 'yes' : 'no'}.`, metadata);
-    if (metadata.is_valid === false) log('NL-TO-SQL', 'warn', 'The engine marked its own SQL as not valid after refinement. Verification will decide.');
-    if (!/^\s*(with|select)\b/i.test(predicted)) log('SECURITY', 'warn', 'Generated statement is not a SELECT. Read-only policies will block it.');
-    if (/;\s*\S/.test(predicted)) log('SECURITY', 'warn', 'Generated text contains more than one statement (";" followed by more SQL).');
-
+    setPolicyText(pretty(pipeline.effectivePolicy));
+    setUserText(pretty(pipeline.user));
+    if (pipeline.generation?.injectedRules) {
+      setRulesText(pretty({ constraints: pipeline.generation.injectedRules.split('\n') }));
+    }
     setGenerated({ sql: predicted, metadata, ms: res.ms });
     setSql(predicted);
     setGenState('pass');
-    log('STEP 2', 'info', 'Step 2 unlocked. Review the SQL and click Verify.');
+    log('STEP 2', 'info', 'Review or edit the generated SQL, then click Validate & execute. Security and policy checks will run on the SQL in the editor before execution.');
     setTimeout(() => step2Ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
-  // ---- Step 2: SQL + policy + user -> SQLGlot + security backend ----------
+  // ---- Step 2: revalidate, execute read-only, classify and mask ------------
   const verifySql = async () => {
-    setInspect(null); setVerify(null);
-    const policy = parseObject('User policy', policyText);
+    if (busy || !generated || !sql.trim()) return;
+    clearVerification();
     const user = parseObject('Authenticated user', userText);
-    if (policy.error || user.error || !sql.trim()) {
-      [policy.error, user.error, !sql.trim() && 'SQL is empty.'].filter(Boolean).forEach((e) => log('STEP 2', 'error', e));
+    if (user.error || !user.value?.userId || !sql.trim()) {
+      [user.error, !user.value?.userId && 'Authenticated user must contain userId.', !sql.trim() && 'SQL is empty.'].filter(Boolean).forEach((e) => log('STEP 2', 'error', e));
       setVerifyState('fail');
       return;
     }
@@ -444,65 +535,50 @@ export default function NlPipeline() {
       log('SECURITY', 'warn', 'The SQL was edited by hand after generation. The edited text is what gets verified.', sql);
     }
     setVerifyState('loading');
-    setVerifiedPolicy(policy.value);
-    log('STEP 2', 'info', 'Verify clicked. Sending the SQL, user policy and authenticated user for checking.');
+    log('STEP 2', 'info', 'Sending the edited SQL and userId to the backend for fresh validation, policy checks, read-only execution and PII masking.');
+    const response = await postJson(SECURE_QUERY_URL, {
+      sql: sql.trim(),
+      userId: user.value.userId,
+      execute: true
+    }, PIPELINE_TIMEOUT_MS);
 
-    // 2a. SQLGlot: parse into an AST and extract tables, columns, filters.
-    log('SQLGLOT', 'info', 'POST /inspect → SQLGlot service (port 8001), dialect mysql.');
-    const ins = await postJson(SQLGLOT_INSPECT_URL, { sql, dialect: 'mysql' }, SERVICE_TIMEOUT_MS);
-    if (!ins.ok || !ins.data?.analysis) {
-      const message = describeError(ins, SERVICE_TIMEOUT_MS);
-      log('SQLGLOT', 'error', `Inspection failed after ${ins.ms} ms: ${message}`, ins.data || undefined);
-      setInspect({ error: message });
-    } else {
-      const a = ins.data.analysis;
-      setInspect({ analysis: a, ms: ins.ms });
-      log('SQLGLOT', 'success', `Parsed in ${ins.ms} ms: ${a.statementType} · ${a.tables.length} table(s) · ${a.columns.length} column reference(s) · ${a.filters.length} filter(s) · ${a.joins.length} join(s).`, a);
-      if (!KNOWN_STATEMENTS.includes(a.statementType)) {
-        log('SQLGLOT', 'warn', `SQLGlot read this as "${a.statementType}", which usually means the text is not valid SQL.`);
-      }
-      const allowed = new Set(policy.value.allowedTables.map((t) => String(t).toLowerCase()));
-      const outside = a.tables.filter((t) => !allowed.has(String(t.name).toLowerCase())).map((t) => t.name);
-      if (outside.length) log('SECURITY', 'warn', `Table(s) outside the policy: ${outside.join(', ')}.`);
-      const denied = new Set((policy.value.deniedColumns || []).map((c) => String(c).toLowerCase()));
-      const hit = a.columns.map((c) => `${qualify(c, a)}.${c.column}`).filter((c) => denied.has(c.toLowerCase()));
-      if (hit.length) log('SECURITY', 'warn', `Denied column(s) referenced: ${[...new Set(hit)].join(', ')}.`);
-      const tenantFilters = a.filters.filter((f) => f.column === 'tenant_id');
-      log('SECURITY', tenantFilters.length ? 'info' : 'warn', tenantFilters.length
-        ? `Tenant filter found: ${tenantFilters.map((f) => `${qualify(f, a)}.tenant_id ${f.operator} ${f.value}`).join(', ')}.`
-        : 'No tenant_id filter found in the query.');
-    }
-
-    // 2b. Security backend: SQLGlot analysis + policy + user -> decision.
-    log('POLICY', 'info', 'POST /api/verify-sql → security checking backend (port 5000). It runs its own SQLGlot inspection, then the policy checks.');
-    const ver = await postJson(VERIFY_URL, { policy: policy.value, user: user.value, sql, dialect: 'mysql' }, SERVICE_TIMEOUT_MS);
-    if (!ver.ok || !ver.data?.checks) {
-      const message = describeError(ver, SERVICE_TIMEOUT_MS);
-      const code = ver.data?.code;
-      const hint = code === 'SQLGLOT_UNAVAILABLE'
-        ? 'The backend could not reach SQLGlot. Start sqlglot-service on port 8001.'
-        : (!ver.data ? 'Start the backend with  npm start  in demo-application/backend (port 5000).' : null);
-      log('POLICY', 'error', `Verification failed after ${ver.ms} ms: ${message}`, ver.data || undefined);
-      if (hint) log('POLICY', 'info', `Hint: ${hint}`);
-      setVerify({ error: message, hint });
+    if (!response.ok || !response.data?.decision) {
+      const message = describeError(response, PIPELINE_TIMEOUT_MS);
+      log('PIPELINE', 'error', `Secure execution request failed after ${response.ms} ms: ${message}`, response.data || undefined);
+      setVerify({ error: message, hint: 'Check the backend, SQLGlot and database configuration.' });
       setVerifyState('fail');
       return;
     }
 
-    const r = ver.data;
-    setVerify({ result: r, ms: ver.ms });
-    r.checks.forEach((check) => log('POLICY', check.passed ? 'success' : 'error',
+    const pipeline = response.data;
+    setPolicyText(pretty(pipeline.effectivePolicy));
+    setUserText(pretty(pipeline.user));
+    setVerifiedPolicy(pipeline.effectivePolicy);
+    setNavodya(pipeline.securityValidation);
+    setInspect(pipeline.inspection ? { analysis: pipeline.inspection, ms: pipeline.elapsedMs } : null);
+    setVerify({ result: pipeline.decision, ms: pipeline.elapsedMs });
+    pipeline.decision.checks.forEach((check) => log('POLICY', check.passed ? 'success' : 'error',
       `${check.label}: ${check.passed ? 'PASS' : 'FAIL'} - ${check.message}`, check.reason ? { reason: check.reason } : undefined));
-    log('DECISION', r.passed ? 'success' : 'error', `${r.decision}: ${r.message}`);
-    setVerifyState(r.passed ? 'pass' : 'fail');
+    if (pipeline.status === 'COMPLETED') {
+      setExecution({ result: pipeline.result });
+      log('EXECUTION', 'success', `Read-only query returned ${pipeline.result.rowCount} row(s); ${pipeline.result.masking.maskedCells} cell(s) were masked before the response left the backend.`, pipeline.result.masking);
+      if (pipeline.result.ner?.warnings?.length) pipeline.result.ner.warnings.forEach((warning) => log('NER', 'warn', warning));
+    } else if (pipeline.executionError) {
+      setExecution({ error: pipeline.executionError });
+      log('EXECUTION', 'error', `${pipeline.executionError.code}: ${pipeline.executionError.message}`, pipeline.executionError.details);
+    }
+    log('DECISION', pipeline.decision.passed ? 'success' : 'error', `${pipeline.decision.decision}: ${pipeline.decision.message}`);
+    setVerifyState(pipeline.status === 'COMPLETED' ? 'pass' : pipeline.decision.passed ? 'pass' : 'fail');
   };
 
   const inspectState = !inspect ? (verifyState === 'loading' ? 'loading' : 'idle') : inspect.error ? 'fail' : 'pass';
   const steps = [
     { label: 'Inputs', state: genState === 'idle' ? 'active' : genState === 'invalid' ? 'fail' : 'pass' },
     { label: 'NL → SQL', state: genState === 'loading' ? 'active' : genState === 'pass' ? 'pass' : genState === 'fail' ? 'fail' : 'idle' },
+    { label: 'Navodya', state: navodya ? (navodya.safe ? 'pass' : 'fail') : verifyState === 'loading' ? 'active' : 'idle' },
     { label: 'SQLGlot', state: inspectState === 'loading' ? 'active' : inspectState },
-    { label: 'Decision', state: verifyState === 'loading' && inspect ? 'active' : verifyState === 'pass' ? 'pass' : verifyState === 'fail' ? 'fail' : 'idle' }
+    { label: 'Policy', state: verifyState === 'loading' && inspect ? 'active' : verifyState === 'pass' ? 'pass' : verifyState === 'fail' ? 'fail' : 'idle' },
+    { label: 'Mask', state: execution?.result ? 'pass' : execution?.error ? 'fail' : 'idle' }
   ];
 
   return (
@@ -510,11 +586,11 @@ export default function NlPipeline() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark"><Icon name="shield" size={22} /></span>
-          <div><strong>PolicyGate</strong><span>NL → SQL → verification pipeline</span></div>
+          <div><strong>PolicyGate</strong><span>NL → SQL → validation → masked results</span></div>
         </div>
         <div className="topbar-actions">
           <a className="reset-button pl-link" href="#/">SQL verification console</a>
-          <button className="reset-button" type="button" onClick={resetAll}><Icon name="refresh" size={16} /> Reset</button>
+          <button className="reset-button" type="button" onClick={resetAll} disabled={busy}><Icon name="refresh" size={16} /> Reset</button>
         </div>
       </header>
 
@@ -522,8 +598,8 @@ export default function NlPipeline() {
         <div className="page-heading">
           <div>
             <p className="kicker">End-to-end pipeline</p>
-            <h1>Ask in English, verify the SQL</h1>
-            <p>Step 1 turns your question into SQL with the NL-to-SQL engine. Step 2 checks that SQL with SQLGlot and the security backend against the user's policy.</p>
+            <h1>Generate SQL, review it, then execute</h1>
+            <p>Generate a SQL draft from your question, edit it below, then validate and execute it to see masked results.</p>
           </div>
           <Stepper steps={steps} />
         </div>
@@ -534,29 +610,29 @@ export default function NlPipeline() {
             <section className="input-card pl-step-card">
               <div className="pl-step-title">
                 <span className="pl-step-badge">Step 1</span>
-                <h2>Question &amp; context</h2>
+                <h2>Question &amp; demo context</h2>
                 <StatusPill state={genState} />
               </div>
 
               <label className="pl-label" htmlFor="pl-question">Natural language question</label>
-              <textarea id="pl-question" className="pl-question" value={question} maxLength={MAX_QUESTION_CHARS}
+              <textarea id="pl-question" className="pl-question" value={question} maxLength={MAX_QUESTION_CHARS} disabled={busy}
                 onChange={(event) => setQuestion(event.target.value)} placeholder="e.g. Show employees who joined this year" />
               <div className="pl-counter">{question.length} / {MAX_QUESTION_CHARS}</div>
 
               <div className="pl-json-grid">
-                <JsonUpload number="A" icon="file" title="User policy" description="Allowed tables, denied columns, required filters"
-                  text={policyText} onText={setPolicyText} fileName={files.policy} onFileName={setFile('policy')} log={log} />
-                <JsonUpload number="B" icon="user" title="Authenticated user" description="Identity claims (userId, role, tenantId)"
-                  text={userText} onText={setUserText} fileName={files.user} onFileName={setFile('user')} log={log} />
-                <JsonUpload number="C" icon="code" title="NL-to-SQL rules" description="Sent to the engine as injected_rules"
-                  text={rulesText} onText={setRulesText} fileName={files.rules} onFileName={setFile('rules')} log={log} />
+                <JsonUpload number="A" icon="file" title="User policy" description="Reference view; backend reloads its authoritative copy"
+                  text={policyText} onText={setPolicyText} fileName={files.policy} onFileName={setFile('policy')} log={log} disabled={busy} />
+                <JsonUpload number="B" icon="user" title="Authenticated user" description="Only userId is sent; backend reloads trusted claims"
+                  text={userText} onText={(value) => { setUserText(value); clearVerification(); }} fileName={files.user} onFileName={setFile('user')} log={log} disabled={busy} />
+                <JsonUpload number="C" icon="code" title="NL-to-SQL rules" description="Reference view; backend derives these from policy"
+                  text={rulesText} onText={setRulesText} fileName={files.rules} onFileName={setFile('rules')} log={log} disabled={busy} />
               </div>
 
               {genError && <div className="pl-banner fail"><Icon name="close" size={16} /> {genError}</div>}
               <div className="pl-actions">
-                <span className="pl-muted">Sends the question and the rules to the NL-to-SQL service.</span>
-                <button className="verify-button" type="button" onClick={submit} disabled={genState === 'loading'}>
-                  <Icon name="bolt" size={17} /> {genState === 'loading' ? 'Generating SQL…' : 'Submit'}
+                <span className="pl-muted">Generate a draft, then review and edit the SQL in step 2.</span>
+                <button className="verify-button" type="button" onClick={submit} disabled={busy}>
+                  <Icon name="bolt" size={17} /> {genState === 'loading' ? 'Generating SQL…' : 'Generate SQL'}
                 </button>
               </div>
             </section>
@@ -565,12 +641,12 @@ export default function NlPipeline() {
             <section ref={step2Ref} className={`input-card pl-step-card ${generated ? '' : 'pl-locked'}`}>
               <div className="pl-step-title">
                 <span className="pl-step-badge">Step 2</span>
-                <h2>Verify the generated SQL</h2>
+                <h2>Review &amp; edit SQL</h2>
                 <StatusPill state={verifyState === 'idle' ? 'idle' : verifyState} />
               </div>
 
               {!generated ? (
-                <p className="pl-muted">Submit step 1 first. The generated SQL will appear here.</p>
+                <p className="pl-muted">Click Generate SQL first. Your editable SQL draft will appear here.</p>
               ) : (
                 <>
                   <div className="pl-meta-row">
@@ -580,25 +656,31 @@ export default function NlPipeline() {
                     <span className={generated.metadata.is_valid === false ? 'bad' : 'ok'}>Engine valid: {generated.metadata.is_valid === false ? 'no' : 'yes'}</span>
                     {generated.metadata.healed && <span className="ok">Self-healed</span>}
                   </div>
-                  <textarea className="code-input sql-input" value={sql} spellCheck="false" aria-label="Generated SQL"
-                    onChange={(event) => setSql(event.target.value)} />
+                  <label className="pl-label" htmlFor="pl-sql">SQL to validate and execute</label>
+                  <textarea id="pl-sql" className="code-input sql-input" value={sql} spellCheck="false" aria-label="Generated SQL" disabled={busy}
+                    onChange={(event) => { setSql(event.target.value); clearVerification(); }} />
                   {sql.trim() !== generated.sql.trim() && (
-                    <p className="field-error"><Icon name="close" size={15} /> Edited by hand. The edited SQL is what will be verified.</p>
+                    <p className="pl-muted">SQL edited. Your changes will be validated before execution.</p>
                   )}
-                  <div className="pl-actions">
-                    <span className="pl-muted">SQL + policy + user → SQLGlot (8001) and security backend (5000).</span>
-                    <button className="verify-button" type="button" onClick={verifySql} disabled={verifyState === 'loading'}>
-                      <Icon name="shield" size={17} /> {verifyState === 'loading' ? 'Verifying…' : 'Verify'}
-                    </button>
-                  </div>
-
+                </>
+              )}
+              <div className="pl-actions">
+                <span className="pl-muted">Validate the SQL in the editor, execute it read-only and return masked results.</span>
+                <button className="verify-button" type="button" onClick={verifySql} disabled={busy || !generated || !sql.trim()}>
+                  <Icon name="shield" size={17} /> {verifyState === 'loading' ? 'Validating & executing…' : 'Validate & execute'}
+                </button>
+              </div>
+              {generated && (
+                <>
                   {(inspect || verify || verifyState === 'loading') && (
                     <div className="pl-results">
                       {verifyState === 'loading' && !verify && (
                         <div className="pl-result-card pl-loading"><span className="spinner" /> Checking the query…</div>
                       )}
+                      <NavodyaCard validation={navodya} />
                       <InspectionCard inspect={inspect} policy={verifiedPolicy} />
                       <DecisionCard verify={verify} />
+                      <ExecutionCard execution={execution} />
                     </div>
                   )}
                 </>
@@ -611,8 +693,8 @@ export default function NlPipeline() {
       </main>
 
       <footer>
-        <span><Icon name="shield" size={14} /> Generated SQL is inspected and evaluated only; it is never executed here.</span>
-        <span>NL-to-SQL → SQLGlot → Policy checks → Decision</span>
+        <span><Icon name="shield" size={14} /> Raw database rows stay in the backend; the browser receives masked values only.</span>
+        <span>NL-to-SQL → Navodya → SQLGlot → Policy → Read-only DB → PII mask</span>
       </footer>
     </div>
   );

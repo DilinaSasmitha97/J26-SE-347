@@ -8,6 +8,13 @@ const { createGenerationContract } = require('./services/generationContract');
 const { generateSql } = require('./services/fakeSqlGenerator');
 const { inspectSql, SqlInspectionError } = require('./security/sql/sqlInspector');
 const { evaluateSqlSecurity } = require('./security/sql/securityEvaluator');
+const {
+  SecureQueryError,
+  validateWithSecurityLayer,
+  translateQuestion,
+  executeAndMask,
+  getSecurityRuntimeHealth
+} = require('./services/secureQueryService');
 
 function createEffectivePolicy(context) {
   if (!context || typeof context !== 'object' || Array.isArray(context)) {
@@ -50,8 +57,43 @@ function validateVerificationRequest(body) {
 }
 
 async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
+  const validation = validateWithSecurityLayer(sql, policy);
+  const validationCheck = {
+    label: 'Navodya AST safety',
+    passed: validation.safe,
+    status: validation.safe ? 'PASS' : 'FAIL',
+    reason: validation.safe ? null : 'SECURITY_LAYER_REJECTED',
+    message: validation.safe
+      ? `${validation.statementType} passed dangerous-query and schema-allowlist validation.`
+      : validation.violations.map((item) => `${item.type}: ${item.detail}`).join('; ')
+  };
+
+  if (!validation.safe) {
+    return {
+      passed: false,
+      decision: 'FAIL',
+      message: 'Query was stopped by the security validation layer.',
+      checks: [validationCheck],
+      securityValidation: validation,
+      context: {
+        policyId: policy.policyId || 'Unnamed policy',
+        userId: user.userId || user.sub || 'Unknown user',
+        role: user.role || 'Unspecified',
+        tables: [],
+        columns: [],
+        normalizedSql: ''
+      }
+    };
+  }
+
   const analysis = await inspectSql(sql, dialect);
-  return evaluateSqlSecurity(analysis, policy, user);
+  const policyResult = evaluateSqlSecurity(analysis, policy, user);
+  return {
+    ...policyResult,
+    checks: [validationCheck, ...policyResult.checks],
+    securityValidation: validation,
+    inspection: analysis
+  };
 }
 
 function createApp() {
@@ -61,6 +103,19 @@ function createApp() {
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', service: 'policy-verification-backend' });
+  });
+
+  app.get('/api/security-health', async (req, res) => {
+    const runtime = await getSecurityRuntimeHealth();
+    res.json({
+      status: runtime.database.status === 'ok' && runtime.ner.status === 'ok' ? 'ok' : 'degraded',
+      service: 'integrated-security-pipeline',
+      components: {
+        navodyaValidation: { status: 'ok', mode: 'in-process' },
+        database: runtime.database,
+        ner: runtime.ner
+      }
+    });
   });
 
   app.get('/api/users', (req, res) => {
@@ -104,6 +159,134 @@ function createApp() {
       return res.status(500).json({
         code: 'VERIFICATION_FAILED',
         message: 'The backend could not complete SQL verification.'
+      });
+    }
+  });
+
+  app.post('/api/generate-sql', async (req, res) => {
+    const started = Date.now();
+    const user = demoUsers.find((item) => item.userId === req.body?.userId);
+    if (!user) {
+      return res.status(400).json({
+        code: 'UNKNOWN_USER',
+        message: 'Choose a valid demo user. The backend does not trust client-supplied roles or policies.'
+      });
+    }
+
+    const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
+    if (!question || question.length > 2000) {
+      return res.status(400).json({
+        code: 'INVALID_REQUEST',
+        message: 'Provide a natural-language question of up to 2000 characters.'
+      });
+    }
+
+    try {
+      const effectivePolicy = createEffectivePolicy(user);
+      const generation = await translateQuestion(question, effectivePolicy);
+      return res.json({
+        status: 'GENERATED',
+        question,
+        user,
+        effectivePolicy,
+        generation,
+        sql: generation.sql,
+        elapsedMs: Date.now() - started
+      });
+    } catch (error) {
+      if (error instanceof SecureQueryError) {
+        return res.status(error.status || 500).json({
+          code: error.code,
+          message: error.message,
+          details: error.details || null
+        });
+      }
+      console.error('SQL generation failed:', error);
+      return res.status(500).json({
+        code: 'SQL_GENERATION_FAILED',
+        message: 'The backend could not generate SQL.'
+      });
+    }
+  });
+
+  app.post('/api/secure-query', async (req, res) => {
+    const started = Date.now();
+    const requestedUserId = req.body?.userId;
+    const user = demoUsers.find((item) => item.userId === requestedUserId);
+
+    if (!user) {
+      return res.status(400).json({
+        code: 'UNKNOWN_USER',
+        message: 'Choose a valid demo user. The backend does not trust client-supplied roles or policies.'
+      });
+    }
+
+    const suppliedSql = typeof req.body?.sql === 'string' ? req.body.sql.trim() : '';
+    const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
+    if (!suppliedSql && !question) {
+      return res.status(400).json({
+        code: 'INVALID_REQUEST',
+        message: 'Provide either a natural-language question or SQL to validate.'
+      });
+    }
+
+    try {
+      const effectivePolicy = createEffectivePolicy(user);
+      const generation = suppliedSql ? null : await translateQuestion(question, effectivePolicy);
+      const sql = suppliedSql || generation.sql;
+      const decision = await verifySql({ policy: effectivePolicy, user, sql, dialect: 'mysql' });
+      const baseResponse = {
+        status: decision.passed ? 'APPROVED' : 'BLOCKED',
+        source: suppliedSql ? 'provided_sql' : 'nl_to_sql',
+        question: question || null,
+        user,
+        effectivePolicy,
+        generation,
+        sql,
+        securityValidation: decision.securityValidation,
+        inspection: decision.inspection || null,
+        decision,
+        tenantRewrite: { applied: false, reason: 'Skipped in this integration phase.' },
+        elapsedMs: Date.now() - started
+      };
+
+      if (!decision.passed || req.body?.execute !== true) {
+        return res.json(baseResponse);
+      }
+
+      try {
+        const result = await executeAndMask(sql, effectivePolicy, user);
+        return res.json({
+          ...baseResponse,
+          status: 'COMPLETED',
+          result,
+          elapsedMs: Date.now() - started
+        });
+      } catch (error) {
+        if (!(error instanceof SecureQueryError)) throw error;
+        return res.json({
+          ...baseResponse,
+          status: 'EXECUTION_FAILED',
+          executionError: {
+            code: error.code,
+            message: error.message,
+            details: error.details || null
+          },
+          elapsedMs: Date.now() - started
+        });
+      }
+    } catch (error) {
+      if (error instanceof SqlInspectionError || error instanceof SecureQueryError) {
+        return res.status(error.status || 500).json({
+          code: error.code,
+          message: error.message,
+          details: error.details || null
+        });
+      }
+      console.error('Secure query pipeline failed:', error);
+      return res.status(500).json({
+        code: 'SECURE_QUERY_FAILED',
+        message: 'The secure query pipeline could not complete.'
       });
     }
   });

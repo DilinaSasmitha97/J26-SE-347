@@ -4,9 +4,9 @@
   "description": "Secure Multi-Tenant Natural Language Interface for Database Querying - Policy Model Prototype",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "backend": "node src/index.js",
+    "start": "node --env-file-if-exists=../.env src/index.js",
+    "dev": "node --env-file-if-exists=../.env --watch src/index.js",
+    "backend": "node --env-file-if-exists=../.env src/index.js",
     "frontend": "npm run dev --prefix frontend",
     "frontend:build": "npm run build --prefix frontend",
     "test": "node --test"
@@ -22,6 +22,8 @@
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.6",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "mysql2": "^3.24.4",
+    "security-validation-layer": "file:../packages/security-validation-layer"
   }
 }

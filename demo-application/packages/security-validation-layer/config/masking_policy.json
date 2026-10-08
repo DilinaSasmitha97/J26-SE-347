@@ -1,0 +1,35 @@
+{
+  "_comment": "Role-based masking for the integrated demo. Unknown roles are redacted by the masking engine.",
+  "defaultRole": "EMPLOYEE",
+  "roles": {
+    "MANAGER": {
+      "default": "partial",
+      "NIC": "redact",
+      "SECRET": "redact",
+      "ADDRESS": "redact",
+      "UNVERIFIED": "redact"
+    },
+    "EMPLOYEE": {
+      "default": "redact",
+      "PERSON": "partial",
+      "UNVERIFIED": "redact"
+    },
+    "ADMIN": {
+      "default": "clear",
+      "SECRET": "redact"
+    }
+  },
+  "columns": {
+    "employees.work_email": {
+      "MANAGER": "partial"
+    },
+    "employees.personal_email": {
+      "MANAGER": "redact",
+      "EMPLOYEE": "redact"
+    },
+    "employee_bank_accounts.account_number": {
+      "MANAGER": "redact",
+      "EMPLOYEE": "redact"
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "_comment": "Declared PII for the shared multi-tenant HR database. NONE marks reviewed text fields that do not require NER name detection.",
+  "multi_tenant_hr": {
+    "tenants": {
+      "name": "NONE",
+      "code": "NONE",
+      "email": "EMAIL",
+      "phone": "PHONE",
+      "address": "ADDRESS"
+    },
+    "departments": {
+      "name": "NONE",
+      "code": "NONE",
+      "description": "NONE"
+    },
+    "designations": {
+      "title": "NONE",
+      "code": "NONE",
+      "description": "NONE"
+    },
+    "employees": {
+      "first_name": "PERSON",
+      "middle_name": "PERSON",
+      "last_name": "PERSON",
+      "date_of_birth": "DATE_OF_BIRTH",
+      "nic_number": "NIC",
+      "passport_number": "SECRET",
+      "work_email": "EMAIL",
+      "personal_email": "EMAIL",
+      "address_line1": "ADDRESS",
+      "address_line2": "ADDRESS",
+      "city": "NONE",
+      "district": "NONE",
+      "postal_code": "ADDRESS",
+      "employment_type": "NONE",
+      "employment_status": "NONE"
+    },
+    "employee_phone_numbers": {
+      "phone_type": "NONE",
+      "phone_number": "PHONE"
+    },
+    "employee_children": {
+      "first_name": "PERSON",
+      "last_name": "PERSON",
+      "date_of_birth": "DATE_OF_BIRTH",
+      "relationship": "NONE"
+    },
+    "employee_bank_accounts": {
+      "bank_name": "NONE",
+      "branch_name": "NONE",
+      "branch_code": "NONE",
+      "account_number": "IBAN",
+      "account_holder_name": "PERSON",
+      "account_type": "NONE"
+    },
+    "attendance": {
+      "attendance_status": "NONE",
+      "check_in_method": "NONE",
+      "check_out_method": "NONE"
+    },
+    "overtime_records": {
+      "ot_type": "NONE",
+      "approval_status": "NONE"
+    },
+    "payroll": {
+      "payment_status": "NONE",
+      "payment_method": "NONE",
+      "payment_reference": "SECRET"
+    },
+    "payroll_allowances": {
+      "allowance_type": "NONE",
+      "description": "NONE"
+    },
+    "payroll_deductions": {
+      "deduction_type": "NONE",
+      "description": "NONE"
+    }
+  }
+}

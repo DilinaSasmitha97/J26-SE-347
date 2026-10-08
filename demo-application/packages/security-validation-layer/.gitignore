@@ -1,0 +1,6 @@
+.env
+node_modules/
+pii_service/.venv/
+**/__pycache__/
+*.pyc
+

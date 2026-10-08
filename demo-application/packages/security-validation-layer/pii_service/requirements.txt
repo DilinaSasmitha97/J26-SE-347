@@ -1,0 +1,7 @@
+# NER side service for the PII pipeline.
+# From demo-application/ use the short-path environment on Windows:
+#   python -m venv .ner-venv
+#   .ner-venv\Scripts\python -m pip install -r packages/security-validation-layer/pii_service/requirements.txt
+#   .ner-venv\Scripts\python -m spacy download en_core_web_lg
+presidio-analyzer==2.2.364
+spacy==3.8.16

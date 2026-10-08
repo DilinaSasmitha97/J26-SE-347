@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Query Security &amp; Validation Layer — test harness</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --ink: #1a1d23;
+    --muted: #667085;
+    --line: #e1e4ea;
+    --accent: #2f5fd0;
+    --safe: #17794a;
+    --safe-bg: #e6f4ec;
+    --block: #b3261e;
+    --block-bg: #fdeceb;
+    --mono: ui-monospace, "Cascadia Code", Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 20px 60px;
+    background: var(--bg); color: var(--ink);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header { margin-bottom: 22px; }
+  h1 { margin: 0 0 4px; font-size: 21px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px;
+  }
+  .panel h2 {
+    margin: 0 0 12px; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--muted); font-weight: 600;
+  }
+  textarea {
+    width: 100%; min-height: 130px; resize: vertical; padding: 11px 12px;
+    font: 13.5px/1.5 var(--mono); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 7px; background: #fcfcfd;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .controls { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+  button.run {
+    background: var(--accent); color: #fff; border: 0; border-radius: 7px;
+    padding: 9px 18px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  button.run:hover { background: #2650b0; }
+  label.check { display: flex; align-items: center; gap: 7px; font-size: 13.5px; cursor: pointer; }
+  .hint { color: var(--muted); font-size: 12.5px; margin-left: auto; }
+
+  .verdict { display: flex; align-items: center; gap: 12px; padding: 13px 15px; border-radius: 8px; margin-bottom: 14px; }
+  .verdict.safe { background: var(--safe-bg); color: var(--safe); }
+  .verdict.blocked { background: var(--block-bg); color: var(--block); }
+  .verdict .label { font-size: 17px; font-weight: 700; letter-spacing: 0.02em; }
+  .verdict .stmt { margin-left: auto; font: 12.5px var(--mono); opacity: 0.85; }
+
+  ul.violations { list-style: none; margin: 0; padding: 0; }
+  ul.violations li { border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; margin-bottom: 8px; }
+  ul.violations code {
+    font: 12px var(--mono); background: #eef1f6; color: #33406b;
+    padding: 2px 7px; border-radius: 4px;
+  }
+  ul.violations p { margin: 7px 0 0; font-size: 13.5px; color: #3d4450; }
+  .none { color: var(--muted); font-size: 13.5px; margin: 0; }
+
+  details { margin-top: 14px; }
+  details summary { cursor: pointer; font-size: 12.5px; color: var(--muted); }
+  details pre {
+    margin: 9px 0 0; padding: 11px; background: #1e2229; color: #dfe4ec;
+    border-radius: 7px; font: 12px/1.5 var(--mono); overflow-x: auto;
+  }
+
+  section.wp { margin-top: 18px; }
+  label.field { display: flex; align-items: center; gap: 7px; font-size: 13.5px; }
+  label.field input {
+    width: 110px; padding: 6px 8px; font: 13.5px var(--mono);
+    border: 1px solid var(--line); border-radius: 6px;
+  }
+  .hint-line { color: var(--muted); font-size: 12.5px; margin: 10px 0 0; }
+  button.ghost {
+    background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 7px;
+    padding: 8px 14px; font-size: 13.5px; cursor: pointer;
+  }
+  button.ghost:hover { border-color: var(--accent); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .steps span {
+    font: 12px var(--mono); padding: 3px 9px; border-radius: 999px;
+    background: #eef1f6; color: var(--muted);
+  }
+  .steps span.on { background: var(--accent); color: #fff; }
+  .steps span.bad { background: var(--block); color: #fff; }
+  .kv { font-size: 13.5px; margin: 0 0 12px; }
+  .kv b { font-weight: 600; }
+  .msg { padding: 9px 12px; border-radius: 7px; font-size: 13.5px; margin: 0 0 12px; }
+  .msg.err { background: var(--block-bg); color: var(--block); }
+  .msg.ok { background: var(--safe-bg); color: var(--safe); }
+  .imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  @media (max-width: 860px) { .imgs { grid-template-columns: 1fr; } }
+  .imgs h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 0 0 6px; }
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 7px; }
+  .tbl table { border-collapse: collapse; width: 100%; font: 12px var(--mono); }
+  .tbl th, .tbl td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  .tbl th { background: #f3f5f9; }
+  .tbl td.changed { background: #fff4d6; }
+  .tbl th small { display: block; font-weight: 400; color: var(--muted); }
+  #qresult { margin-top: 14px; }
+  #presult { margin-top: 14px; font-size: 14px; line-height: 2.1; white-space: pre-wrap; }
+  #presult mark { background: #fff1c2; border-radius: 4px; padding: 1px 4px; }
+  #presult mark b { font: 600 10.5px var(--mono); color: #8a5a00; margin-left: 5px; }
+  .tbl th .pii {
+    display: inline-block; margin-top: 3px; font: 600 10.5px var(--mono);
+    background: var(--block-bg); color: var(--block); padding: 1px 6px; border-radius: 4px;
+  }
+  .tbl td.masked { background: #eef3ff; color: #2f4aa0; }
+  #qresult h3.sub { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 14px 0 6px; }
+  #qmode { font: 13px var(--mono); padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; }
+  #qresult .meta { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>AI Query Security &amp; Validation Layer</h1>
+    <p>Test harness — queries are checked by the real <code>validate()</code> function. Validation never executes anything; only the Controlled Write Protocol below touches the database.</p>
+  </header>
+
+  <div class="cols">
+    <div class="panel">
+      <h2>Query under test</h2>
+      <textarea id="sql" spellcheck="false">SELECT * FROM users WHERE 1=1</textarea>
+      <div class="controls">
+        <button class="run" id="run">Validate</button>
+        <label class="check">
+          <input type="checkbox" id="allowWrites">
+          Authorize writes
+        </label>
+        <label class="check">
+          <input type="checkbox" id="enforceAllowlist">
+          Schema allowlist (svl_demo)
+        </label>
+        <span class="hint">Ctrl + Enter</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Result</h2>
+      <div id="result">
+        <p class="none">Run a query to see the verdict.</p>
+      </div>
+    </div>
+  </div>
+
+  <section class="panel wp">
+    <h2>Run query — validated, then executed read-only</h2>
+    <textarea id="qsql" spellcheck="false" style="min-height: 80px">SELECT c.name AS customer, c.email, c.phone, c.city, o.product, o.amount
+FROM customers c JOIN orders o ON o.customer_id = c.id
+WHERE c.tenant_id = 1</textarea>
+    <div class="controls">
+      <button class="run" id="qrun">Run</button>
+      <label class="check">Viewer role
+        <select id="qmode">
+          <option value="admin">admin — clear</option>
+          <option value="analyst">analyst — FPE pseudonyms</option>
+          <option value="support" selected>support — partial</option>
+          <option value="viewer">viewer — redacted</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="qraw" checked> Show raw values too (demo only)</label>
+      <span class="hint">validate → execute read-only → classify → mask</span>
+    </div>
+    <div id="qresult"></div>
+  </section>
+
+  <section class="panel wp">
+    <h2>PII detector — regex + NER</h2>
+    <textarea id="ptext" spellcheck="false" style="min-height: 80px">Hi, I am Nimal Perera (NIC 851234567V). Call me on 077 123 4567 or email nimal.perera@example.com.
+Card 4111 1111 1111 1111, order #10023 for Rs. 120.00 on 2026-07-19.</textarea>
+    <div class="controls">
+      <button class="run" id="pdetect">Detect</button>
+      <span class="hint">Regex: emails · phones · NIC · cards (Luhn) · IBAN · IPv4 — NER: names</span>
+    </div>
+    <div id="presult"></div>
+  </section>
+
+  <section class="panel wp">
+    <h2>Controlled Write Protocol — preview → approve → commit</h2>
+    <div class="cols">
+      <div>
+        <textarea id="wsql" spellcheck="false">UPDATE orders SET status = 'cancelled' WHERE status = 'pending' AND tenant_id = 1</textarea>
+        <div class="controls">
+          <label class="field">Requested by <input id="requestedBy" value="alice"></label>
+          <button class="run" id="wpreview">Preview</button>
+        </div>
+        <p class="hint-line">Preview runs the write inside a transaction, captures the change, then rolls it back. Nothing is saved until an approved commit.</p>
+      </div>
+      <div id="wstate"><p class="none">Preview a write to start a request.</p></div>
+    </div>
+    <div id="wimages"></div>
+  </section>
+</div>
+
+<script>
+const sqlEl = document.getElementById('sql');
+const allowEl = document.getElementById('allowWrites');
+const allowlistEl = document.getElementById('enforceAllowlist');
+const resultEl = document.getElementById('result');
+
+async function run() {
+  const body = { sql: sqlEl.value, allowWrites: allowEl.checked, enforceAllowlist: allowlistEl.checked };
+  let data;
+  try {
+    const res = await fetch('/api/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    data = await res.json();
+  } catch (e) {
+    resultEl.innerHTML = '<p class="none">Could not reach the server. Is it still running?</p>';
+    return;
+  }
+  render(data);
+}
+
+function render(data) {
+  resultEl.textContent = '';
+
+  const verdict = document.createElement('div');
+  verdict.className = 'verdict ' + (data.safe ? 'safe' : 'blocked');
+  const label = document.createElement('span');
+  label.className = 'label';
+  label.textContent = data.safe ? 'SAFE' : 'BLOCKED';
+  const stmt = document.createElement('span');
+  stmt.className = 'stmt';
+  stmt.textContent = data.statementType;
+  verdict.append(label, stmt);
+  resultEl.appendChild(verdict);
+
+  if (!data.violations.length) {
+    const p = document.createElement('p');
+    p.className = 'none';
+    p.textContent = 'No violations — this query would be passed on for execution.';
+    resultEl.appendChild(p);
+  } else {
+    const ul = document.createElement('ul');
+    ul.className = 'violations';
+    for (const v of data.violations) {
+      const li = document.createElement('li');
+      const code = document.createElement('code');
+      code.textContent = v.type;
+      li.appendChild(code);
+      if (v.detail) {
+        const p = document.createElement('p');
+        p.textContent = v.detail;
+        li.appendChild(p);
+      }
+      ul.appendChild(li);
+    }
+    resultEl.appendChild(ul);
+  }
+
+  const details = document.createElement('details');
+  const summary = document.createElement('summary');
+  summary.textContent = 'Raw response (what an integrating service receives)';
+  const pre = document.createElement('pre');
+  pre.textContent = JSON.stringify(data, null, 2);
+  details.append(summary, pre);
+  resultEl.appendChild(details);
+}
+
+document.getElementById('run').onclick = run;
+sqlEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) run();
+});
+
+run();
+
+// ---- Controlled Write Protocol ------------------------------------------
+const wsqlEl = document.getElementById('wsql');
+const wstateEl = document.getElementById('wstate');
+const wimagesEl = document.getElementById('wimages');
+const FLOW = ['pending', 'previewed', 'approved', 'committed'];
+let current = null;
+
+function el(tag, props = {}, ...kids) {
+  const n = Object.assign(document.createElement(tag), props);
+  n.append(...kids);
+  return n;
+}
+
+async function call(method, url, body) {
+  try {
+    const res = await fetch(url, {
+      method, headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { ok: res.ok, data: await res.json() };
+  } catch (e) {
+    return { ok: false, data: { error: 'network', detail: 'Could not reach the server. Is it still running?' } };
+  }
+}
+
+function renderWrite(reqState, message) {
+  wstateEl.textContent = '';
+  wimagesEl.textContent = '';
+  if (message) wstateEl.append(el('p', { className: 'msg ' + message.kind, textContent: message.text }));
+  if (!reqState) return;
+  current = reqState;
+
+  const steps = el('div', { className: 'steps' });
+  const failed = ['rejected', 'expired', 'failed'].includes(reqState.status);
+  const reached = FLOW.indexOf(reqState.status);
+  for (const s of FLOW) {
+    steps.append(el('span', { className: FLOW.indexOf(s) <= reached ? 'on' : '', textContent: s }));
+  }
+  if (failed) steps.append(el('span', { className: 'bad', textContent: reqState.status }));
+  wstateEl.append(steps);
+
+  const p = reqState.preview;
+  wstateEl.append(el('p', { className: 'kv', innerHTML: '' },
+    el('b', { textContent: reqState.statementType }), ` on ${reqState.table} — `,
+    el('b', { textContent: p ? String(p.affectedRows) : '?' }), ' row(s) would change',
+    el('br'), `requested by ${reqState.requestedBy}`,
+    reqState.approvals.length ? ` · approved by ${reqState.approvals.map((a) => a.by).join(', ')}` : '',
+    reqState.reason ? el('span', {}, el('br'), 'reason: ' + reqState.reason) : ''));
+
+  const approver = el('input', { value: 'bob' });
+  const approveBtn = el('button', { className: 'ghost', textContent: 'Approve', disabled: reqState.status !== 'previewed' });
+  const rejectBtn = el('button', { className: 'ghost', textContent: 'Reject', disabled: ['committed', 'rejected', 'expired', 'failed'].includes(reqState.status) });
+  const commitBtn = el('button', { className: 'run', textContent: 'Commit', disabled: reqState.status !== 'approved' });
+  approveBtn.onclick = () => step('approve', { approvedBy: approver.value });
+  rejectBtn.onclick = () => step('reject', { rejectedBy: approver.value, reason: 'Rejected in demo UI' });
+  // Commit sends whatever is in the editor now, so editing the SQL after approval shows the hash check.
+  commitBtn.onclick = () => step('commit', { sql: wsqlEl.value, committedBy: document.getElementById('requestedBy').value });
+  wstateEl.append(el('div', { className: 'controls' },
+    el('label', { className: 'field' }, 'Approver ', approver), approveBtn, rejectBtn, commitBtn));
+
+  if (p) {
+    const imgs = el('div', { className: 'imgs' });
+    imgs.append(imageTable('Before (rows the write matches)', p.before, null, p.primaryKey));
+    imgs.append(imageTable('After (inside the rolled-back preview)', p.after, p.before, p.primaryKey));
+    wimagesEl.append(imgs);
+  }
+
+  const details = el('details', {}, el('summary', { textContent: 'Raw request state (audit history included)' }),
+    el('pre', { textContent: JSON.stringify(reqState, null, 2) }));
+  wimagesEl.append(details);
+}
+
+function imageTable(title, rows, compareTo, pk) {
+  const box = el('div', {}, el('h3', { textContent: title }));
+  if (!rows || !rows.length) {
+    box.append(el('p', { className: 'none', textContent: 'No rows.' }));
+    return box;
+  }
+  const cols = Object.keys(rows[0]);
+  const keyOf = (r) => pk.map((c) => r[c]).join('|');
+  const prev = new Map((compareTo || []).map((r) => [keyOf(r), r]));
+  const table = el('table', {}, el('thead', {}, el('tr', {}, ...cols.map((c) => el('th', { textContent: c })))));
+  const tbody = el('tbody');
+  for (const r of rows) {
+    const old = prev.get(keyOf(r));
+    tbody.append(el('tr', {}, ...cols.map((c) => el('td', {
+      textContent: r[c] === null ? 'NULL' : String(r[c]),
+      className: old && String(old[c]) !== String(r[c]) ? 'changed' : '',
+    }))));
+  }
+  table.append(tbody);
+  box.append(el('div', { className: 'tbl' }, table));
+  return box;
+}
+
+function errorMessage(data) {
+  let text = data.detail || data.error;
+  if (data.violations && data.violations.length) text += ' — ' + data.violations.map((v) => v.type).join(', ');
+  return { kind: 'err', text };
+}
+
+async function step(action, body) {
+  const { ok, data } = await call('POST', `/api/writes/${current.id}/${action}`, body);
+  if (ok) {
+    const text = { approve: 'Approved.', reject: 'Rejected.', commit: 'Committed — the change is now saved.' }[action];
+    return renderWrite(data, { kind: 'ok', text });
+  }
+  const latest = data.request || (await call('GET', `/api/writes/${current.id}`)).data;
+  renderWrite(latest && latest.id ? latest : current, errorMessage(data));
+}
+
+// ---- Read-query execution ----------------------------------------------
+document.getElementById('qrun').onclick = async () => {
+  const out = document.getElementById('qresult');
+  out.textContent = '';
+  const showRaw = document.getElementById('qraw').checked;
+  const { ok, data } = await call('POST', '/api/query', {
+    sql: document.getElementById('qsql').value,
+    role: document.getElementById('qmode').value,
+    includeRaw: showRaw,
+  });
+  if (!ok) {
+    out.append(el('p', { className: 'msg err', textContent: errorMessage(data).text }));
+    return;
+  }
+  out.append(el('p', { className: 'meta', textContent:
+    `${data.rowCount} row(s) · ${data.elapsedMs} ms · ${data.masking.maskedCells} cell(s) masked${data.truncated ? ' · truncated' : ''}` }));
+  for (const w of (data.ner && data.ner.warnings) || []) out.append(el('p', { className: 'msg err', textContent: w }));
+  const pseudo = data.masking.columns.filter((c) => c.pseudonymised).map((c) => c.name);
+  out.append(el('p', { className: 'meta', textContent: `Role: ${data.masking.role} · `
+    + (data.masking.columns.map((c) => `${c.name} → ${c.action}`).join(', ') || 'no PII columns')
+    + (pseudo.length ? ` · pseudonymised (encrypted look-alikes, not real data): ${pseudo.join(', ')}` : '') }));
+  out.append(el('h3', { className: 'sub', textContent: 'Masked — what leaves the security layer' }));
+  out.append(resultTable(data.columns, data.rows, data.classification, data.rawRows));
+  if (data.rawRows) {
+    out.append(el('h3', { className: 'sub', textContent: 'Raw — as stored in MySQL (demo only)' }));
+    out.append(resultTable(data.columns, data.rawRows, data.classification));
+  }
+};
+
+// ---- PII detector -------------------------------------------------------
+document.getElementById('pdetect').onclick = async () => {
+  const out = document.getElementById('presult');
+  const text = document.getElementById('ptext').value;
+  const { ok, data } = await call('POST', '/api/pii/detect', { text });
+  out.textContent = '';
+  if (!ok) return out.append(el('p', { className: 'msg err', textContent: errorMessage(data).text }));
+  let pos = 0;
+  for (const s of data.spans) {
+    out.append(text.slice(pos, s.start), el('mark', {}, text.slice(s.start, s.end), el('b', { textContent: s.type })));
+    pos = s.end;
+  }
+  out.append(text.slice(pos));
+  if (!data.spans.length) out.append(el('p', { className: 'none', textContent: 'No PII found.' }));
+  for (const w of data.warnings || []) out.prepend(el('p', { className: 'msg err', textContent: w }));
+};
+
+/**
+ * Header shows the result name, where the value really comes from (traced
+ * through the query, not MySQL's metadata), and the PII classification.
+ */
+function resultTable(columns, rows, classification = [], compareTo = null) {
+  const head = el('tr', {}, ...columns.map((c, i) => {
+    const cls = classification[i] || {};
+    const from = cls.sources && cls.sources.length
+      ? cls.sources.join(', ') + (cls.transforms && cls.transforms.length ? ` via ${cls.transforms.join(', ')}` : '')
+      : 'computed';
+    const th = el('th', {}, c.name, el('small', { textContent: from }));
+    if (cls.piiType) {
+      th.append(el('span', { className: 'pii', textContent: cls.piiType, title: `${cls.method} · ${cls.confidence} confidence` }));
+    }
+    return th;
+  }));
+  const body = el('tbody', {}, ...rows.map((r, ri) => el('tr', {},
+    ...r.map((v, ci) => el('td', {
+      textContent: v === null ? 'NULL' : String(v),
+      className: compareTo && String(compareTo[ri][ci]) !== String(v) ? 'masked' : '',
+    })))));
+  return el('div', { className: 'tbl' }, el('table', {}, el('thead', {}, head), body));
+}
+
+document.getElementById('wpreview').onclick = async () => {
+  const { ok, data } = await call('POST', '/api/writes/preview', {
+    sql: wsqlEl.value, requestedBy: document.getElementById('requestedBy').value,
+  });
+  if (ok) return renderWrite(data, { kind: 'ok', text: 'Previewed and rolled back — nothing was saved.' });
+  current = null;
+  renderWrite(data.request || null, errorMessage(data));
+};
+</script>
+</body>
+</html>

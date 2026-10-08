@@ -1,0 +1,19 @@
+{
+  "_comment": "Canonical schema columns per database. The backend narrows this list to the authenticated user's allowed tables and removes denied columns before validation.",
+  "multi_tenant_hr": {
+    "tenants": ["id", "name", "code", "email", "phone", "address", "is_active", "created_at", "updated_at"],
+    "departments": ["id", "tenant_id", "name", "code", "description", "is_active", "created_at", "updated_at"],
+    "designations": ["id", "tenant_id", "title", "code", "level_no", "description", "is_active", "created_at", "updated_at"],
+    "employees": ["id", "tenant_id", "employee_no", "department_id", "designation_id", "first_name", "middle_name", "last_name", "gender", "date_of_birth", "nic_number", "passport_number", "work_email", "personal_email", "address_line1", "address_line2", "city", "district", "postal_code", "employment_type", "employment_status", "joined_date", "confirmation_date", "resignation_date", "supervisor_id", "is_active", "created_at", "updated_at"],
+    "employee_phone_numbers": ["id", "tenant_id", "employee_id", "phone_type", "phone_number", "is_primary", "created_at"],
+    "employee_children": ["id", "tenant_id", "employee_id", "first_name", "last_name", "gender", "date_of_birth", "relationship", "is_dependent", "created_at", "updated_at"],
+    "employee_bank_accounts": ["id", "tenant_id", "employee_id", "bank_name", "branch_name", "branch_code", "account_number", "account_holder_name", "account_type", "is_primary", "created_at", "updated_at"],
+    "employee_salary": ["id", "tenant_id", "employee_id", "basic_salary", "fixed_allowance", "transport_allowance", "meal_allowance", "other_allowance", "effective_from", "effective_to", "currency", "status", "created_at", "updated_at"],
+    "attendance": ["id", "tenant_id", "employee_id", "attendance_date", "check_in_time", "check_out_time", "work_minutes", "late_minutes", "early_leave_minutes", "attendance_status", "check_in_method", "check_out_method", "remarks", "created_at", "updated_at"],
+    "overtime_records": ["id", "tenant_id", "employee_id", "attendance_id", "overtime_date", "start_time", "end_time", "ot_hours", "hourly_rate", "ot_multiplier", "ot_amount", "ot_type", "approval_status", "approved_by", "approved_at", "remarks", "created_at", "updated_at"],
+    "payroll_periods": ["id", "tenant_id", "year_no", "month_no", "period_start", "period_end", "payment_date", "status", "created_at", "updated_at"],
+    "payroll": ["id", "tenant_id", "payroll_period_id", "employee_id", "basic_salary", "fixed_allowance", "transport_allowance", "meal_allowance", "other_allowance", "overtime_hours", "overtime_amount", "bonus_amount", "gross_salary", "epf_employee", "epf_employer", "etf_employer", "tax_amount", "loan_deduction", "advance_deduction", "other_deduction", "total_deductions", "net_salary", "payment_status", "payment_method", "payment_reference", "created_at", "updated_at"],
+    "payroll_allowances": ["id", "tenant_id", "payroll_id", "employee_id", "allowance_type", "description", "amount", "created_at"],
+    "payroll_deductions": ["id", "tenant_id", "payroll_id", "employee_id", "deduction_type", "description", "amount", "created_at"]
+  }
+}
