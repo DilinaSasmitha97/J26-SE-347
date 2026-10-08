@@ -1,6 +1,7 @@
 import os
+import json
 import time
-from typing import Optional, Any
+from typing import Optional, Any, Union
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -10,6 +11,7 @@ import main
 import llm
 import schema_extractor
 import database
+from profiler import begin_trace, end_trace, trace
 
 # Load environment variables
 load_dotenv()
@@ -35,7 +37,7 @@ class TranslateRequest(BaseModel):
     user_query: str = Field(..., description="Natural language question from the user", example="List all active employees and their departments")
     db_id: Optional[str] = Field("default", description="Database identifier: default (multitenant_hr) or nemsuerp", example="default")
     schema_meta: Optional[str] = Field(None, description="Optional DDL schema. If omitted, default multi-tenant HR schema is loaded automatically.")
-    injected_rules: Optional[str] = Field(None, description="Security / RBAC grounding rules from Member 3", example="STRICT CONSTRAINT: Filter all results by tenant_id = 101.")
+    injected_rules: Optional[Union[str, dict[str, Any]]] = Field(None, description="User-supplied NL-to-SQL rules as a JSON object or legacy plain text")
     use_pruning: Optional[bool] = Field(True, description="Whether to apply Task 1 schema pruning")
     enable_refinement: Optional[bool] = Field(True, description="Whether to apply Task 3 automated self-correction loop")
     max_refinement_attempts: Optional[int] = Field(2, description="Maximum self-correction refinement attempts")
@@ -138,7 +140,12 @@ def translate_query(req: TranslateRequest):
     """
     start_time = time.time()
     conn = None
+    trace_token = begin_trace("/api/v1/translate", req.model_dump(exclude_unset=True))
     try:
+        rules_text = req.injected_rules if isinstance(req.injected_rules, str) else (
+            json.dumps(req.injected_rules, indent=2, ensure_ascii=False) if req.injected_rules is not None else None
+        )
+        trace("RULES FOR ENGINE PROMPT", rules_text)
         # Load default multi-tenant HR schema if caller didn't supply custom DDL
         schema_meta = req.schema_meta
         if not schema_meta:
@@ -149,13 +156,15 @@ def translate_query(req: TranslateRequest):
             # Skipped for caller-supplied DDL: that schema is not in this database.
             try:
                 conn = database.get_db_connection(db_id=req.db_id)
-            except Exception:
+            except Exception as connection_error:
                 conn = None
+                trace("COMPILER CONNECTION UNAVAILABLE", str(connection_error))
+        trace("SCHEMA SOURCE", {"db_id": req.db_id, "caller_supplied_schema": bool(req.schema_meta), "compiler_connection": conn is not None})
 
         sql, token_stats = main.translate(
             nl_query=req.user_query,
             schema_meta=schema_meta,
-            injected_rules=req.injected_rules,
+            injected_rules=rules_text,
             use_pruning=req.use_pruning,
             enable_refinement=req.enable_refinement,
             max_refinement_attempts=req.max_refinement_attempts,
@@ -167,12 +176,15 @@ def translate_query(req: TranslateRequest):
         if isinstance(token_stats, dict):
             token_stats["execution_time_ms"] = execution_time_ms
 
-        return TranslateResponse(
+        response = TranslateResponse(
             status="SUCCESS",
             predicted_sql=sql,
             metadata=token_stats if isinstance(token_stats, dict) else {"execution_time_ms": execution_time_ms}
         )
+        trace("HTTP RESPONSE OUTPUT", response.model_dump())
+        return response
     except Exception as e:
+        trace("HTTP ERROR OUTPUT", {"status": "ERROR", "error_code": "TRANSLATION_FAILED", "detail": str(e)})
         raise HTTPException(
             status_code=500,
             detail={
@@ -187,6 +199,7 @@ def translate_query(req: TranslateRequest):
                 conn.close()
             except Exception:
                 pass
+        end_trace(trace_token)
 
 @app.post("/api/v1/ask", response_model=AskResponse, summary="Ask Question Directly Against Live Database")
 def ask_database(req: AskRequest):

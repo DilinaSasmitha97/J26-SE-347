@@ -1,32 +1,10 @@
 import React, { useMemo, useState } from 'react';
 
-const SAMPLE_POLICY = {
-  policyId: 'finance-read-policy',
-  version: '1.0',
-  allowedOperations: ['SELECT'],
-  allowedTables: ['employees', 'departments'],
-  deniedColumns: ['employees.salary', 'employees.date_of_birth'],
-  requiredFilters: [
-    { table: 'employees', column: 'tenant_id', operator: '=', valueFrom: 'tenantId' },
-    { table: 'employees', column: 'department_id', operator: '=', valueFrom: 'departmentId' }
-  ]
-};
-
-const SAMPLE_USER = {
-  userId: 'usr_84f2c',
-  email: 'maya@acme.example',
-  role: 'MANAGER',
-  tenantId: 101,
-  departmentId: 1
-};
-
 const SQL_EXAMPLES = {
   allowed: 'SELECT name, job_title\nFROM employees\nWHERE tenant_id = 101 AND department_id = 1;',
   blockedColumn: 'SELECT name, salary\nFROM employees\nWHERE tenant_id = 101 AND department_id = 1;',
   blockedTable: 'SELECT *\nFROM payroll_secrets\nWHERE tenant_id = 101;'
 };
-
-const formatJson = (value) => JSON.stringify(value, null, 2);
 
 function parseJsonInput(label, source) {
   try {
@@ -173,8 +151,8 @@ function ResultPanel({ result, loading }) {
 }
 
 export default function App() {
-  const [policyText, setPolicyText] = useState(formatJson(SAMPLE_POLICY));
-  const [userText, setUserText] = useState(formatJson(SAMPLE_USER));
+  const [policyText, setPolicyText] = useState('');
+  const [userText, setUserText] = useState('');
   const [sql, setSql] = useState(SQL_EXAMPLES.allowed);
   const [errors, setErrors] = useState({});
   const [result, setResult] = useState(null);
@@ -182,9 +160,9 @@ export default function App() {
 
   const lineCount = useMemo(() => sql.split('\n').length, [sql]);
 
-  const resetSample = () => {
-    setPolicyText(formatJson(SAMPLE_POLICY));
-    setUserText(formatJson(SAMPLE_USER));
+  const resetInputs = () => {
+    setPolicyText('');
+    setUserText('');
     setSql(SQL_EXAMPLES.allowed);
     setErrors({});
     setResult(null);
@@ -255,8 +233,8 @@ export default function App() {
         <div className="topbar-actions">
           <span className="environment"><span /> Development</span>
           <a className="reset-button pl-link" href="#/pipeline"><Icon name="bolt" size={16} /> NL → SQL pipeline</a>
-          <button className="reset-button" type="button" onClick={resetSample}>
-            <Icon name="refresh" size={16} /> Reset sample
+          <button className="reset-button" type="button" onClick={resetInputs}>
+            <Icon name="refresh" size={16} /> Reset
           </button>
         </div>
       </header>

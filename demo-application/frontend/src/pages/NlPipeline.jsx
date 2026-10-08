@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '../App.jsx';
+import PresentationResult, { IntentPreview } from '../components/PresentationResult.jsx';
 
-// The browser calls only the Node backend. It owns the trusted user/policy,
-// then orchestrates NL-to-SQL, Navodya validation, SQLGlot and masked execution.
+// The browser supplies the operator's pasted context to the Node demo gateway.
+// The gateway validates it before generation, verification and masked execution.
 const SECURE_QUERY_URL = '/api/secure-query';
 const GENERATE_SQL_URL = '/api/generate-sql';
 
@@ -12,35 +13,6 @@ const PIPELINE_TIMEOUT_MS = 120000; // LLM calls with self-refinement can be slo
 const KNOWN_STATEMENTS = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
 
 const SAMPLE_QUESTION = 'Show the first name, last name and work email of employees in my department';
-
-const SAMPLE_POLICY = {
-  policyId: 'policy-manager-hr-read',
-  version: '1.0',
-  role: 'MANAGER',
-  allowedOperations: ['SELECT'],
-  allowedTables: ['employees', 'departments'],
-  deniedColumns: ['employees.nic_number', 'employees.passport_number', 'employees.personal_email'],
-  requiredFilters: [
-    { table: 'employees', column: 'tenant_id', operator: '=', valueFrom: 'tenantId' }
-  ]
-};
-
-const SAMPLE_USER = {
-  userId: 'user-101-manager',
-  name: 'Manager A',
-  role: 'MANAGER',
-  tenantId: 101,
-  departmentId: 1
-};
-
-const SAMPLE_RULES = {
-  constraints: [
-    'STRICT CONSTRAINT: Filter all results by employees.tenant_id = 101.',
-    'STRICT CONSTRAINT: Filter employees.department_id = 1.',
-    'Only use the tables employees and departments.',
-    'Never select nic_number, passport_number or personal_email.'
-  ]
-};
 
 const pretty = (value) => JSON.stringify(value, null, 2);
 
@@ -55,17 +27,6 @@ function parseObject(label, text) {
   } catch (error) {
     return { error: `${label} is not valid JSON: ${error.message}` };
   }
-}
-
-/**
- * The translate API takes injected_rules as plain text. A rules file may give
- * that text directly, a list of constraint lines, or any other JSON object
- * (sent as formatted JSON so the LLM still sees every field).
- */
-function rulesToText(rules) {
-  if (typeof rules.injected_rules === 'string') return rules.injected_rules;
-  if (Array.isArray(rules.constraints)) return rules.constraints.map(String).join('\n');
-  return pretty(rules);
 }
 
 async function postJson(url, body, timeoutMs) {
@@ -138,9 +99,10 @@ function StatusPill({ state }) {
   return <span className={`pl-pill pl-pill-${state === 'invalid' ? 'fail' : state}`}>{state === 'loading' && <i className="pl-dot-spin" />}{labels[state]}</span>;
 }
 
-function JsonUpload({ number, icon, title, description, text, onText, fileName, onFileName, log, disabled = false }) {
+function JsonUpload({ number, icon, title, description, text, onText, fileName, onFileName, log, disabled = false, optional = false }) {
   const input = useRef(null);
-  const parsed = parseObject(title, text);
+  const empty = !text.trim();
+  const parsed = optional && empty ? { value: {} } : parseObject(title, text);
 
   const readFile = (file) => {
     if (!file) return;
@@ -166,7 +128,7 @@ function JsonUpload({ number, icon, title, description, text, onText, fileName, 
   };
 
   return (
-    <section className={`input-card pl-json-card ${parsed.error ? 'has-error' : ''}`}>
+    <section className={`input-card pl-json-card ${!empty && parsed.error ? 'has-error' : ''}`}>
       <div className="card-heading">
         <span className="step-number">{number}</span>
         <span className="card-icon"><Icon name={icon} /></span>
@@ -176,13 +138,13 @@ function JsonUpload({ number, icon, title, description, text, onText, fileName, 
         <button type="button" className="pl-ghost" onClick={() => input.current?.click()} disabled={disabled}>
           <Icon name="file" size={15} /> Upload .json
         </button>
-        <span className="pl-file-name">{fileName || 'sample (edit or upload)'}</span>
+        <span className="pl-file-name">{fileName || 'Paste JSON or upload a file'}</span>
         <input ref={input} type="file" accept=".json,application/json" hidden disabled={disabled}
           onChange={(event) => { readFile(event.target.files[0]); event.target.value = ''; }} />
       </div>
-      <textarea className="code-input pl-json-input" value={text} spellCheck="false" aria-label={title} disabled={disabled}
+      <textarea className="code-input pl-json-input" value={text} spellCheck="false" aria-label={title} disabled={disabled} placeholder={optional ? 'Optional: paste additional rules as JSON' : `Paste ${title.toLowerCase()} JSON`}
         onChange={(event) => { onText(event.target.value); onFileName(fileName ? `${fileName} (edited)` : ''); }} />
-      {parsed.error
+      {empty ? <p className="pl-muted">{optional ? 'Optional. The SQL service receives your question with no additional rules when left empty.' : 'Paste JSON or upload a .json file to continue.'}</p> : parsed.error
         ? <p className="field-error"><Icon name="close" size={15} /> {parsed.error}</p>
         : <p className="pl-field-ok"><Icon name="check" size={15} /> Valid JSON · {Object.keys(parsed.value).length} keys</p>}
     </section>
@@ -414,9 +376,9 @@ function ActivityLog({ entries, onClear }) {
 
 export default function NlPipeline() {
   const [question, setQuestion] = useState(SAMPLE_QUESTION);
-  const [policyText, setPolicyText] = useState(pretty(SAMPLE_POLICY));
-  const [userText, setUserText] = useState(pretty(SAMPLE_USER));
-  const [rulesText, setRulesText] = useState(pretty(SAMPLE_RULES));
+  const [policyText, setPolicyText] = useState('');
+  const [userText, setUserText] = useState('');
+  const [rulesText, setRulesText] = useState('');
   const [files, setFiles] = useState({ policy: '', user: '', rules: '' });
 
   const [genState, setGenState] = useState('idle');
@@ -429,11 +391,16 @@ export default function NlPipeline() {
   const [verify, setVerify] = useState(null);
   const [navodya, setNavodya] = useState(null);
   const [execution, setExecution] = useState(null);
+  const [presentation, setPresentation] = useState(null);
   const [verifiedPolicy, setVerifiedPolicy] = useState(null);
   const busy = genState === 'loading' || verifyState === 'loading';
 
   const clearVerification = () => {
-    setVerifyState('idle'); setInspect(null); setVerify(null); setNavodya(null); setExecution(null); setVerifiedPolicy(null);
+    setVerifyState('idle'); setInspect(null); setVerify(null); setNavodya(null); setExecution(null); setVerifiedPolicy(null); setPresentation(null);
+  };
+
+  const invalidateDraft = () => {
+    setGenerated(null); setSql(''); setGenState('idle'); setGenError(null); clearVerification();
   };
 
   const [logs, setLogs] = useState([]);
@@ -446,9 +413,9 @@ export default function NlPipeline() {
 
   const resetAll = () => {
     setQuestion(SAMPLE_QUESTION);
-    setPolicyText(pretty(SAMPLE_POLICY));
-    setUserText(pretty(SAMPLE_USER));
-    setRulesText(pretty(SAMPLE_RULES));
+    setPolicyText('');
+    setUserText('');
+    setRulesText('');
     setFiles({ policy: '', user: '', rules: '' });
     setGenState('idle'); setGenError(null); setGenerated(null); setSql('');
     clearVerification();
@@ -465,7 +432,7 @@ export default function NlPipeline() {
     const q = question.trim();
     const policy = parseObject('User policy', policyText);
     const user = parseObject('Authenticated user', userText);
-    const rules = parseObject('NL-to-SQL rules', rulesText);
+    const rules = rulesText.trim() ? parseObject('NL-to-SQL rules', rulesText) : { value: null };
     const problems = [
       !q && 'Natural language question is empty.',
       q.length > MAX_QUESTION_CHARS && `Question is ${q.length} characters; the limit is ${MAX_QUESTION_CHARS}.`,
@@ -481,17 +448,16 @@ export default function NlPipeline() {
 
     const u = user.value;
     if (!u.userId) {
-      log('STEP 1', 'error', 'Authenticated user JSON must contain userId. Only that identifier is sent to the backend.');
+      log('STEP 1', 'error', 'Authenticated user JSON must contain userId.');
       setGenState('invalid');
-      setGenError('Add a valid demo userId, then submit again.');
+      setGenError('Add userId to your user JSON, then submit again.');
       return;
     }
-    log('STEP 1', 'success', `Inputs valid. Requesting SQL generation for demo identity ${u.userId}.`);
-    log('SECURITY', 'info', 'Only userId is sent. The backend reloads the trusted identity and policy, then derives the NL-to-SQL rules itself.');
-    log('SECURITY', 'info', 'The policy and rules editors remain visible for comparison, but client edits cannot weaken backend enforcement.');
+    log('STEP 1', 'success', `Inputs valid. Requesting SQL generation for ${u.userId} using the pasted context.`);
+    log('NL-TO-SQL', 'info', 'Only the natural-language question and pasted NL-to-SQL rules are forwarded to the SQL service. The gateway keeps user and policy context for validation and execution.');
 
     setGenState('loading');
-    const body = { question: q, userId: u.userId };
+    const body = { question: q, user: u, policy: policy.value, rules: rules.value };
     log('NL-TO-SQL', 'info', 'POST /api/generate-sql → backend gateway. Generate a SQL draft for review before validation and execution.', body);
     const res = await postJson(GENERATE_SQL_URL, body, PIPELINE_TIMEOUT_MS);
 
@@ -509,12 +475,10 @@ export default function NlPipeline() {
     const metadata = pipeline.generation?.metadata || {};
     log('NL-TO-SQL', 'success', `SQL generated through the backend gateway in ${res.ms} ms.`, predicted);
     log('NL-TO-SQL', 'info', `Tokens: ${metadata.total_tokens ?? '?'} (prompt ${metadata.prompt_tokens ?? '?'}, completion ${metadata.completion_tokens ?? '?'}) · refinement attempts: ${metadata.refinement_attempts ?? 0} · self-healed: ${metadata.healed ? 'yes' : 'no'}.`, metadata);
-    setPolicyText(pretty(pipeline.effectivePolicy));
-    setUserText(pretty(pipeline.user));
-    if (pipeline.generation?.injectedRules) {
-      setRulesText(pretty({ constraints: pipeline.generation.injectedRules.split('\n') }));
-    }
-    setGenerated({ sql: predicted, metadata, ms: res.ms });
+    setGenerated({ sql: predicted, metadata, ms: res.ms, question: pipeline.question, userId: u.userId, context: { user: u, policy: policy.value, rules: rules.value }, injectedRules: pipeline.generation?.injectedRules, analysis: pipeline.analysis, analysisStatus: pipeline.analysisStatus });
+    log('INTENT', pipeline.analysis ? 'success' : 'warn', pipeline.analysis
+      ? `Intent: ${pipeline.analysis.intent.primary_intent}; response: ${pipeline.analysis.response_intent.intent}.`
+      : 'Intent analysis unavailable. Generation continued with the question and pasted NL-to-SQL rules.');
     setSql(predicted);
     setGenState('pass');
     log('STEP 2', 'info', 'Review or edit the generated SQL, then click Validate & execute. Security and policy checks will run on the SQL in the editor before execution.');
@@ -526,7 +490,12 @@ export default function NlPipeline() {
     if (busy || !generated || !sql.trim()) return;
     clearVerification();
     const user = parseObject('Authenticated user', userText);
-    if (user.error || !user.value?.userId || !sql.trim()) {
+    if (user.value?.userId && user.value.userId !== generated.userId) {
+      log('STEP 2', 'error', 'The selected identity changed. Generate a fresh SQL draft.');
+      invalidateDraft();
+      return;
+    }
+    if (user.error || !user.value?.userId || !sql.trim() || user.value.userId !== generated.userId) {
       [user.error, !user.value?.userId && 'Authenticated user must contain userId.', !sql.trim() && 'SQL is empty.'].filter(Boolean).forEach((e) => log('STEP 2', 'error', e));
       setVerifyState('fail');
       return;
@@ -535,10 +504,11 @@ export default function NlPipeline() {
       log('SECURITY', 'warn', 'The SQL was edited by hand after generation. The edited text is what gets verified.', sql);
     }
     setVerifyState('loading');
-    log('STEP 2', 'info', 'Sending the edited SQL and userId to the backend for fresh validation, policy checks, read-only execution and PII masking.');
+    log('STEP 2', 'info', 'Sending the edited SQL and pasted context for fresh validation, policy checks, read-only execution and PII masking.');
     const response = await postJson(SECURE_QUERY_URL, {
       sql: sql.trim(),
-      userId: user.value.userId,
+      question: generated.question,
+      ...generated.context,
       execute: true
     }, PIPELINE_TIMEOUT_MS);
 
@@ -551,8 +521,6 @@ export default function NlPipeline() {
     }
 
     const pipeline = response.data;
-    setPolicyText(pretty(pipeline.effectivePolicy));
-    setUserText(pretty(pipeline.user));
     setVerifiedPolicy(pipeline.effectivePolicy);
     setNavodya(pipeline.securityValidation);
     setInspect(pipeline.inspection ? { analysis: pipeline.inspection, ms: pipeline.elapsedMs } : null);
@@ -561,6 +529,10 @@ export default function NlPipeline() {
       `${check.label}: ${check.passed ? 'PASS' : 'FAIL'} - ${check.message}`, check.reason ? { reason: check.reason } : undefined));
     if (pipeline.status === 'COMPLETED') {
       setExecution({ result: pipeline.result });
+      setPresentation({ envelope: pipeline.presentation, status: pipeline.presentationStatus, error: pipeline.presentationError, resultId: pipeline.resultId, context: generated.context, question: pipeline.question });
+      log('PRESENTATION', pipeline.presentationStatus === 'READY' ? 'success' : 'warn', pipeline.presentationStatus === 'READY'
+        ? 'Answer, prediction and presentation completed using masked results.'
+        : 'Presentation unavailable; the masked database results remain available.');
       log('EXECUTION', 'success', `Read-only query returned ${pipeline.result.rowCount} row(s); ${pipeline.result.masking.maskedCells} cell(s) were masked before the response left the backend.`, pipeline.result.masking);
       if (pipeline.result.ner?.warnings?.length) pipeline.result.ner.warnings.forEach((warning) => log('NER', 'warn', warning));
     } else if (pipeline.executionError) {
@@ -568,7 +540,7 @@ export default function NlPipeline() {
       log('EXECUTION', 'error', `${pipeline.executionError.code}: ${pipeline.executionError.message}`, pipeline.executionError.details);
     }
     log('DECISION', pipeline.decision.passed ? 'success' : 'error', `${pipeline.decision.decision}: ${pipeline.decision.message}`);
-    setVerifyState(pipeline.status === 'COMPLETED' ? 'pass' : pipeline.decision.passed ? 'pass' : 'fail');
+    setVerifyState(pipeline.status === 'COMPLETED' || pipeline.status === 'APPROVED' ? 'pass' : 'fail');
   };
 
   const inspectState = !inspect ? (verifyState === 'loading' ? 'loading' : 'idle') : inspect.error ? 'fail' : 'pass';
@@ -578,7 +550,8 @@ export default function NlPipeline() {
     { label: 'Navodya', state: navodya ? (navodya.safe ? 'pass' : 'fail') : verifyState === 'loading' ? 'active' : 'idle' },
     { label: 'SQLGlot', state: inspectState === 'loading' ? 'active' : inspectState },
     { label: 'Policy', state: verifyState === 'loading' && inspect ? 'active' : verifyState === 'pass' ? 'pass' : verifyState === 'fail' ? 'fail' : 'idle' },
-    { label: 'Mask', state: execution?.result ? 'pass' : execution?.error ? 'fail' : 'idle' }
+    { label: 'Mask', state: execution?.result ? 'pass' : execution?.error ? 'fail' : 'idle' },
+    { label: 'Present', state: presentation?.status === 'READY' ? 'pass' : presentation?.status === 'UNAVAILABLE' ? 'fail' : 'idle' }
   ];
 
   return (
@@ -610,22 +583,26 @@ export default function NlPipeline() {
             <section className="input-card pl-step-card">
               <div className="pl-step-title">
                 <span className="pl-step-badge">Step 1</span>
-                <h2>Question &amp; demo context</h2>
+                <h2>Question &amp; supplied context</h2>
                 <StatusPill state={genState} />
               </div>
 
               <label className="pl-label" htmlFor="pl-question">Natural language question</label>
               <textarea id="pl-question" className="pl-question" value={question} maxLength={MAX_QUESTION_CHARS} disabled={busy}
-                onChange={(event) => setQuestion(event.target.value)} placeholder="e.g. Show employees who joined this year" />
+                onChange={(event) => { setQuestion(event.target.value); invalidateDraft(); }} placeholder="e.g. Show employees who joined this year" />
               <div className="pl-counter">{question.length} / {MAX_QUESTION_CHARS}</div>
+              <div className="vp-examples" aria-label="Example questions">
+                {['How many employees are in my department?', 'List employee names and work emails in my department', 'Chart monthly new hires in my department and forecast the next 3 months'].map((example) =>
+                  <button key={example} type="button" className="pl-ghost" disabled={busy} onClick={() => { setQuestion(example); invalidateDraft(); }}>{example}</button>)}
+              </div>
 
               <div className="pl-json-grid">
-                <JsonUpload number="A" icon="file" title="User policy" description="Reference view; backend reloads its authoritative copy"
-                  text={policyText} onText={setPolicyText} fileName={files.policy} onFileName={setFile('policy')} log={log} disabled={busy} />
-                <JsonUpload number="B" icon="user" title="Authenticated user" description="Only userId is sent; backend reloads trusted claims"
-                  text={userText} onText={(value) => { setUserText(value); clearVerification(); }} fileName={files.user} onFileName={setFile('user')} log={log} disabled={busy} />
-                <JsonUpload number="C" icon="code" title="NL-to-SQL rules" description="Reference view; backend derives these from policy"
-                  text={rulesText} onText={setRulesText} fileName={files.rules} onFileName={setFile('rules')} log={log} disabled={busy} />
+                <JsonUpload number="A" icon="file" title="User policy" description="Paste the policy to apply to this query"
+                  text={policyText} onText={(value) => { setPolicyText(value); invalidateDraft(); }} fileName={files.policy} onFileName={setFile('policy')} log={log} disabled={busy} />
+                <JsonUpload number="B" icon="user" title="Authenticated user" description="Paste the identity claims used to resolve policy filters"
+                  text={userText} onText={(value) => { setUserText(value); invalidateDraft(); }} fileName={files.user} onFileName={setFile('user')} log={log} disabled={busy} />
+                <JsonUpload number="C" icon="code" title="NL-to-SQL rules" description="Optional additional instructions for SQL generation"
+                  text={rulesText} onText={(value) => { setRulesText(value); invalidateDraft(); }} fileName={files.rules} onFileName={setFile('rules')} log={log} disabled={busy} optional />
               </div>
 
               {genError && <div className="pl-banner fail"><Icon name="close" size={16} /> {genError}</div>}
@@ -656,6 +633,8 @@ export default function NlPipeline() {
                     <span className={generated.metadata.is_valid === false ? 'bad' : 'ok'}>Engine valid: {generated.metadata.is_valid === false ? 'no' : 'yes'}</span>
                     {generated.metadata.healed && <span className="ok">Self-healed</span>}
                   </div>
+                  <IntentPreview analysis={generated.analysis} status={generated.analysisStatus} />
+                  {generated.injectedRules && <details><summary>NL-to-SQL rules sent</summary><pre>{typeof generated.injectedRules === 'string' ? generated.injectedRules : pretty(generated.injectedRules)}</pre></details>}
                   <label className="pl-label" htmlFor="pl-sql">SQL to validate and execute</label>
                   <textarea id="pl-sql" className="code-input sql-input" value={sql} spellCheck="false" aria-label="Generated SQL" disabled={busy}
                     onChange={(event) => { setSql(event.target.value); clearVerification(); }} />
@@ -680,6 +659,13 @@ export default function NlPipeline() {
                       <NavodyaCard validation={navodya} />
                       <InspectionCard inspect={inspect} policy={verifiedPolicy} />
                       <DecisionCard verify={verify} />
+                      {presentation && <PresentationResult key={presentation.resultId || 'unavailable'} {...presentation}
+                        onSimulate={presentation.resultId ? async (scenarioText) => {
+                          const response = await postJson('/api/simulate', { resultId: presentation.resultId, ...presentation.context, scenarioText }, 65000);
+                          if (!response.ok || response.data?.status !== 'SUCCESS') throw new Error(describeError(response, 65000));
+                          log('WHAT-IF', 'success', 'Scenario evaluated against the authorized masked result.');
+                          return response.data;
+                        } : undefined} />}
                       <ExecutionCard execution={execution} />
                     </div>
                   )}

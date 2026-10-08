@@ -16,12 +16,6 @@
       "field": "tenant_id",
       "operator": "=",
       "valueFrom": "tenantId"
-    },
-    {
-      "table": "employees",
-      "field": "department_id",
-      "operator": "=",
-      "valueFrom": "departmentId"
     }
   ]
 }

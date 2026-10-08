@@ -81,7 +81,7 @@ function policyToInjectedRules(policy) {
   if ((policy.deniedColumns || []).length) {
     lines.push(`Never select these columns: ${policy.deniedColumns.join(', ')}.`);
   }
-  for (const rule of policy.rowRules || policy.requiredFilters || []) {
+  for (const rule of [...(policy.rowRules || []), ...(policy.requiredFilters || []), ...(policy.mandatoryFilters || [])]) {
     const column = rule.column || rule.field;
     const value = typeof rule.value === 'string' ? `'${rule.value.replaceAll("'", "''")}'` : rule.value;
     lines.push(`Required filter: ${rule.table}.${column} ${rule.operator || '='} ${value}.`);
@@ -89,7 +89,7 @@ function policyToInjectedRules(policy) {
   return lines.join('\n');
 }
 
-async function translateQuestion(question, policy) {
+async function translateQuestion(question, rules = null) {
   const url = process.env.NL_SERVICE_URL || DEFAULT_NL_SERVICE_URL;
   let response;
   try {
@@ -98,7 +98,7 @@ async function translateQuestion(question, policy) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         user_query: question,
-        injected_rules: policyToInjectedRules(policy)
+        injected_rules: rules
       }),
       signal: AbortSignal.timeout(Number(process.env.NL_SERVICE_TIMEOUT_MS || 120000))
     });
@@ -123,7 +123,7 @@ async function translateQuestion(question, policy) {
   return {
     sql: payload.predicted_sql,
     metadata: payload.metadata || {},
-    injectedRules: policyToInjectedRules(policy)
+    injectedRules: rules
   };
 }
 

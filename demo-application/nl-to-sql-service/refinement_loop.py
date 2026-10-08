@@ -2,7 +2,7 @@ import re
 import sqlite3
 from typing import Optional, Tuple, List, Dict, Any
 
-from profiler import time_block, log_step
+from profiler import time_block, log_step, trace
 import llm
 import prompts
 
@@ -315,6 +315,9 @@ def execute_refinement_loop(
     with time_block("Automated Query Refinement Loop (Task 3)", parent_summary=profiler.categories if profiler else None, category="Self-Correction Refinement Loop"):
         # Step 1: Validate initial SQL
         is_valid, error_msg, err_type = dry_run_validate(initial_sql, db_conn)
+        trace("INITIAL SQL VALIDATION", {"sql": initial_sql, "valid": is_valid,
+            "error": error_msg, "error_type": err_type,
+            "validation_mode": "compiler dry-run" if db_conn is not None else "structural check"})
         
         refinement_stats = {
             "initial_valid": is_valid,
@@ -334,6 +337,7 @@ def execute_refinement_loop(
             sanitized_sql = sanitize_sql_keyword_spacing(initial_sql)
             if sanitized_sql != initial_sql:
                 is_sanitized_valid, s_err, s_type = dry_run_validate(sanitized_sql, db_conn)
+                trace("SPACING SANITIZER OUTPUT", {"sql": sanitized_sql, "valid": is_sanitized_valid, "error": s_err})
                 if is_sanitized_valid:
                     refinement_stats["healed"] = True
                     refinement_stats["healed_by_sanitizer"] = True
@@ -368,6 +372,7 @@ def execute_refinement_loop(
                 if new_ddls:
                     supplemental_schema_str += "\n\n" + "\n\n".join(new_ddls)
                     accumulated_schema += "\n\n" + "\n\n".join(new_ddls)
+                trace("REFINEMENT SCHEMA EXPANSION", {"attempt": attempt, "missing_entities": missing_entities, "added_schema": new_ddls})
 
                 # Build targeted error-correction prompt
                 refine_prompt = build_refinement_prompt(
@@ -409,6 +414,7 @@ def execute_refinement_loop(
                     "tokens": token_stats.get("total_tokens", 0)
                 }
                 refinement_stats["attempts_history"].append(attempt_log)
+                trace("REFINEMENT ATTEMPT OUTPUT", attempt_log)
 
                 current_sql = refined_sql
 

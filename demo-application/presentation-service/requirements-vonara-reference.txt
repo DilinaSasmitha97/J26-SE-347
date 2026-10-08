@@ -1,0 +1,30 @@
+# Pinned to the versions every reported number was produced with (Python 3.13.14).
+# A newer statsmodels can change SARIMA fits, STL decompositions and test
+# p-values, so upgrades are deliberate: bump a pin, re-run the benchmarks
+# (evaluate_forecasting.py, evaluate_readiness.py, evaluate_anomalies.py) and
+# the test suites, and record the new versions in the reports.
+
+# --- Core numerics / data handling ---
+pandas==3.0.3
+numpy==2.5.1
+
+# --- Forecasting & statistics (Prediction Stages 3-5) ---
+statsmodels==0.14.6
+scipy==1.18.0
+
+# --- LLM providers (optional: engine degrades to deterministic mode) ---
+groq==1.6.0
+google-genai==2.17.0
+python-dotenv==1.2.2
+
+# --- REST gateway (integration surface for Members 1-3) ---
+fastapi==0.141.1
+uvicorn==0.51.0
+pydantic==2.13.4
+httpx==0.28.1            # FastAPI TestClient, used by the API tests and benchmarks
+
+# --- Reports ---
+openpyxl==3.1.5          # build_intent_report.py, build_review_workbook.py
+
+# --- Synthetic MySQL integration fixtures (test_db/ only) ---
+pymysql==1.2.3

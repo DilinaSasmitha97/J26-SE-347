@@ -1,8 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const authorizationContext = require('./config/authorizationContext.json');
-const demoUsers = require('./config/demoUsers.json');
-const { getPolicyForRole } = require('./services/policyService');
 const { resolvePolicyValues } = require('./utils/resolvePolicyValues');
 const { createGenerationContract } = require('./services/generationContract');
 const { generateSql } = require('./services/fakeSqlGenerator');
@@ -15,16 +12,38 @@ const {
   executeAndMask,
   getSecurityRuntimeHealth
 } = require('./services/secureQueryService');
+const presentationService = require('./services/presentationService');
+const { createResultStore } = require('./services/resultStore');
 
-function createEffectivePolicy(context) {
+function createEffectivePolicy(context, policy) {
   if (!context || typeof context !== 'object' || Array.isArray(context)) {
     throw new Error('A valid authorization context is required.');
   }
-  if (!context.role) {
+  if (typeof context.role !== 'string' || !context.role.trim()) {
     throw new Error('Authorization context must contain a "role" field.');
   }
 
-  return resolvePolicyValues(getPolicyForRole(context.role), context);
+  if (!policy || typeof policy !== 'object' || Array.isArray(policy) || !Array.isArray(policy.allowedTables)) {
+    throw new Error('Paste a policy JSON object containing an allowedTables array.');
+  }
+  return resolvePolicyValues(policy, context);
+}
+
+function validateContextRequest(body) {
+  const { user, policy, rules } = body || {};
+  if (!user || typeof user !== 'object' || Array.isArray(user)) return { error: 'Paste the authenticated user JSON object.' };
+  if (typeof user.userId !== 'string' || !user.userId.trim()) return { error: 'Authenticated user must contain a non-empty userId.' };
+  if (!policy || typeof policy !== 'object' || Array.isArray(policy)) return { error: 'Paste the user policy JSON object.' };
+  if (!Array.isArray(policy.allowedTables) || policy.allowedTables.some((table) => typeof table !== 'string' || !table.trim())) return { error: 'Policy allowedTables must be an array of table names.' };
+  for (const key of ['deniedColumns', 'allowedOperations']) {
+    if (policy[key] !== undefined && (!Array.isArray(policy[key]) || policy[key].some((item) => typeof item !== 'string'))) return { error: `Policy ${key} must be an array of strings.` };
+  }
+  if (rules != null && (typeof rules !== 'object' || Array.isArray(rules))) return { error: 'NL-to-SQL rules must be a JSON object when provided.' };
+  try {
+    return { value: { user: structuredClone(user), effectivePolicy: createEffectivePolicy(user, policy), rules: rules || null } };
+  } catch (error) {
+    return { error: error.message };
+  }
 }
 
 function validateVerificationRequest(body) {
@@ -96,8 +115,12 @@ async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
   };
 }
 
-function createApp() {
+function createApp(dependencies = {}) {
   const app = express();
+  const presenter = dependencies.presentationService || presentationService;
+  const runMaskedQuery = dependencies.executeAndMask || executeAndMask;
+  const verifyQuery = dependencies.verifySql || verifySql;
+  const resultStore = dependencies.resultStore || createResultStore();
   app.use(cors());
   app.use(express.json({ limit: '256kb' }));
 
@@ -106,33 +129,46 @@ function createApp() {
   });
 
   app.get('/api/security-health', async (req, res) => {
-    const runtime = await getSecurityRuntimeHealth();
+    const [runtime, presentation] = await Promise.all([getSecurityRuntimeHealth(), presenter.presentationHealth()]);
     res.json({
       status: runtime.database.status === 'ok' && runtime.ner.status === 'ok' ? 'ok' : 'degraded',
       service: 'integrated-security-pipeline',
       components: {
         navodyaValidation: { status: 'ok', mode: 'in-process' },
         database: runtime.database,
-        ner: runtime.ner
+        ner: runtime.ner,
+        presentation
       }
     });
   });
 
+  app.get('/api/presentation-health', async (req, res) => {
+    res.json(await presenter.presentationHealth());
+  });
+
+  app.post('/api/simulate', async (req, res) => {
+    const context = validateContextRequest(req.body);
+    if (context.error) return res.status(400).json({ code: 'INVALID_REQUEST', message: context.error });
+    const { user, effectivePolicy: policy } = context.value;
+    const scenarioText = typeof req.body?.scenarioText === 'string' ? req.body.scenarioText.trim() : '';
+    if (typeof req.body?.resultId !== 'string' || !scenarioText || scenarioText.length > 1000) {
+      return res.status(400).json({ code: 'INVALID_REQUEST', message: 'Provide a resultId and a scenario of up to 1000 characters.' });
+    }
+    const entry = resultStore.get(req.body.resultId, user, policy);
+    if (!entry) return res.status(404).json({ code: 'RESULT_UNAVAILABLE', message: 'This result expired or is unavailable for the current user and policy. Execute the query again.' });
+    try {
+      return res.json(await presenter.simulateResult(entry, scenarioText, user, policy));
+    } catch (error) {
+      return res.status(error.status || 502).json({ code: error.code || 'SIMULATION_FAILED', message: error.message });
+    }
+  });
+
   app.get('/api/users', (req, res) => {
-    res.json(demoUsers);
+    res.json([]);
   });
 
   app.get('/api/user-policy/:userId', (req, res) => {
-    try {
-      const user = demoUsers.find((item) => item.userId === req.params.userId)
-        || authorizationContext;
-      res.json({ user, effectivePolicy: createEffectivePolicy(user) });
-    } catch (error) {
-      res.status(400).json({
-        code: 'POLICY_RESOLUTION_FAILED',
-        message: error.message
-      });
-    }
+    res.status(400).json({ code: 'MANUAL_CONTEXT_REQUIRED', message: 'Paste the user and policy JSON in the application. Stored policy lookup is disabled.' });
   });
 
   app.post('/api/verify-sql', async (req, res) => {
@@ -165,13 +201,9 @@ function createApp() {
 
   app.post('/api/generate-sql', async (req, res) => {
     const started = Date.now();
-    const user = demoUsers.find((item) => item.userId === req.body?.userId);
-    if (!user) {
-      return res.status(400).json({
-        code: 'UNKNOWN_USER',
-        message: 'Choose a valid demo user. The backend does not trust client-supplied roles or policies.'
-      });
-    }
+    const context = validateContextRequest(req.body);
+    if (context.error) return res.status(400).json({ code: 'INVALID_REQUEST', message: context.error });
+    const { user, effectivePolicy, rules } = context.value;
 
     const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
     if (!question || question.length > 2000) {
@@ -182,14 +214,18 @@ function createApp() {
     }
 
     try {
-      const effectivePolicy = createEffectivePolicy(user);
-      const generation = await translateQuestion(question, effectivePolicy);
+      const understanding = await presenter.analyzeQuestion(question, user, effectivePolicy);
+      if (understanding.analysis?.response_intent?.is_data_request === false) {
+        return res.status(400).json({ code: 'NOT_A_DATA_REQUEST', message: 'Ask a question about the data, such as a count, trend, comparison or list.', ...understanding });
+      }
+      const generation = await translateQuestion(question, rules);
       return res.json({
         status: 'GENERATED',
         question,
         user,
         effectivePolicy,
         generation,
+        ...understanding,
         sql: generation.sql,
         elapsedMs: Date.now() - started
       });
@@ -211,30 +247,27 @@ function createApp() {
 
   app.post('/api/secure-query', async (req, res) => {
     const started = Date.now();
-    const requestedUserId = req.body?.userId;
-    const user = demoUsers.find((item) => item.userId === requestedUserId);
-
-    if (!user) {
-      return res.status(400).json({
-        code: 'UNKNOWN_USER',
-        message: 'Choose a valid demo user. The backend does not trust client-supplied roles or policies.'
-      });
-    }
+    const context = validateContextRequest(req.body);
+    if (context.error) return res.status(400).json({ code: 'INVALID_REQUEST', message: context.error });
+    const { user, effectivePolicy, rules } = context.value;
 
     const suppliedSql = typeof req.body?.sql === 'string' ? req.body.sql.trim() : '';
     const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
-    if (!suppliedSql && !question) {
+    if ((!suppliedSql && !question) || question.length > 2000) {
       return res.status(400).json({
         code: 'INVALID_REQUEST',
-        message: 'Provide either a natural-language question or SQL to validate.'
+        message: 'Provide SQL or a natural-language question of up to 2000 characters.'
       });
     }
 
     try {
-      const effectivePolicy = createEffectivePolicy(user);
-      const generation = suppliedSql ? null : await translateQuestion(question, effectivePolicy);
+      const understanding = suppliedSql ? {} : await presenter.analyzeQuestion(question, user, effectivePolicy);
+      if (understanding.analysis?.response_intent?.is_data_request === false) {
+        return res.status(400).json({ code: 'NOT_A_DATA_REQUEST', message: 'Ask a question about the data.', ...understanding });
+      }
+      const generation = suppliedSql ? null : await translateQuestion(question, rules);
       const sql = suppliedSql || generation.sql;
-      const decision = await verifySql({ policy: effectivePolicy, user, sql, dialect: 'mysql' });
+      const decision = await verifyQuery({ policy: effectivePolicy, user, sql, dialect: 'mysql' });
       const baseResponse = {
         status: decision.passed ? 'APPROVED' : 'BLOCKED',
         source: suppliedSql ? 'provided_sql' : 'nl_to_sql',
@@ -242,6 +275,7 @@ function createApp() {
         user,
         effectivePolicy,
         generation,
+        ...understanding,
         sql,
         securityValidation: decision.securityValidation,
         inspection: decision.inspection || null,
@@ -255,11 +289,15 @@ function createApp() {
       }
 
       try {
-        const result = await executeAndMask(sql, effectivePolicy, user);
+        const result = await runMaskedQuery(sql, effectivePolicy, user);
+        const presentation = await presenter.presentResult(question, result, user, effectivePolicy);
+        const resultId = question ? resultStore.save({ user, policy: effectivePolicy, question, result }) : null;
         return res.json({
           ...baseResponse,
           status: 'COMPLETED',
           result,
+          resultId,
+          ...presentation,
           elapsedMs: Date.now() - started
         });
       } catch (error) {
@@ -291,11 +329,11 @@ function createApp() {
     }
   });
 
-  // Compatibility endpoint for the original predefined-user demo.
+  // Compatibility endpoints also require explicit user and policy inputs.
   app.post('/api/check-sql', async (req, res) => {
-    const user = demoUsers.find((item) => item.userId === req.body?.userId)
-      || authorizationContext;
-    const policy = createEffectivePolicy(user);
+    const context = validateContextRequest(req.body);
+    if (context.error) return res.status(400).json({ code: 'INVALID_REQUEST', message: context.error });
+    const { user, effectivePolicy: policy } = context.value;
     const validation = validateVerificationRequest({
       policy,
       user,
@@ -319,10 +357,10 @@ function createApp() {
   });
 
   app.post('/api/query', async (req, res) => {
+    const context = validateContextRequest(req.body);
+    if (context.error) return res.status(400).json({ code: 'INVALID_REQUEST', message: context.error });
     try {
-      const user = demoUsers.find((item) => item.userId === req.body?.userId)
-        || authorizationContext;
-      const policy = createEffectivePolicy(user);
+      const { user, effectivePolicy: policy } = context.value;
       const question = req.body?.question || 'Show employee names';
       const contract = createGenerationContract(policy, question);
 
@@ -364,6 +402,7 @@ module.exports = {
   server,
   createApp,
   createEffectivePolicy,
+  validateContextRequest,
   validateVerificationRequest,
   verifySql
 };

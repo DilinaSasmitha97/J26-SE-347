@@ -3,6 +3,11 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const { once } = require('node:events');
 const { createApp } = require('../src/index');
+const user = { userId: 'pasted-user', role: 'CUSTOM', tenantId: 123, departmentId: 9 };
+const policy = { allowedTables: ['employees'], requiredFilters: [
+  { table: 'employees', column: 'tenant_id', valueFrom: 'tenantId' },
+  { table: 'employees', column: 'department_id', valueFrom: 'departmentId' }
+] };
 
 function post(server, path, body) {
   return new Promise((resolve, reject) => {
@@ -21,7 +26,11 @@ function post(server, path, body) {
 }
 
 test('separate generation and execution workflow', async (t) => {
-  const server = createApp().listen(0, '127.0.0.1');
+  const server = createApp({ presentationService: {
+    analyzeQuestion: async () => ({ analysis: { intent: { primary_intent: 'KPI_SINGLE_VALUE' },
+      response_intent: { is_data_request: true }, semantic_roles: { metrics: [{ table: 'employees', column: 'is_active', aggregation: 'COUNT' }] } }, analysisStatus: 'READY' }),
+    generationGuidance: () => { assert.fail('Vonara hints must not be used for SQL generation'); }
+  } }).listen(0, '127.0.0.1');
   await once(server, 'listening');
   t.after(() => new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve())));
 
@@ -32,27 +41,30 @@ test('separate generation and execution workflow', async (t) => {
     return { ok: true, json: async () => ({ status: 'SUCCESS', predicted_sql: draft, metadata: { total_tokens: 25 } }) };
   });
 
-  await t.test('generation returns an editable draft using trusted policy without inspection or execution', async () => {
+  await t.test('generation forwards only question and pasted JSON rules despite policy and Vonara analysis', async () => {
     const response = await post(server, '/api/generate-sql', {
-      userId: 'user-101-manager', question: ' Show employee names ', execute: true,
-      policy: { allowedTables: ['secrets'] }, user: { tenantId: 999 }
+      question: ' Show employee names ', execute: true,
+      policy, user, rules: { constraints: ['Sort employee names alphabetically.'] }
     });
     assert.equal(response.status, 200);
     assert.equal(response.body.status, 'GENERATED');
     assert.equal(response.body.sql, draft);
     assert.equal(response.body.question, 'Show employee names');
-    assert.equal(response.body.user.tenantId, 101);
+    assert.equal(response.body.user.tenantId, 123);
+    assert.equal(response.body.user.role, 'CUSTOM');
+    assert.deepEqual(response.body.effectivePolicy.allowedTables, ['employees']);
     assert.equal(response.body.generation.metadata.total_tokens, 25);
     assert.equal(response.body.decision, undefined);
     assert.equal(response.body.result, undefined);
     assert.equal(calls.length, 1);
-    assert.match(calls[0].body.injected_rules, /employees\.tenant_id = 101/);
-    assert.doesNotMatch(calls[0].body.injected_rules, /secrets|999/);
+    assert.deepEqual(calls[0].body, { user_query: 'Show employee names',
+      injected_rules: { constraints: ['Sort employee names alphabetically.'] } });
+    assert.deepEqual(response.body.generation.injectedRules, calls[0].body.injected_rules);
   });
 
   await t.test('execution validates the edited SQL and blocks a destructive change', async () => {
     const response = await post(server, '/api/secure-query', {
-      userId: 'user-101-manager', sql: 'DROP TABLE employees', execute: true
+      user, policy, sql: 'DROP TABLE employees', execute: true
     });
     assert.equal(response.status, 200);
     assert.equal(response.body.sql, 'DROP TABLE employees');
@@ -65,9 +77,11 @@ test('separate generation and execution workflow', async (t) => {
 
   await t.test('invalid generation inputs do not call the translation service', async () => {
     for (const body of [
-      { userId: 'unknown', question: 'Show employees' },
-      { userId: 'user-101-manager', question: '   ' },
-      { userId: 'user-101-manager', question: 'x'.repeat(2001) }
+      { userId: 'user-101-manager', question: 'Show employees' },
+      { user, question: 'Show employees' },
+      { policy, question: 'Show employees' },
+      { user, policy, question: '   ' },
+      { user, policy, question: 'x'.repeat(2001) }
     ]) {
       const response = await post(server, '/api/generate-sql', body);
       assert.equal(response.status, 400);

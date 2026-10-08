@@ -21,8 +21,11 @@ function resolvePolicyValues(policy, authorizationContext) {
   // Deep clone to guarantee original policy is not mutated
   const effectivePolicy = structuredClone(policy);
 
-  if (Array.isArray(effectivePolicy.rowRules)) {
-    effectivePolicy.rowRules = effectivePolicy.rowRules.map((rule) => {
+  for (const rulesKey of ['rowRules', 'requiredFilters', 'mandatoryFilters']) {
+    if (effectivePolicy[rulesKey] === undefined) continue;
+    if (!Array.isArray(effectivePolicy[rulesKey])) throw new Error(`Policy ${rulesKey} must be an array.`);
+    effectivePolicy[rulesKey] = effectivePolicy[rulesKey].map((rule) => {
+      if (!rule || typeof rule !== 'object' || Array.isArray(rule)) throw new Error(`Policy ${rulesKey} entries must be JSON objects.`);
       if ('valueFrom' in rule) {
         const contextKey = rule.valueFrom;
 

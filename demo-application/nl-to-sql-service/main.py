@@ -20,7 +20,7 @@ import refinement_loop
 from entity_resolver import entity_resolver
 from relationship_mapper import relationship_mapper
 from exemplar_selector import exemplar_selector
-from profiler import CycleProfiler, time_block, log_step
+from profiler import CycleProfiler, time_block, log_step, trace
 
 # Load environment variables
 load_dotenv()
@@ -52,6 +52,11 @@ def translate(
     and DAIL-style dynamic few-shot exemplar selection (Task 2.5).
     """
     full_schema_context = full_schema_meta or schema_meta
+    trace("ENGINE INPUT", {"user_query": nl_query, "injected_rules": injected_rules,
+        "use_pruning": use_pruning, "enable_refinement": enable_refinement,
+        "use_entity_resolution": use_entity_resolution, "use_relationship_mapping": use_relationship_mapping,
+        "use_exemplars": use_exemplars, "max_refinement_attempts": max_refinement_attempts})
+    trace("FULL SCHEMA", full_schema_context)
 
     # Resolve target dialect
     import sqlite3
@@ -64,6 +69,7 @@ def translate(
             active_dialect = "sqlite"
     else:
         active_dialect = dialect
+    trace("SQL DIALECT", active_dialect)
 
     # 0A. Contextual Entity & Value Grounding (Task 4A)
     value_groundings_str = ""
@@ -76,6 +82,8 @@ def translate(
                 schema_meta=full_schema_context
             )
             value_groundings_str = entity_resolver.format_grounding_hints(grounding_matches)
+    trace("ENTITY GROUNDING OUTPUT", {"enabled": use_entity_resolution,
+        "grounded_tables": sorted(grounded_tables), "hints": value_groundings_str})
 
     # 0B. Relational Graph & Multi-Hop Steiner Bridge Resolution (Task 4B)
     join_paths_str = ""
@@ -98,6 +106,8 @@ def translate(
                 )
                 join_paths_str = relationship_mapper.format_canonical_join_skeleton(join_paths, nl_query=nl_query)
 
+    trace("RELATIONSHIP MAPPING OUTPUT", {"enabled": use_relationship_mapping,
+        "bridge_tables": sorted(bridge_tables), "join_hints": join_paths_str})
     # Combine protected tables to prevent accidental over-pruning in Task 1
     protected_tables = grounded_tables.union(bridge_tables)
 
@@ -110,6 +120,8 @@ def translate(
             protected_tables=protected_tables if protected_tables else None
         )
         schema_meta = pruned_schema
+        trace("SCHEMA PRUNING STATS", pruning_stats)
+    trace("SCHEMA USED FOR GENERATION", schema_meta)
 
     # 0C.2 Subgraph Relational Join Paths (Task 4B / Stage 8A Precision Guidance)
     if use_relationship_mapping:
@@ -128,12 +140,14 @@ def translate(
             if subgraph_hints:
                 join_paths_str = subgraph_hints
 
+    trace("FINAL JOIN HINTS", join_paths_str)
     # 0D. Dynamic Exemplar Selection (Task 2.5 - DAIL-SQL In-Context Learning)
     exemplars_str = ""
     if use_exemplars:
         with time_block("Dynamic Exemplar Selection (Task 2.5)", parent_summary=profiler.categories if profiler else None, category="Exemplar Retrieval"):
             retrieved_ex = exemplar_selector.retrieve(nl_query, k=num_exemplars)
             exemplars_str = exemplar_selector.format_exemplars(retrieved_ex)
+    trace("EXEMPLAR OUTPUT", {"enabled": use_exemplars, "examples": exemplars_str})
 
     # 1. Build Prompt with CRP v2 (including Value Groundings, Join Paths & Strict Projection Rules)
     with time_block("Build Code Representation Prompt (CRP v2)", parent_summary=profiler.categories if profiler else None, category="Prompt Construction"):
@@ -147,6 +161,7 @@ def translate(
             exemplars=exemplars_str
         )
         
+    trace("FINAL ENGINE PROMPT", prompt_string)
     # 2. Call LLM via wrapper with retries & token tracking
     raw_output, token_stats = llm.call_llm(prompt_string, retries=3, profiler=profiler)
     
@@ -165,6 +180,7 @@ def translate(
         else:
             final_sql = clean_output
 
+    trace("INITIAL CLEANED SQL", final_sql)
     # 4. Apply Task 3 Automated Query Refinement Loop (Self-Correction)
     if enable_refinement:
         final_sql, is_valid, attempts_count, ref_stats = refinement_loop.execute_refinement_loop(
@@ -178,6 +194,7 @@ def translate(
             profiler=profiler,
             dialect=active_dialect
         )
+        trace("REFINEMENT OUTPUT", ref_stats)
         if isinstance(token_stats, dict):
             token_stats["refinement_attempts"] = attempts_count
             token_stats["healed"] = ref_stats.get("healed", False)
@@ -190,6 +207,8 @@ def translate(
             token_stats["healed"] = False
             token_stats["is_valid"] = True
 
+    trace("FINAL FULL SQL QUERY", final_sql)
+    trace("ENGINE OUTPUT METADATA", token_stats)
     return final_sql, token_stats
 
 

@@ -8,11 +8,38 @@ so this module is reconstructed from the .pyc interface:
 Set PROFILER_VERBOSE=1 to print step logs; silent by default for service use.
 """
 import os
+import json
+import sys
 import time
+from contextvars import ContextVar
+from threading import Lock
+from uuid import uuid4
 from contextlib import contextmanager
 from datetime import datetime
 
 VERBOSE = os.getenv("PROFILER_VERBOSE", "0").strip() in ("1", "true", "True")
+_request_id = ContextVar("nl_sql_request_id", default="-")
+_console_lock = Lock()
+
+
+def trace(stage: str, payload):
+    """Print complete process data, without reading environment secrets or headers."""
+    rendered = payload if isinstance(payload, str) else json.dumps(payload, indent=2, ensure_ascii=True, default=str)
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    rendered = rendered.encode(encoding, errors="backslashreplace").decode(encoding)
+    with _console_lock:
+        print(f"\n[{get_timestamp()}] [NL-to-SQL {_request_id.get()}] {stage}\n{rendered}", flush=True)
+
+
+def begin_trace(endpoint: str, received):
+    token = _request_id.set(uuid4().hex[:12])
+    trace("RECEIVED INPUT " + endpoint, received)
+    return token
+
+
+def end_trace(token):
+    trace("REQUEST END", "Finished processing request.")
+    _request_id.reset(token)
 
 
 def get_timestamp() -> str:
@@ -26,6 +53,9 @@ def format_duration(seconds: float) -> str:
 
 
 def log_step(message: str, level: str = "INFO"):
+    if _request_id.get() != "-":
+        trace(level, message)
+        return
     if VERBOSE or level in ("ERROR",):
         print(f"[{get_timestamp()}] [{level}] {message}")
 
@@ -39,7 +69,9 @@ def time_block(step_name: str, parent_summary: dict = None, category: str = None
         duration = time.perf_counter() - start
         if parent_summary is not None and category:
             parent_summary[category] = parent_summary.get(category, 0.0) + duration
-        if VERBOSE:
+        if _request_id.get() != "-":
+            trace("TIMER", f"{step_name}: {format_duration(duration)}")
+        elif VERBOSE:
             print(f"[{get_timestamp()}] [TIMER] {step_name}: {format_duration(duration)}")
 
 

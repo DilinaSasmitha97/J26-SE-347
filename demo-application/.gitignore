@@ -1,2 +1,5 @@
 .ner-venv/
-
+presentation-service/.venv/
+presentation-service/__pycache__/
+presentation-service/.env
+.runtime/

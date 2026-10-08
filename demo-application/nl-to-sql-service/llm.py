@@ -15,7 +15,7 @@ from google.genai import types
 from groq import Groq
 from openai import OpenAI
 
-from profiler import time_block, log_step
+from profiler import time_block, log_step, trace
 
 # Load environment variables
 load_dotenv()
@@ -111,11 +111,20 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
         active_model = os.getenv("OPENAI_MODEL", OPENAI_MODEL)
     else:
         active_model = "default-model"
+    messages = [
+        {"role": "system", "content": "You are an expert database assistant. Your goal is to generate accurate, syntactically valid SQL queries adhering strictly to the provided database schema."},
+        {"role": "user", "content": prompt_string}
+    ]
     
     attempt = 0
     while True:
         attempt += 1
         try:
+            trace("LLM REQUEST / FULL PROMPT", {
+                "provider": current_provider, "model": active_model, "attempt": attempt,
+                "temperature": 0.0,
+                **({"contents": prompt_string} if current_provider == "gemini" else {"messages": messages})
+            })
             with time_block(f"LLM Call ({current_provider.upper()} - {active_model}, attempt {attempt})", 
                             parent_summary=profiler.categories if profiler else None, 
                             category="LLM API Inference"):
@@ -136,10 +145,7 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
                 elif current_provider in ("groq", "cerebras", "sambanova", "openrouter", "openai"):
                     response = client.chat.completions.create(
                         model=active_model,
-                        messages=[
-                            {"role": "system", "content": "You are an expert database assistant. Your goal is to generate accurate, syntactically valid SQL queries adhering strictly to the provided database schema."},
-                            {"role": "user", "content": prompt_string}
-                        ],
+                        messages=messages,
                         temperature=0.0
                     )
                     raw_output = response.choices[0].message.content.strip() if response.choices else ""
@@ -156,10 +162,13 @@ def call_llm(prompt_string: str, retries: int = 3, profiler=None) -> tuple[str, 
                     "total_tokens": total_tokens
                 }
                 
+                trace("LLM RAW OUTPUT", raw_output)
+                trace("LLM TOKEN USAGE", token_stats)
                 log_step(f"LLM Call Successful | Tokens: {prompt_tokens} in / {completion_tokens} out / {total_tokens} total")
                 return raw_output, token_stats
                 
         except Exception as e:
+            trace("LLM ATTEMPT ERROR", {"attempt": attempt, "provider": current_provider, "model": active_model, "error": str(e)})
             err_msg = str(e)
             log_step(f"LLM Call attempt {attempt} failed: {e}", level="WARN")
             # If rate limited (429), pause 15 seconds and retry same sample indefinitely until success
