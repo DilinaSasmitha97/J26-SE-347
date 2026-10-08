@@ -64,6 +64,11 @@ def main() -> int:
     datasets = client.get("/demo/datasets").json()
     (OUT / "datasets.json").write_text(json.dumps(datasets, indent=1), encoding="utf-8")
     print(f"datasets: {len(datasets['datasets'])}")
+    policy = client.get("/demo/policy").json()
+    (OUT / "policy.json").write_text(json.dumps(policy, indent=1), encoding="utf-8")
+    rows = client.post("/demo/rows", json={"dataset_id": "employees"}).json()
+    (OUT / "rows_employees.json").write_text(json.dumps(rows, indent=1), encoding="utf-8")
+    print(f"policy: {policy['version']}; employees rows: {rows['member2_result']['rowCount']}")
     return 0
 
 

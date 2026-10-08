@@ -1,8 +1,8 @@
-// Drive the built UI in a real browser and save screenshots (Stage 7 visual
-// check). Needs the demo server running (uvicorn demo_api:app --port 8004) and
+// Drive the built UI in a real browser and save screenshots (visual check).
+// Needs the demo server running (uvicorn demo_api:app --port 8004) and
 // `npm install --no-save playwright-core`; uses the installed Microsoft Edge.
 //
-//   node scripts/screenshot.mjs <output-dir>
+//   node scripts/screenshot.mjs <output-dir>        (UI_URL=http://localhost:8005 for another port)
 
 import { chromium } from "playwright-core";
 import { existsSync, mkdirSync } from "node:fs";
@@ -17,22 +17,32 @@ mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch({ executablePath: EDGE, headless: true });
 const problems = [];
+const report = { page_scrolls: {} };
 
-async function session(colorScheme, width) {
-  const page = await browser.newPage({ viewport: { width, height: 900 }, colorScheme });
+async function session(colorScheme, width, height = 900) {
+  const context = await browser.newContext({ viewport: { width, height }, colorScheme });
+  const page = await context.newPage();
   page.on("console", (m) => { if (m.type() === "error") problems.push(`${colorScheme}/${width}: ${m.text()}`); });
   page.on("pageerror", (e) => problems.push(`${colorScheme}/${width}: ${e.message}`));
-  await page.goto(URL);
-  await page.getByText("Monthly expenses", { exact: true }).waitFor();
   return page;
 }
 
-async function ask(page, dataset, question) {
-  const escaped = dataset.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  await page.locator(".source")
-    .filter({ has: page.locator(".source-title", { hasText: new RegExp(`^${escaped}$`) }) })
-    .click();
-  await page.getByText("What Member 2 sent").waitFor();
+async function open(page, path, waitFor) {
+  await page.goto(`${URL}/#${path}`);
+  await page.locator(waitFor).first().waitFor({ timeout: 20000 });
+  await page.waitForTimeout(300);
+}
+
+async function shot(page, name) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(150);
+  // The layout is meant to fit the window: record whether the page itself scrolls.
+  report.page_scrolls[name] = await page.evaluate(
+    () => document.documentElement.scrollHeight > window.innerHeight + 1);
+  await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: true });
+}
+
+async function ask(page, question) {
   await page.locator("#question").fill(question);
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await page.locator(".result-title", { hasText: question }).waitFor({ timeout: 20000 });
@@ -43,67 +53,68 @@ async function chartDrawn(page) {
   return page.locator(".vega-host svg path, .vega-host svg line, .vega-host svg rect").count();
 }
 
-async function shot(page, name) {
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(150);
-  await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: true });
-}
+const overflow = (page) => page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
 
-const report = {};
 for (const scheme of ["light", "dark"]) {
-  const page = await session(scheme, 1280);
-  if (scheme === "light") {
-    await page.locator(".welcome").waitFor();
-    await shot(page, `welcome_light`);
-  }
-  await ask(page, "Monthly expenses", "Show my monthly expenses over time and forecast the next 3 months");
+  const page = await session(scheme, 1440);
+  await open(page, "/ask/expenses_a", ".chip");
+  await shot(page, `ask_${scheme}`);
+
+  await ask(page, "Show my monthly expenses over time and forecast the next 3 months");
   report[`${scheme}_forecast_marks`] = await chartDrawn(page);
-  await shot(page, `forecast_${scheme}`);
+  await shot(page, `ask_result_${scheme}`);
 
   if (scheme === "light") {
     await page.getByRole("tab", { name: /What-if/ }).click();
     await page.getByLabel("Change to the forecast").fill("-15");
     await page.getByRole("button", { name: "Run scenario" }).click();
     await page.getByText("With the scenario", { exact: true }).waitFor({ timeout: 15000 });
-    await page.locator("#panel-whatif .vega-host svg").first().waitFor({ timeout: 15000 });
-    await shot(page, `whatif_light`);
+    await shot(page, "ask_whatif_light");
 
-    await page.getByRole("tab", { name: /Show the working/ }).click();
-    await shot(page, `working_light`);
+    await open(page, "/ask/employees", ".chip");
+    await ask(page, "List all employees in the Finance department");
+    await open(page, "/ask/software_a", ".chip");
+    await ask(page, "Show monthly spend on Software and forecast the next 3 months");
+  }
 
-    await ask(page, "Spend by vendor", "Show spend by vendor");
-    report.vendor_bar_marks = await chartDrawn(page);
-    await shot(page, `vendors_bar_light`);
+  await open(page, "/admin", "[aria-label='Workspace summary']");
+  await shot(page, `dashboard_${scheme}`);
 
-    await ask(page, "Finance employees", "List all employees in the Finance department");
-    await shot(page, `table_pii_light`);
-
-    await ask(page, "Monthly expenses (steady growth)", "How much will I spend next month?");
-    await shot(page, `answer_forecast_light`);
-
-    await ask(page, "Individual expense amounts", "Show the distribution of individual expense amounts");
-    report.histogram_marks = await chartDrawn(page);
-    await shot(page, `histogram_light`);
-
-    await ask(page, "Monthly Software spend", "Show monthly spend on Software and forecast the next 3 months");
-    await shot(page, `refused_light`);
+  if (scheme === "light") {
+    await open(page, "/admin/sources", "[aria-label='All data sources'] tbody tr");
+    await shot(page, "sources_light");
+    await open(page, "/admin/sources/employees", "[aria-label='Sample records'] tbody tr");
+    await page.locator(".xitem summary").nth(1).click();
+    await shot(page, "source_detail_light");
+    await open(page, "/admin/configuration", "[aria-label='Forecasting']");
+    await shot(page, "configuration_light");
+    await open(page, "/admin/activity", "[aria-label='Activity log'] tbody tr");
+    await shot(page, "activity_light");
   }
   await page.close();
 }
 
-const darkReport = await session("dark", 1280);
-await ask(darkReport, "Monthly expenses (steady growth)", "Give me a report on monthly expenses with a forecast");
-await chartDrawn(darkReport);
-await shot(darkReport, `report_dark`);
-await darkReport.close();
+// A common laptop size: everything must still fit without page scrolling.
+const laptop = await session("light", 1366, 768);
+await open(laptop, "/ask/expenses_d", ".chip");
+await ask(laptop, "Give me a report on monthly expenses with a forecast");
+await chartDrawn(laptop);
+await shot(laptop, "ask_report_1366x768");
+await open(laptop, "/admin/sources/employees", "[aria-label='Sample records'] tbody tr");
+await shot(laptop, "source_detail_1366x768");
+await open(laptop, "/admin/configuration", "[aria-label='Forecasting']");
+await shot(laptop, "configuration_1366x768");
+await laptop.close();
 
-const mobile = await session("light", 390);
-await ask(mobile, "Monthly expenses", "Deep dive into my monthly expenses");
+const mobile = await session("light", 390, 844);
+await open(mobile, "/ask/expenses_d", ".chip");
+await ask(mobile, "Give me a report on monthly expenses with a forecast");
 await chartDrawn(mobile);
-report.mobile_horizontal_overflow = await mobile.evaluate(
-  () => document.documentElement.scrollWidth > window.innerWidth + 1,
-);
-await shot(mobile, `report_mobile`);
+report.mobile_ask_overflow = await overflow(mobile);
+await shot(mobile, "ask_result_mobile");
+await open(mobile, "/admin", "[aria-label='Workspace summary']");
+report.mobile_dashboard_overflow = await overflow(mobile);
+await shot(mobile, "dashboard_mobile");
 
 await browser.close();
 console.log(JSON.stringify({ report, problems }, null, 1));

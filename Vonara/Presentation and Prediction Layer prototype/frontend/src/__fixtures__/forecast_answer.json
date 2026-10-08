@@ -114,7 +114,7 @@
    "completion_tokens": 0,
    "total_tokens": 0,
    "schema_tables_considered": 4,
-   "execution_time_ms": 12.06,
+   "execution_time_ms": 14.12,
    "tenant_id": "tenant_d",
    "user_role": ""
   }
@@ -760,14 +760,14 @@
   "key": "4385b0c595ae6612"
  },
  "profiling": {
-  "total_execution_ms": 72.26,
+  "total_execution_ms": 81.13,
   "stage_breakdown_ms": {
-   "Part 4: Prediction": 37.73,
-   "Result Profiling": 14.93,
-   "Part 1: Query Understanding": 12.13,
-   "Part 3: Summarization": 4.01,
-   "Part 5: Response Shaping": 0.13,
-   "Part 2: Visualization": 0.0
+   "Part 4: Prediction": 39.48,
+   "Result Profiling": 18.82,
+   "Part 1: Query Understanding": 14.26,
+   "Part 3: Summarization": 4.35,
+   "Part 5: Response Shaping": 0.23,
+   "Part 2: Visualization": 0.01
   }
  }
 }

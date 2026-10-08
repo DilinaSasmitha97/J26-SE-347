@@ -1,4 +1,4 @@
-# Component 4 user interface (Stage 7)
+# Component 4 user interface
 
 React interface for the Presentation & Prediction Layer. It renders what the
 component returns: the answer, table, chart and summary blocks; the forecast
@@ -6,9 +6,39 @@ notice; key figures taken from the summary's claims; and four tabs —
 anomalies, the interactive what-if (slider or words), the "show the working"
 claim trace, and details of every decision.
 
-Layout: a top bar (API status, tenant, theme), grouped data sources and what
-Member 2 sent on the left, the question box and the result on the right. On
-a phone the sources become a scrolling strip above the question box.
+The app has its own identity: an indigo brand colour (white text 6.3:1) and a
+chart mark - a solid history line turning into a dashed forecast - on a
+deep-slate sidebar. Charts keep the validated data-viz palette, so the
+interface colour never competes with history (blue), forecast (orange),
+scenario (green) or anomalies (red).
+
+**It fills the window and the page never scrolls.** Long content scrolls
+inside its own card or pane; on the Ask screen the result sits on the left
+(the chart takes the free height) and the analysis tabs on the right. This is
+checked at 1440 x 900 and 1366 x 768 by `scripts/screenshot.mjs`. Below
+1024 x 620 (phones, small windows) the layout becomes one column and the page
+scrolls normally.
+
+There are two separate apps on one server:
+
+- **The user app** (`#/ask`, the default): what a business user sees. Brand,
+  connection status, the question box and the answers. No sidebar and no
+  links to administration.
+- **The admin console** (`#/admin/...`): a sidebar with the pages below, for
+  whoever runs the component. It is reached by its URL only and links out to
+  the user app. It has no login yet: access control is Member 3's part.
+
+| Screen | URL | What it shows |
+| --- | --- | --- |
+| Ask (user app) | `#/ask`, `#/ask/<source>` | Centred question box, source picker and example questions; after asking, the result workspace |
+| Dashboard | `#/admin` | Sources, records, questions asked and forecasts shown/refused; data sources and recent questions |
+| Data sources | `#/admin/sources` | Every source by group: tenant, privacy, columns, records |
+| Data source | `#/admin/sources/<source>` | Fields (masked ones marked), sample records exactly as Member 2 sends them, the SQL, a connection test |
+| Configuration | `#/admin/configuration` | The forecasting policy in force (`forecast_config.json`), read-only |
+| Activity | `#/admin/activity` | Questions asked from this browser (the API keeps no history) |
+
+Questions-asked figures come from this browser's log (`src/activity.js`);
+every other figure comes from the API.
 
 It follows the client rendering contract in
 `data_and_reports/team_interface_contract.md`:
@@ -29,7 +59,7 @@ cd ..
 uvicorn demo_api:app --port 8004       # API + the built UI
 ```
 
-Then open http://localhost:8004.
+Then open http://localhost:8004 for the user app, or http://localhost:8004/#/admin for the admin console.
 
 **For UI development with hot reload**, keep `uvicorn demo_api:app --port 8004` running and run `npm run dev` in `frontend/`, then open http://localhost:5173. Vite forwards `/api` and `/demo` to port 8004.
 
@@ -56,10 +86,10 @@ The backend's Vega-Lite specs are rendered with `vega-embed`.
 ## Tests
 
 ```bash
-npm test                                          # 14 UI tests
+npm test                                          # 22 UI tests
 python frontend/scripts/make_fixtures.py          # refresh fixtures (run from the component folder)
 node scripts/screenshot.mjs <dir>                 # real-browser screenshots (Edge, needs the server)
 ```
 
 - **UI tests** render real API responses captured by `make_fixtures.py`, not hand-written JSON. Re-run that script after any change to the response envelope or to `demo_api.py`'s data sources.
-- **The screenshot script** needs `npm install --no-save playwright-core` and the demo server running. It drives 12 screens and reports console errors and phone-width overflow. To use a server on another port, set `UI_URL`, e.g. `UI_URL=http://localhost:8005`.
+- **The screenshot script** needs `npm install --no-save playwright-core` and the demo server running. It drives 16 screens (ask, result, what-if, dashboard, sources, source detail, configuration, activity; light, dark, 1366 x 768 and phone width) and reports console errors, whether each page scrolls, and phone-width overflow. To use a server on another port, set `UI_URL`, e.g. `UI_URL=http://localhost:8005`.

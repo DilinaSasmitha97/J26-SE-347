@@ -294,7 +294,7 @@ function useColorMode() {
   return mode;
 }
 
-export function ChartBlock({ chart, visualization, embed, title, subtitle }) {
+export function ChartBlock({ chart, visualization, embed, title, subtitle, fill = false }) {
   const host = useRef(null);
   const [tableChosen, setAsTable] = useState(false);
   const mode = useColorMode();
@@ -307,7 +307,8 @@ export function ChartBlock({ chart, visualization, embed, title, subtitle }) {
   // Vega to draw: show its rows as a table.
   const gridOnly = meta.render_as === "data_grid" || (spec && !spec.mark && !spec.layer);
   const asTable = tableChosen || gridOnly;
-  const themed = useMemo(() => (spec ? themeSpec(spec, mode, meta) : null), [spec, mode, meta]);
+  const themed = useMemo(() => (spec ? themeSpec(spec, mode, meta, { fillHeight: fill }) : null),
+    [spec, mode, meta, fill]);
   const key = meta.extension_rules_applied && meta.extension_rules_applied.length ? chartKey(meta, mode, spec) : [];
 
   useEffect(() => {
@@ -334,7 +335,7 @@ export function ChartBlock({ chart, visualization, embed, title, subtitle }) {
   const cols = rows.length ? Object.keys(rows[0]) : [];
   const name = title || chartTitle(meta);
   return (
-    <section className="card" aria-label={`Chart: ${chart?.chart_type || meta.chart_type || ""}`}>
+    <section className={`card${fill ? " chart-fill" : ""}`} aria-label={`Chart: ${chart?.chart_type || meta.chart_type || ""}`}>
       <div className="card-head">
         <div>
           <h3 className="card-title">{name}</h3>

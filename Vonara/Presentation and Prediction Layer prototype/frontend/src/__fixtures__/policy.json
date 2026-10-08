@@ -1,0 +1,35 @@
+{
+ "file": "forecast_config.json",
+ "version": "2026-10-07.1",
+ "readiness": {
+  "min_points_any": 4,
+  "min_points_trend": 6,
+  "min_points_seasonal": 24,
+  "min_points_signal_test": 8,
+  "signal_test_origins": 6,
+  "max_expected_error": {
+   "_note": "Noise limit of the forecastability gate. 'default' was chosen on monthly development data; the per-granularity keys exist so a limit can be set once there is daily or weekly evidence. Until then they all equal the default.",
+   "default": 0.2,
+   "DAY": 0.2,
+   "WEEK": 0.2,
+   "MONTH": 0.2,
+   "QUARTER": 0.2,
+   "YEAR": 0.2
+  },
+  "max_missing_value_ratio": 0.2,
+  "max_missing_period_ratio": 0.25,
+  "near_constant_cv": 0.01,
+  "min_points_stationarity": 12,
+  "refuse_truncated_input": true,
+  "holidays": [],
+  "conflict_noise_limit": 0.08
+ },
+ "forecast": {
+  "max_horizon": 24,
+  "clip_non_negative": true,
+  "sarima_timeout_seconds": 5.0,
+  "guard_sarima": true,
+  "fitted_smoothing_min_points": 48,
+  "band_method": "normal"
+ }
+}

@@ -26,6 +26,14 @@ const PATHS = {
   shield: "M10 3l6 2v5c0 3.5-2.6 6.2-6 7-3.4-.8-6-3.5-6-7V5z",
   arrowUp: "M10 16V4M5 9l5-5 5 5",
   arrowDown: "M10 4v12M5 11l5 5 5-5",
+  arrowRight: "M4 10h12M11 5l5 5-5 5",
+  grid: "M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z",
+  gear: "M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4",
+  history: "M3.5 10a6.5 6.5 0 106.5-6.5c-2.4 0-4.4 1.3-5.6 3.2M3.5 3.5v3.2h3.2M10 6.5V10l2.5 1.5",
+  chevronLeft: "M12 5l-5 5 5 5",
+  chevronRight: "M8 5l5 5-5 5",
+  refresh: "M16 10a6 6 0 11-1.8-4.3M16 3.5v3.2h-3.2",
+  sparkleAsk: "M4 10h7M8 6l4 4-4 4M15 5v10",
 };
 
 export default function Icon({ name, size = 18, title, className = "" }) {
@@ -51,12 +59,19 @@ export default function Icon({ name, size = 18, title, className = "" }) {
   );
 }
 
-export function BrandMark({ size = 28 }) {
+/**
+ * The component's mark: observed history as a solid line, then the forecast
+ * as a dashed one, with a dot where the projection starts. Drawn in
+ * currentColor so it sits on the brand tile (white) or anywhere else.
+ */
+export function BrandMark({ size = 20 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-      <rect width="32" height="32" rx="8" fill="var(--accent)" />
-      <path d="M7 21l5-6 4 3 4-6" stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M20 12l5-4" stroke="#fff" strokeWidth="2.2" strokeDasharray="2 2.5" strokeLinecap="round" />
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" fill="none"
+      stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 17l4.5-5 3.5 3 4-5.5" />
+      <path d="M15 9.5l5.5-5" strokeDasharray="2.2 2.6" />
+      <circle cx="15" cy="9.5" r="1.6" fill="currentColor" stroke="none" />
+      <path d="M3 21h18" strokeOpacity="0.45" />
     </svg>
   );
 }
