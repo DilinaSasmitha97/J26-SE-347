@@ -14,7 +14,13 @@
     "Give me a full report on monthly expenses with a forecast for next quarter",
     "Show my monthly expenses over the last three years",
     "Are there any unusual spikes in my monthly expenses?"
-   ]
+   ],
+   "row_count": 36,
+   "columns": [
+    "month",
+    "total_amount"
+   ],
+   "masked": []
   },
   {
    "id": "expenses_d",
@@ -29,7 +35,13 @@
     "What will my expenses be next month?",
     "Show monthly expenses, predict the next 3 months, and what if I reduce spending by 20%?",
     "Give me a report on monthly expenses with a forecast"
-   ]
+   ],
+   "row_count": 24,
+   "columns": [
+    "month",
+    "total_amount"
+   ],
+   "masked": []
   },
   {
    "id": "expenses_b",
@@ -43,7 +55,13 @@
     "Show monthly expenses and forecast the next 3 months",
     "Show monthly expenses",
     "Summarise monthly expenses"
-   ]
+   ],
+   "row_count": 5,
+   "columns": [
+    "month",
+    "total_amount"
+   ],
+   "masked": []
   },
   {
    "id": "software_a",
@@ -56,7 +74,13 @@
    "examples": [
     "Show monthly spend on Software and forecast the next 3 months",
     "Show monthly software spend over time"
-   ]
+   ],
+   "row_count": 35,
+   "columns": [
+    "month",
+    "software_spend"
+   ],
+   "masked": []
   },
   {
    "id": "tickets_a",
@@ -70,7 +94,13 @@
     "Show weekly support tickets opened and predict the next few weeks",
     "Show weekly support tickets over time",
     "Were there any unusual weeks for tickets?"
-   ]
+   ],
+   "row_count": 158,
+   "columns": [
+    "week_start",
+    "tickets"
+   ],
+   "masked": []
   },
   {
    "id": "by_category",
@@ -84,7 +114,13 @@
     "Compare total expenses across categories",
     "Show expenses by category",
     "Which category has the highest spend?"
-   ]
+   ],
+   "row_count": 5,
+   "columns": [
+    "category",
+    "total_amount"
+   ],
+   "masked": []
   },
   {
    "id": "by_vendor",
@@ -98,7 +134,13 @@
     "What percentage of spend goes to each vendor?",
     "Show spend by vendor",
     "Who are the top vendors by spend?"
-   ]
+   ],
+   "row_count": 15,
+   "columns": [
+    "vendor",
+    "total_amount"
+   ],
+   "masked": []
   },
   {
    "id": "amounts",
@@ -111,7 +153,12 @@
    "examples": [
     "Show the distribution of individual expense amounts",
     "How are invoice amounts spread?"
-   ]
+   ],
+   "row_count": 473,
+   "columns": [
+    "amount"
+   ],
+   "masked": []
   },
   {
    "id": "units_revenue",
@@ -124,7 +171,13 @@
    "examples": [
     "Is there a relationship between units sold and revenue?",
     "Plot revenue against units sold"
-   ]
+   ],
+   "row_count": 650,
+   "columns": [
+    "units",
+    "revenue"
+   ],
+   "masked": []
   },
   {
    "id": "employees",
@@ -137,6 +190,24 @@
    "examples": [
     "List all employees in the Finance department",
     "List the finance employees with their emails"
+   ],
+   "row_count": 4,
+   "columns": [
+    "full_name",
+    "email",
+    "department",
+    "hire_date",
+    "salary"
+   ],
+   "masked": [
+    {
+     "name": "full_name",
+     "pii_type": "PERSON"
+    },
+    {
+     "name": "email",
+     "pii_type": "EMAIL"
+    }
    ]
   },
   {
@@ -150,7 +221,12 @@
    "examples": [
     "What is the total amount spent on travel?",
     "How much did we spend on travel?"
-   ]
+   ],
+   "row_count": 1,
+   "columns": [
+    "total_travel"
+   ],
+   "masked": []
   }
  ],
  "backend": "sqlite"

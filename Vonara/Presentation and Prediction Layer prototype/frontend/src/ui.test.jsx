@@ -5,6 +5,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { clearActivity, record } from "./activity.js";
 import App from "./App.jsx";
 import ResponseView from "./components/ResponseView.jsx";
 import { sliderScenario } from "./components/panels.jsx";
@@ -16,7 +17,9 @@ import chartForecast from "./__fixtures__/chart_forecast.json";
 import datasets from "./__fixtures__/datasets.json";
 import forecastAnswer from "./__fixtures__/forecast_answer.json";
 import forecastRefused from "./__fixtures__/forecast_refused.json";
+import policy from "./__fixtures__/policy.json";
 import report from "./__fixtures__/report.json";
+import rowsEmployees from "./__fixtures__/rows_employees.json";
 import tablePii from "./__fixtures__/table_pii.json";
 import whatif from "./__fixtures__/whatif.json";
 import whatifRefused from "./__fixtures__/whatif_refused.json";
@@ -212,28 +215,114 @@ describe("theme", () => {
 });
 
 describe("app", () => {
-  it("fetches Member 2's rows, calls the real present endpoint and renders the answer", async () => {
-    const rows = { member2_result: { rowCount: 1, truncated: false, columns: [{ name: "total_travel" }],
-      masking: { columns: [] } }, security_context: { tenant_id: "tenant_a" }, schema_meta: "", sql: "SELECT 1" };
-    const status = { status: "UP", pipeline_version: "1.0", llm_available: false, llm_provider: "none" };
+  const status = { status: "UP", pipeline_version: "1.0", llm_available: false, llm_provider: "none" };
+  const travelRows = { member2_result: { rowCount: 1, truncated: false, columns: [{ name: "total_travel" }],
+    rows: [["150741.23"]], masking: { columns: [] } }, security_context: { tenant_id: "tenant_a" },
+    schema_meta: "", sql: "SELECT 1" };
+
+  function serve(rowsBody = travelRows) {
     const fetchMock = vi.fn((url) => {
-      const body = { "/demo/datasets": datasets, "/demo/rows": rows, "/api/v4/health": status }[url] || answer;
+      const body = { "/demo/datasets": datasets, "/demo/rows": rowsBody, "/api/v4/health": status,
+        "/demo/policy": policy }[url] || answer;
       return Promise.resolve({ ok: true, json: () => Promise.resolve(body) });
     });
     vi.stubGlobal("fetch", fetchMock);
-    render(<App />);
-    expect(await screen.findByText("API online")).toBeInTheDocument();
-    // Sources arrive grouped, each with its kind.
-    expect(screen.getByText("Records & figures")).toBeInTheDocument();
-    const travel = await screen.findByText("Total travel spend");
-    fireEvent.click(travel);
-    await waitFor(() => expect(screen.getAllByText("tenant_a").length).toBeGreaterThan(0));
-    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
-    await waitFor(() => expect(screen.getByLabelText("Answer")).toBeInTheDocument());
-    const presentCall = fetchMock.mock.calls.find(([u]) => u === "/api/v4/present");
-    const sent = JSON.parse(presentCall[1].body);
-    expect(sent.member2_result).toEqual(rows.member2_result);
-    expect(sent.security_context).toEqual({ tenant_id: "tenant_a" });
+    return fetchMock;
+  }
+
+  afterEach(() => {
     vi.unstubAllGlobals();
+    clearActivity();
+    window.location.hash = "";
+  });
+
+  it("asks from the ask screen: Member 2's rows go to the real present endpoint, the answer renders", async () => {
+    window.location.hash = "#/ask/travel_total";
+    const fetchMock = serve();
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "Ask Total travel spend a question" })).toBeInTheDocument();
+    const chip = await screen.findByRole("button", { name: datasets.datasets.find((d) => d.id === "travel_total").examples[0] });
+    await waitFor(() => expect(chip).not.toBeDisabled());
+    fireEvent.click(chip);
+    await waitFor(() => expect(screen.getByLabelText("Answer")).toBeInTheDocument());
+    const sent = JSON.parse(fetchMock.mock.calls.find(([u]) => u === "/api/v4/present")[1].body);
+    expect(sent.member2_result).toEqual(travelRows.member2_result);
+    expect(sent.security_context).toEqual({ tenant_id: "tenant_a" });
+  });
+
+  it("shows the workspace on the dashboard, with every figure from the API", async () => {
+    window.location.hash = "#/admin";
+    serve();
+    render(<App />);
+    const summary = await screen.findByLabelText("Workspace summary");
+    const records = datasets.datasets.reduce((n, d) => n + d.row_count, 0);
+    await waitFor(() => expect(within(summary).getByText(String(datasets.datasets.length))).toBeInTheDocument());
+    expect(within(summary).getByText(records.toLocaleString())).toBeInTheDocument();
+    expect(within(summary).getByText("none yet in this browser")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Dashboard/ })).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByText(/online · v1.0 · rules only/)).toBeInTheDocument();
+  });
+
+  it("records a question in Activity once it is answered", async () => {
+    record("What is the total amount spent on travel?", datasets.datasets[10], answer);
+    window.location.hash = "#/admin/activity";
+    serve();
+    render(<App />);
+    const log = await screen.findByLabelText("Activity log");
+    expect(within(log).getByText("What is the total amount spent on travel?")).toBeInTheDocument();
+    expect(within(log).getByText(answer.response.answer.display_value)).toBeInTheDocument();
+  });
+
+  it("shows a source's fields and sample records, with masked columns marked", async () => {
+    window.location.hash = "#/admin/sources/employees";
+    serve(rowsEmployees);
+    render(<App />);
+    const fields = await screen.findByLabelText("Fields");
+    expect(within(fields).getAllByText("masked").length).toBe(2);
+    const sample = screen.getByLabelText("Sample records");
+    const firstEmail = rowsEmployees.member2_result.rows[0][1];
+    expect(await within(sample).findByText(firstEmail)).toBeInTheDocument();
+    expect(firstEmail).toContain("*");
+  });
+
+  it("lays a result out as a workspace: the result and the analysis in separate panes", () => {
+    const { container } = render(
+      <ResponseView envelope={chartForecast} embed={recorder().embed} layout="workspace" onSimulate={vi.fn()} />);
+    const main = container.querySelector(".workspace > .ws-main");
+    const side = container.querySelector(".workspace > .ws-side");
+    expect(within(main).getByLabelText(/Chart:/)).toHaveClass("chart-fill");
+    expect(within(side).getByRole("region", { name: "Analysis" })).toBeInTheDocument();
+    expect(within(main).queryByRole("region", { name: "Analysis" })).toBeNull();
+  });
+
+  it("keeps the user app free of administration: no sidebar, no console links", async () => {
+    window.location.hash = "#/ask";
+    serve();
+    render(<App />);
+    expect(screen.getByText("Presentation & Prediction")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Navigation")).toBeNull();
+    expect(screen.queryByRole("link", { name: /Dashboard|Configuration|Data sources|Activity/ })).toBeNull();
+    expect(screen.queryByText(/AskDB/)).toBeNull();
+    expect(await screen.findByText("Online")).toBeInTheDocument();
+  });
+
+  it("keeps the console separate: administration pages, and a link out to the user app", async () => {
+    window.location.hash = "#/admin";
+    serve();
+    render(<App />);
+    const nav = screen.getByLabelText("Navigation");
+    expect(within(nav).getByText("Administration")).toBeInTheDocument();
+    expect(within(nav).queryByRole("link", { name: /^Ask$/ })).toBeNull();
+    expect(within(nav).getByRole("link", { name: /Open the user app/ })).toHaveAttribute("href", "#/ask");
+  });
+
+  it("shows the forecasting policy in force", async () => {
+    window.location.hash = "#/admin/configuration";
+    serve();
+    render(<App />);
+    expect(await screen.findByText(policy.version)).toBeInTheDocument();
+    const forecasting = screen.getByLabelText("Forecasting");
+    expect(within(forecasting).getByText("guard_sarima")).toBeInTheDocument();
+    expect(within(forecasting).getByText(`${policy.forecast.sarima_timeout_seconds} s`)).toBeInTheDocument();
   });
 });

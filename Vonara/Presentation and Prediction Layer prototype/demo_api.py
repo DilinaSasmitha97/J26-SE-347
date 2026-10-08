@@ -4,6 +4,7 @@ Demo server for the Stage 7 user interface.
 Wraps the production API (api.py) unchanged and adds two things the UI needs
 while the other components are not running:
 
+  GET  /demo/policy     the forecasting policy in force (forecast_config.json)
   GET  /demo/datasets   result sets the UI can ask questions about - the
                         integration fixtures' SQL, grouped, with example
                         questions (stand-in for Member 1's SQL generation)
@@ -24,6 +25,7 @@ During UI development: `npm run dev` in frontend/ (proxies to port 8004).
 
 import json
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import HTTPException
@@ -37,6 +39,7 @@ sys.path.insert(0, str(HERE / "test_db"))
 import db_config  # noqa: E402
 import member2_stub  # noqa: E402
 
+import prediction  # noqa: E402
 from api import app  # noqa: E402  (the production app; routes added below)
 
 FRONTEND_DIST = HERE / "frontend" / "dist"
@@ -80,6 +83,18 @@ _MORE_EXAMPLES = {
 }
 
 
+@lru_cache(maxsize=None)
+def _shape(sql: str) -> dict:
+    """Rows, columns and masked columns of a data source, as Member 2 returns them."""
+    payload = member2_stub.query(sql)
+    return {
+        "row_count": payload.get("rowCount", len(payload.get("rows") or [])),
+        "columns": [c.get("name") for c in payload.get("columns") or []],
+        "masked": [{"name": m.get("name"), "pii_type": m.get("piiType")}
+                   for m in (payload.get("masking") or {}).get("columns") or []],
+    }
+
+
 def _fixtures() -> dict:
     data = json.loads((db_config.TEST_DB_DIR / "fixtures.json").read_text(encoding="utf-8"))
     return {c["id"]: c for c in data["cases"]}
@@ -99,7 +114,8 @@ def _catalogue() -> list:
                     and "ignore your previous" not in c["question"].lower()]
         examples += [q for q in _MORE_EXAMPLES.get(key, []) if q not in examples]
         out.append({"id": key, "title": title, "note": note, "group": group, "kind": kind,
-                    "tenant": case["tenant"], "sql": case["sql"], "examples": examples[:6]})
+                    "tenant": case["tenant"], "sql": case["sql"], "examples": examples[:6],
+                    **_shape(case["sql"])})
     return out
 
 
@@ -109,6 +125,12 @@ def demo_datasets() -> dict:
         return {"datasets": _catalogue(), "backend": db_config.backend()}
     except db_config.DatabaseNotConfigured as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@app.get("/demo/policy")
+def demo_policy() -> dict:
+    """The forecasting policy in force (forecast_config.json), read-only, for the console."""
+    return {"file": "forecast_config.json", **prediction.CONFIG}
 
 
 class RowsRequest(BaseModel):

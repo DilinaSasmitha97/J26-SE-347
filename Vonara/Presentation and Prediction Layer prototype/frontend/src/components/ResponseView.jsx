@@ -47,7 +47,12 @@ function ResultHeader({ question, envelope }) {
   );
 }
 
-export default function ResponseView({ envelope, question, onSimulate, embed }) {
+/**
+ * `layout="workspace"` is the full-screen ask view: the result on the left
+ * (the chart grows to the free height) and the analysis tabs in a side pane;
+ * each side scrolls on its own. The default stacks everything in one column.
+ */
+export default function ResponseView({ envelope, question, onSimulate, embed, layout = "stack" }) {
   const pred = envelope?.prediction || {};
   const anomaly = pred.stage_5_anomaly;
   const anomalyCount = anomaly && anomaly.evaluated
@@ -80,8 +85,9 @@ export default function ResponseView({ envelope, question, onSimulate, embed }) 
     { id: "details", label: "Details", icon: "info" },
   ];
 
-  return (
-    <div className="stack">
+  const workspace = layout === "workspace";
+  const main = (
+    <>
       <ResultHeader question={question} envelope={envelope} />
 
       {notRequest && (
@@ -105,11 +111,14 @@ export default function ResponseView({ envelope, question, onSimulate, embed }) 
         if (name === "TABLE") return <TableBlock key={name} table={response.table} maskedColumns={masked} />;
         if (name === "CHART")
           return (
-            <ChartBlock key={name} chart={response.chart} visualization={envelope.visualization} embed={embed} />
+            <ChartBlock key={name} chart={response.chart} visualization={envelope.visualization} embed={embed}
+              fill={workspace} />
           );
         return null;
       })}
-
+    </>
+  );
+  const analysis = (
       <section className="card" aria-label="Analysis">
         <Tabs tabs={tabs} active={tab} onChange={setTab} label="Analysis" />
         <TabPanel id="anomalies" active={tab}>
@@ -125,6 +134,20 @@ export default function ResponseView({ envelope, question, onSimulate, embed }) 
           <DetailsPanel envelope={envelope} />
         </TabPanel>
       </section>
+  );
+
+  if (workspace) {
+    return (
+      <div className="workspace">
+        <div className="ws-main">{main}</div>
+        <div className="ws-side">{analysis}</div>
+      </div>
+    );
+  }
+  return (
+    <div className="stack">
+      {main}
+      {analysis}
     </div>
   );
 }

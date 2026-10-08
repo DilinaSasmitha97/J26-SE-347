@@ -1,0 +1,113 @@
+{
+ "member2_result": {
+  "statementType": "SELECT",
+  "columns": [
+   {
+    "name": "full_name",
+    "sourceTable": "employees",
+    "sourceColumn": "full_name"
+   },
+   {
+    "name": "email",
+    "sourceTable": "employees",
+    "sourceColumn": "email"
+   },
+   {
+    "name": "department",
+    "sourceTable": "employees",
+    "sourceColumn": "department"
+   },
+   {
+    "name": "hire_date",
+    "sourceTable": "employees",
+    "sourceColumn": "hire_date"
+   },
+   {
+    "name": "salary",
+    "sourceTable": "employees",
+    "sourceColumn": "salary"
+   }
+  ],
+  "rows": [
+   [
+    "D***** B******",
+    "d***************@tenanta.example.com",
+    "Finance",
+    "2023-02-18",
+    229200
+   ],
+   [
+    "H***** G**********",
+    "h******************@tenanta.example.com",
+    "Finance",
+    "2020-05-11",
+    161600
+   ],
+   [
+    "N***** B******",
+    "n***************@tenanta.example.com",
+    "Finance",
+    "2019-09-26",
+    110700
+   ],
+   [
+    "R****** D**********",
+    "r********************@tenanta.example.com",
+    "Finance",
+    "2018-12-12",
+    164300
+   ]
+  ],
+  "rowCount": 4,
+  "truncated": false,
+  "elapsedMs": 1.1,
+  "masking": {
+   "mode": "partial",
+   "columns": [
+    {
+     "name": "full_name",
+     "piiType": "PERSON",
+     "strategy": "partial"
+    },
+    {
+     "name": "email",
+     "piiType": "EMAIL",
+     "strategy": "partial"
+    }
+   ],
+   "maskedCells": 8
+  },
+  "classification": [
+   {
+    "name": "full_name",
+    "piiType": "PERSON",
+    "source": "DECLARED"
+   },
+   {
+    "name": "email",
+    "piiType": "EMAIL",
+    "source": "DECLARED"
+   },
+   {
+    "name": "department",
+    "piiType": null,
+    "source": "NONE"
+   },
+   {
+    "name": "hire_date",
+    "piiType": null,
+    "source": "NONE"
+   },
+   {
+    "name": "salary",
+    "piiType": null,
+    "source": "NONE"
+   }
+  ]
+ },
+ "security_context": {
+  "tenant_id": "tenant_a"
+ },
+ "schema_meta": "-- Synthetic multi-tenant business database for Component 4 integration tests.\n--\n-- Tables hold individual TRANSACTIONS (one invoice, one sale, one ticket), not\n-- monthly totals, so the fixture queries must aggregate with GROUP BY exactly\n-- as Member 1's generated SQL would. Every table carries tenant_id; tenant\n-- scoping is written into each fixture query, standing in for Member 3.\n--\n-- Column names match synthetic_data.SCHEMA_DDL, so this file is also passed to\n-- the query analyzer as schema metadata. Keep each definition free of\n-- trailing table options (ENGINE=..., CHARSET=...): the analyzer's DDL parser\n-- expects the closing parenthesis to be followed directly by a semicolon.\n\nDROP TABLE IF EXISTS expenses;\nDROP TABLE IF EXISTS sales;\nDROP TABLE IF EXISTS employees;\nDROP TABLE IF EXISTS support_tickets;\n\nCREATE TABLE expenses (\n    expense_id INT NOT NULL,\n    tenant_id VARCHAR(32) NOT NULL,\n    invoice_date DATE NOT NULL,\n    category VARCHAR(64) NOT NULL,\n    vendor VARCHAR(128) NOT NULL,\n    amount DECIMAL(12,2) NOT NULL,\n    approved_by_email VARCHAR(128),\n    PRIMARY KEY (expense_id),\n    INDEX idx_expenses_tenant_date (tenant_id, invoice_date)\n);\n\nCREATE TABLE sales (\n    sale_id INT NOT NULL,\n    tenant_id VARCHAR(32) NOT NULL,\n    sale_date DATE NOT NULL,\n    region VARCHAR(64) NOT NULL,\n    product VARCHAR(64) NOT NULL,\n    units INT NOT NULL,\n    revenue DECIMAL(12,2) NOT NULL,\n    PRIMARY KEY (sale_id),\n    INDEX idx_sales_tenant_date (tenant_id, sale_date)\n);\n\nCREATE TABLE employees (\n    employee_id INT NOT NULL,\n    tenant_id VARCHAR(32) NOT NULL,\n    full_name VARCHAR(128) NOT NULL,\n    email VARCHAR(128) NOT NULL,\n    department VARCHAR(64) NOT NULL,\n    hire_date DATE NOT NULL,\n    salary DECIMAL(12,2) NOT NULL,\n    PRIMARY KEY (employee_id),\n    INDEX idx_employees_tenant (tenant_id)\n);\n\nCREATE TABLE support_tickets (\n    ticket_id INT NOT NULL,\n    tenant_id VARCHAR(32) NOT NULL,\n    opened_date DATE NOT NULL,\n    priority VARCHAR(16) NOT NULL,\n    resolution_hours DECIMAL(8,2) NOT NULL,\n    customer_phone VARCHAR(32),\n    PRIMARY KEY (ticket_id),\n    INDEX idx_tickets_tenant_date (tenant_id, opened_date)\n);\n",
+ "sql": "SELECT full_name, email, department, hire_date, salary FROM employees WHERE tenant_id = 'tenant_a' AND department = 'Finance' ORDER BY full_name"
+}

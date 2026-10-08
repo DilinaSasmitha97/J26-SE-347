@@ -27,6 +27,9 @@ export const health = () => call("/api/v4/health");
 
 export const listDatasets = () => call("/demo/datasets");
 
+/** The forecasting policy in force (forecast_config.json), read-only. */
+export const policy = () => call("/demo/policy");
+
 /** Member 2's masked payload for a dataset, plus the security context and schema. */
 export const fetchRows = (datasetId) => call("/demo/rows", { dataset_id: datasetId });
 

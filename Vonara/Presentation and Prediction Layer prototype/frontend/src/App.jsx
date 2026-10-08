@@ -1,191 +1,68 @@
 import { useEffect, useRef, useState } from "react";
+import { record } from "./activity.js";
 import { fetchRows, health, listDatasets, present, simulate } from "./api.js";
 import ResponseView from "./components/ResponseView.jsx";
 import Icon, { BrandMark } from "./components/icons.jsx";
+import {
+  ActivityPage, AppShell, ConfigurationPage, DashboardPage, SourceDetailPage, SourcesPage,
+} from "./console.jsx";
+import { go, href, useRoute } from "./router.js";
 
-const THEMES = [
-  ["system", "monitor", "System"],
-  ["light", "sun", "Light"],
-  ["dark", "moon", "Dark"],
-];
+// ---------------------------------------------------------------------------
+// Theme: system by default; the sidebar toggle stores an explicit choice.
+// ---------------------------------------------------------------------------
 
-function ThemeSwitch() {
+function systemDark() {
+  return typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+}
+
+function useTheme() {
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem("c4-theme") || "system";
+      return localStorage.getItem("c4-theme") || (systemDark() ? "dark" : "light");
     } catch {
-      return "system";
+      return systemDark() ? "dark" : "light";
     }
   });
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "system") root.removeAttribute("data-theme");
-    else root.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
     try {
       localStorage.setItem("c4-theme", theme);
     } catch {
       // storage unavailable: the choice lasts for this page only
     }
   }, [theme]);
-  return (
-    <div className="segmented" role="group" aria-label="Theme">
-      {THEMES.map(([id, icon, label]) => (
-        <button key={id} type="button" aria-pressed={theme === id} onClick={() => setTheme(id)} title={label}>
-          <Icon name={icon} size={14} />
-          <span className="sr-only">{label}</span>
-        </button>
-      ))}
-    </div>
-  );
+  return [theme, () => setTheme((t) => (t === "dark" ? "light" : "dark"))];
 }
 
-function StatusPill({ status }) {
-  if (!status) return null;
-  const up = status.status === "UP";
-  const mode = status.llm_available ? `LLM ${status.llm_provider}` : "rules only";
-  return (
-    <span className="status-pill" title={up ? `Pipeline ${status.pipeline_version}, ${status.active_model}` : status.error}>
-      <span className={`status-dot ${up ? "" : "off"}`} aria-hidden="true" />
-      <span className="status-label">{up ? "API online" : "API offline"}</span>
-      {up && <span className="status-text muted">· v{status.pipeline_version} · {mode}</span>}
-    </span>
-  );
-}
-
-function SourceList({ datasets, active, onChoose }) {
-  const groups = [];
-  for (const d of datasets) {
-    const group = d.group || "Data";
-    let g = groups.find((x) => x.name === group);
-    if (!g) groups.push((g = { name: group, items: [] }));
-    g.items.push(d);
-  }
-  return (
-    <section className="card card-pad" aria-label="Data sources">
-      {groups.map((g) => (
-        <div className="source-group" key={g.name}>
-          <p className="eyebrow">{g.name}</p>
-          <div className="source-list">
-            {g.items.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                className="source"
-                aria-pressed={active?.id === d.id}
-                onClick={() => onChoose(d)}
-              >
-                <span className="source-icon">
-                  <Icon name={d.kind || "database"} size={16} />
-                </span>
-                <span style={{ minWidth: 0 }}>
-                  <span className="source-title">{d.title}</span>
-                  <span className="source-note">{d.note}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-    </section>
-  );
-}
-
-function Provenance({ source }) {
-  if (!source) return null;
-  const m2 = source.member2_result;
-  const masked = (m2.masking && m2.masking.columns) || [];
-  return (
-    <section className="card card-pad provenance" aria-label="Data received">
-      <p className="eyebrow">What Member 2 sent</p>
-      <dl>
-        <dt>Tenant</dt>
-        <dd>{source.security_context.tenant_id}</dd>
-        <dt>Rows</dt>
-        <dd>
-          {m2.rowCount}
-          {m2.truncated ? " (truncated)" : ""}
-        </dd>
-        <dt>Columns</dt>
-        <dd>{m2.columns.map((c) => c.name).join(", ")}</dd>
-        <dt>Masked</dt>
-        <dd>
-          {masked.length
-            ? masked.map((c) => (
-                <span key={c.name} className="tag tag-lock" style={{ margin: "0 4px 4px 0" }}>
-                  <Icon name="lock" size={11} />
-                  {c.name} · {c.piiType}
-                </span>
-              ))
-            : "none"}
-        </dd>
-      </dl>
-      <details>
-        <summary>SQL (stand-in for Member 1)</summary>
-        <pre className="code">{source.sql}</pre>
-      </details>
-    </section>
-  );
-}
-
-function Welcome({ dataset }) {
-  return (
-    <section className="card welcome" aria-label="Welcome">
-      <h2>Ask a question about {dataset ? dataset.title.toLowerCase() : "your data"}</h2>
-      <p>
-        The result arrives already secured and masked by the other components. This layer decides how to show
-        it, forecasts when it is asked to and the data supports it, flags unusual values and explains every
-        number it states.
-      </p>
-      <div className="features">
-        <div className="feature">
-          <Icon name="layers" size={18} />
-          <div>
-            <strong>The right shape</strong>
-            A single figure, a table, a chart or a short report.
-          </div>
-        </div>
-        <div className="feature">
-          <Icon name="trend" size={18} />
-          <div>
-            <strong>Forecasts with ranges</strong>
-            Only when the history is long and regular enough.
-          </div>
-        </div>
-        <div className="feature">
-          <Icon name="alert" size={18} />
-          <div>
-            <strong>Unusual values</strong>
-            Past outliers and projected breaches, marked on the chart.
-          </div>
-        </div>
-        <div className="feature">
-          <Icon name="check" size={18} />
-          <div>
-            <strong>Checked numbers</strong>
-            Every number in a summary traces to a computed claim.
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
+// ---------------------------------------------------------------------------
+// Ask
+// ---------------------------------------------------------------------------
 
 function Loading() {
   return (
-    <div className="stack" aria-busy="true" aria-label="Loading result">
-      <div className="skeleton" style={{ height: 22, width: "45%" }} />
-      <div className="kpis">
-        {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: 84 }} />)}
+    <div className="workspace" aria-busy="true" aria-label="Loading result">
+      <div className="ws-main">
+        <div className="skeleton" style={{ height: 22, width: "45%", flex: "none" }} />
+        <div className="kpis">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: 74 }} />)}
+        </div>
+        <div className="skeleton" style={{ flex: 1, minHeight: 240 }} />
       </div>
-      <div className="skeleton" style={{ height: 340 }} />
+      <div className="ws-side"><div className="skeleton" style={{ flex: 1 }} /></div>
     </div>
   );
 }
 
-export default function App() {
-  const [status, setStatus] = useState(null);
-  const [datasets, setDatasets] = useState([]);
-  const [active, setActive] = useState(null);
+const CAPABILITIES = [
+  ["layers", "The right shape", "A figure, a table, a chart or a short report."],
+  ["trend", "Forecasts with ranges", "Only when the history supports one."],
+  ["alert", "Unusual values", "Past outliers and projected breaches."],
+  ["check", "Checked numbers", "Every number traces to a computed claim."],
+];
+
+function AskPage({ datasets, sourceId, loadError }) {
+  const active = datasets.find((d) => d.id === sourceId) || datasets[0] || null;
   const [source, setSource] = useState(null);
   const [question, setQuestion] = useState("");
   const [envelope, setEnvelope] = useState(null);
@@ -195,15 +72,15 @@ export default function App() {
   const input = useRef(null);
 
   useEffect(() => {
-    health()
-      .then(setStatus)
-      .catch((err) => setStatus({ status: "DOWN", error: err.message }));
-    listDatasets()
-      .then((d) => {
-        setDatasets(d.datasets);
-        if (d.datasets.length) choose(d.datasets[0]);
-      })
-      .catch((err) => setError(`Could not load data sources: ${err.message}`));
+    if (!active) return;
+    setEnvelope(null);
+    setError("");
+    setQuestion("");
+    setSource(null);
+    fetchRows(active.id).then(setSource).catch((err) => setError(err.message));
+  }, [active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     // "/" jumps to the question box, as in most search-first tools.
     const onKey = (e) => {
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "");
@@ -214,21 +91,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  async function choose(dataset) {
-    setActive(dataset);
-    setEnvelope(null);
-    setError("");
-    setQuestion(dataset.examples[0] || "");
-    try {
-      setSource(await fetchRows(dataset.id));
-    } catch (err) {
-      setSource(null);
-      setError(err.message);
-    }
-  }
 
   async function ask(text) {
     const q = (text ?? question).trim();
@@ -237,8 +100,10 @@ export default function App() {
     setBusy(true);
     setError("");
     try {
-      setEnvelope(await present(q, source));
+      const result = await present(q, source);
+      setEnvelope(result);
       setAsked(q);
+      record(q, active, result);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -246,91 +111,193 @@ export default function App() {
     }
   }
 
+  const title = active ? active.title : "your data";
+  const started = Boolean(envelope || busy);
+
+  const picker = datasets.length > 0 && (
+    <label className="source-select" htmlFor="source">
+      <Icon name="database" size={16} />
+      <span className="sr-only">Data source</span>
+      <select id="source" value={active?.id || ""} onChange={(e) => go(`/ask/${e.target.value}`)}>
+        {[...new Set(datasets.map((d) => d.group))].map((group) => (
+          <optgroup key={group} label={group}>
+            {datasets.filter((d) => d.group === group).map((d) => (
+              <option key={d.id} value={d.id}>{d.title}</option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </label>
+  );
+  const box = (
+    <form
+      className="ask-box"
+      onSubmit={(e) => {
+        e.preventDefault();
+        ask();
+      }}
+    >
+      <Icon name="search" size={18} />
+      <label className="sr-only" htmlFor="question">Question</label>
+      <input
+        id="question"
+        ref={input}
+        value={question}
+        autoComplete="off"
+        placeholder={`Ask about ${title}...`}
+        onChange={(e) => setQuestion(e.target.value)}
+      />
+      <button className="send" type="submit" aria-label="Ask" disabled={busy || !source || !question.trim()}>
+        <Icon name="arrowRight" size={18} />
+      </button>
+    </form>
+  );
+  const problem = (error || loadError) && (
+    <div className="notice notice-critical" role="alert">
+      <Icon name="x" size={18} />
+      <div>
+        <strong>Something went wrong</strong>
+        {error || loadError}
+      </div>
+    </div>
+  );
+
+  if (!started) {
+    // Before the first question: everything centred, as a search page.
+    return (
+      <section className="ask-empty" aria-label="Start">
+        <span className="brand-tile lg"><BrandMark size={34} /></span>
+        <h2>Ask {title} a question</h2>
+        <p>
+          Answers come from the secured, masked result. You get the right kind of answer, a forecast when the
+          history supports one, and every number is checked.
+        </p>
+        <div className="ask-bar ask-bar-hero">
+          {picker}
+          {box}
+        </div>
+        {problem}
+        {active && active.examples.length > 0 && (
+          <div className="chips" aria-label="Example questions">
+            {active.examples.map((ex) => (
+              <button key={ex} type="button" className="chip" onClick={() => ask(ex)} disabled={busy || !source}>
+                {ex}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="capabilities">
+          {CAPABILITIES.map(([icon, head, text]) => (
+            <div className="capability" key={head}>
+              <strong><Icon name={icon} size={15} />{head}</strong>
+              {text}
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  // After a question: the box moves to the top; the result fills the window.
   return (
     <>
-      <header className="topbar">
-        <div className="topbar-inner">
-          <div className="brand">
-            <BrandMark />
-            <div style={{ minWidth: 0 }}>
-              <div className="brand-name">Presentation &amp; Prediction</div>
-              <div className="brand-sub">Component 4 · J26-SE-347</div>
-            </div>
-          </div>
-          <div className="topbar-spacer" />
-          <StatusPill status={status} />
-          {source && (
-            <span className="status-pill tenant-pill" title="Tenant of the current result">
-              <Icon name="shield" size={13} />
-              {source.security_context.tenant_id}
-            </span>
-          )}
-          <ThemeSwitch />
-        </div>
-      </header>
-
-      <div className="shell">
-        <aside className="sidebar">
-          <SourceList datasets={datasets} active={active} onChoose={choose} />
-          <Provenance source={source} />
-        </aside>
-
-        <main className="stack">
-          <section className="card composer" aria-label="Ask">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                ask();
-              }}
-            >
-              <div className="composer-row">
-                <Icon name="search" size={18} />
-                <label className="sr-only" htmlFor="question">Question</label>
-                <input
-                  id="question"
-                  ref={input}
-                  value={question}
-                  autoComplete="off"
-                  placeholder="Ask about this data, e.g. show monthly expenses and predict the next 3 months"
-                  onChange={(e) => setQuestion(e.target.value)}
-                />
-                <button className="btn btn-primary" type="submit" disabled={busy || !source || !question.trim()}>
-                  {busy ? "Working…" : "Ask"}
-                </button>
-              </div>
-            </form>
-            {active && active.examples.length > 0 && (
-              <div className="suggestions" aria-label="Example questions">
-                {active.examples.map((ex) => (
-                  <button key={ex} type="button" className="suggestion" onClick={() => ask(ex)} disabled={busy}>
-                    {ex}
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {error && (
-            <div className="notice notice-critical" role="alert">
-              <Icon name="x" size={18} />
-              <div>
-                <strong>Something went wrong</strong>
-                {error}
-              </div>
-            </div>
-          )}
-          {busy && <Loading />}
-          {!busy && !envelope && !error && <Welcome dataset={active} />}
-          {!busy && envelope && (
-            <ResponseView
-              key={asked}
-              envelope={envelope}
-              question={asked}
-              onSimulate={(scenario) => simulate(asked, source, scenario)}
-            />
-          )}
-        </main>
+      <div className="ask-bar">
+        {picker}
+        {box}
       </div>
+      {problem}
+      {busy && <Loading />}
+      {!busy && envelope && (
+        <ResponseView
+          key={asked}
+          envelope={envelope}
+          question={asked}
+          layout="workspace"
+          onSimulate={(scenario) => simulate(asked, source, scenario)}
+        />
+      )}
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The user-facing app: brand and status only, no administration
+// ---------------------------------------------------------------------------
+
+function UserApp({ status, theme, onToggleTheme, children }) {
+  const up = status?.status === "UP";
+  return (
+    <div className="user-app">
+      <header className="user-top">
+        <a className="user-brand" href={href("/ask")}>
+          <span className="brand-tile"><BrandMark size={20} /></span>
+          <span>Presentation &amp; Prediction</span>
+        </a>
+        <div className="spacer" />
+        <button type="button" className="icon-btn" onClick={onToggleTheme}
+          title={theme === "dark" ? "Light mode" : "Dark mode"}>
+          <Icon name={theme === "dark" ? "sun" : "moon"} size={17} />
+          <span className="sr-only">{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+        </button>
+        <span className="status" title={up ? "The service is available" : status ? "The service is unavailable" : ""}>
+          <span className={`dot ${status && !up ? "off" : ""}`} aria-hidden="true" />
+          {!status ? "Connecting…" : up ? "Online" : "Offline"}
+        </span>
+      </header>
+      <main className="user-body">{children}</main>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// App: #/ask is the user app; #/admin/... is the console
+// ---------------------------------------------------------------------------
+
+const PAGES = {
+  dashboard: ["Dashboard", "Health and usage across your workspace"],
+  sources: ["Data sources", "Result sets users can ask questions about"],
+  configuration: ["Configuration", "The forecasting policy in force"],
+  activity: ["Activity", "Questions asked from this browser"],
+};
+
+export default function App() {
+  const route = useRoute();
+  const [theme, toggleTheme] = useTheme();
+  const [status, setStatus] = useState(null);
+  const [datasets, setDatasets] = useState([]);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    health().then(setStatus).catch((err) => setStatus({ status: "DOWN", error: err.message }));
+    listDatasets()
+      .then((d) => setDatasets(d.datasets))
+      .catch((err) => setLoadError(`Could not load data sources: ${err.message}`));
+  }, []);
+
+  if (route.area === "ask") {
+    return (
+      <UserApp status={status} theme={theme} onToggleTheme={toggleTheme}>
+        <AskPage datasets={datasets} sourceId={route.id} loadError={loadError} />
+      </UserApp>
+    );
+  }
+
+  const page = PAGES[route.page] ? route.page : "dashboard";
+  const detail = page === "sources" && route.id ? datasets.find((d) => d.id === route.id) : null;
+  const [title, subtitle] = detail ? ["Data source", "What it holds and how it arrives"] : PAGES[page];
+  return (
+    <AppShell page={page} title={title} subtitle={subtitle} status={status} theme={theme} onToggleTheme={toggleTheme}>
+      {page === "dashboard" && <DashboardPage datasets={datasets} status={status} loadError={loadError} />}
+      {page === "sources" && !route.id && <SourcesPage datasets={datasets} />}
+      {page === "sources" && route.id && (detail ? <SourceDetailPage dataset={detail} />
+        : datasets.length ? (
+          <section className="card empty">
+            No data source called <span className="mono">{route.id}</span>.{" "}
+            <a href={href("/admin/sources")}>See all data sources</a>
+          </section>
+        ) : <div className="skeleton fill" />)}
+      {page === "configuration" && <ConfigurationPage />}
+      {page === "activity" && <ActivityPage />}
+    </AppShell>
   );
 }

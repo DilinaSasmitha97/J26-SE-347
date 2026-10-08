@@ -13,7 +13,7 @@ import { humanize } from "./format.js";
 
 export const PALETTE = {
   light: {
-    surface: "#fcfcfb",
+    surface: "#ffffff",
     ink: "#0b0b0b",
     inkSecondary: "#52514e",
     muted: "#898781",
@@ -77,7 +77,7 @@ function recolor(node, palette) {
 }
 
 /** The backend spec with the palette for `mode`, and a Vega-Lite config. */
-export function themeSpec(spec, mode = currentMode(), metaOverride = null) {
+export function themeSpec(spec, mode = currentMode(), metaOverride = null, options = {}) {
   const palette = PALETTE[mode];
   const meta = metaOverride || spec._meta || {};
   // A single series with overlays is fully described by the chart key the UI
@@ -105,6 +105,11 @@ export function themeSpec(spec, mode = currentMode(), metaOverride = null) {
   }
   themed.background = palette.surface;
   themed.width = "container";
+  if (options.fillHeight) {
+    // The chart takes the height of its pane (the ask workspace), not a fixed 320 px.
+    themed.height = "container";
+    themed.autosize = { type: "fit", contains: "padding", resize: true };
+  }
   themed.config = {
     ...(themed.config || {}),
     font: 'system-ui, -apple-system, "Segoe UI", sans-serif',
