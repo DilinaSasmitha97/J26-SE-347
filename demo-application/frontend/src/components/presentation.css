@@ -21,3 +21,30 @@
 .vp-examples { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 18px; }
 .vp-examples .pl-ghost { white-space: normal; text-align: left; }
 @media (max-width: 600px) { .vp-answer { padding: 14px; } .vp-scenario .verify-button { width: 100%; } }
+
+/* Data presentation layer: one tab per recommended format */
+.dp-card { min-width: 0; grid-column: 1 / -1; border-top: 3px solid var(--green); }
+.dp-card .pl-result-head { flex-wrap: wrap; }
+.dp-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); margin: 4px 0 14px; }
+.dp-tab { border: 0; background: none; padding: 9px 14px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--muted); font-size: .8rem; font-weight: 700; cursor: pointer; border-radius: 8px 8px 0 0; }
+.dp-tab:hover { color: var(--ink); background: #f6f9f7; }
+.dp-tab[aria-selected="true"] { color: var(--green-dark); border-bottom-color: var(--green); background: var(--green-soft); }
+.dp-tab:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.dp-tab.is-unavailable { color: #9aa49f; font-weight: 600; }
+.dp-panel { min-width: 0; }
+.dp-panel .vp-chart-wrap { width: 100%; }
+.dp-num { text-align: right; font-variant-numeric: tabular-nums; }
+.dp-masked { margin-left: 6px; font-family: var(--mono); font-size: .58rem; font-weight: 500; padding: 1px 5px; border-radius: 4px; background: #fff4dc; color: #8a6200; vertical-align: middle; }
+.dp-single { padding: 22px; border-radius: 12px; background: var(--green-soft); display: flex; flex-direction: column; gap: 6px; }
+.dp-single > strong { font-size: clamp(1.8rem, 4vw, 2.6rem); color: var(--green-dark); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.dp-single p { margin: 0; }
+.dp-summary p { line-height: 1.65; margin: 0 0 10px; }
+.dp-badge { display: inline-block; font-size: .66rem; font-weight: 700; padding: 3px 8px; border-radius: 99px; background: #eef2f0; color: #5d6a64; margin-bottom: 8px; }
+.dp-badge.ok { background: var(--green-soft); color: var(--green-dark); }
+.dp-badge.warn { background: #fff4dc; color: #8a6200; }
+.dp-unavailable { padding: 16px 18px; border-radius: 10px; background: #f6f8f7; border: 1px dashed #c9d3ce; }
+.dp-unavailable p { margin: 6px 0 0; color: var(--muted); }
+.dp-notes { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: .72rem; }
+/* vega-embed renders its container inline-block, which collapses
+   width: "container" specs to 0 px; give it the full panel width. */
+.vp-chart-wrap .vega-embed { display: block; width: 100%; }

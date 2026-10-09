@@ -5,6 +5,7 @@ Mirrors the conventions of Member 1's FastAPI gateway so the middleware chain
 exposes one consistent surface. Three endpoints:
 
   POST /api/v4/classify-intent  Question-only presentation/prediction classification
+  POST /api/v4/render     Data presentation: masked result in the classified formats
   POST /api/v4/analyze    Part 1 only - called BEFORE SQL generation
   POST /api/v4/present    Full pipeline - called AFTER Member 2 returns rows
   POST /api/v4/simulate   Re-run a what-if against an existing result set
@@ -16,10 +17,12 @@ Run:  uvicorn api:app --reload --port 8004
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+import data_presentation
 import input_adapter
 import intent_classification
+from intent_classification.schema import Intent, PresentationType
 import llm
 import pipeline
 
@@ -85,6 +88,25 @@ class SimulateRequest(BaseModel):
     horizon: Optional[int] = Field(default=None, ge=1, le=24)
 
 
+class RenderRequest(BaseModel):
+    """Masked result plus the classification it should be shown in."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    member2_result: Dict[str, Any]
+    user_query: str = Field(default="", max_length=2000)
+    intent: Optional[Intent] = None
+    # None means "not classified": formats are then chosen from the data.
+    presentation_types: Optional[List[PresentationType]] = Field(default=None, min_length=1)
+
+    @field_validator("presentation_types")
+    @classmethod
+    def _unique(cls, value):
+        if value is not None and len(set(value)) != len(value):
+            raise ValueError("presentation_types must not contain duplicates")
+        return value
+
+
 def _ctx(model: Optional[SecurityContext]) -> dict:
     return model.model_dump() if model else {}
 
@@ -130,6 +152,27 @@ def classify_intent(request: intent_classification.ClassifyIntentRequest) -> dic
     go to the service log, not the response.
     """
     return intent_classification.classify_intent(request.nl_query)
+
+
+@app.post("/api/v4/render")
+def render(request: RenderRequest) -> dict:
+    """
+    Data presentation layer: one view per recommended presentation type.
+
+    Charts are Vega-Lite v5 specs. A format the rows cannot support is returned
+    with `available: false` and a reason. No forecasting runs here.
+    """
+    try:
+        return data_presentation.build_views(
+            request.member2_result,
+            intent=request.intent,
+            presentation_types=request.presentation_types,
+            question=request.user_query,
+        )
+    except input_adapter.InputFormatError as exc:
+        return {"status": "ERROR", "error_code": "INPUT_FORMAT_ERROR", "detail": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "ERROR", "error_code": "RENDER_FAILED", "detail": str(exc)}
 
 
 @app.post("/api/v4/analyze")

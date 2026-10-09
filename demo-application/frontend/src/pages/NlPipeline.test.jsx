@@ -3,12 +3,19 @@ import { afterEach, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import NlPipeline from './NlPipeline.jsx';
 
+vi.mock('vega-embed', () => ({ default: vi.fn(async () => ({ view: { finalize: vi.fn() } })) }));
+
 afterEach(() => vi.unstubAllGlobals());
 const user = { userId: 'user-101-manager', role: 'MANAGER', tenantId: 101 };
 const policy = { allowedTables: ['employees'], deniedColumns: [] };
 const sql = 'SELECT COUNT(*) AS headcount FROM employees WHERE tenant_id = 101 AND department_id = 1';
 const CLASSIFY = '/api/classify-intent';
 const GENERATE = '/api/generate-sql';
+const PRESENT = '/api/present-result';
+const rendered = { status: 'SUCCESS', source: 'classification', intent: 'KPI_SINGLE_VALUE', row_count: 1, views: [
+  { type: 'single_value', label: 'Single value', available: true, reason: '', notes: [], block: { label: 'Headcount', display_value: '7' } },
+  { type: 'table', label: 'Table', available: true, reason: '', notes: [], block: { columns: [{ name: 'headcount', label: 'Headcount', align: 'right' }], rows: [{ headcount: 7 }], row_count: 1 } }
+] };
 const WAIT = { timeout: 3000 };
 
 const reply = (body, status = 200) => ({ ok: status < 400, status, text: async () => JSON.stringify(body) });
@@ -20,6 +27,7 @@ function fakeFetch(classify = (body) => reply(classified(body.nl_query))) {
   return vi.fn(async (url, options) => {
     const body = JSON.parse(options.body);
     if (url === CLASSIFY) return classify(body, options);
+    if (url === PRESENT) return reply(rendered);
     return reply(url === GENERATE
       ? { sql, question: 'How many employees?', user, effectivePolicy: policy, generation: { metadata: {}, injectedRules: body.rules } }
       : { status: 'COMPLETED', question: 'How many employees?', user, effectivePolicy: policy, resultId: 'result-1',
@@ -194,4 +202,34 @@ it('question changes clear the classification and SQL draft; identity changes cl
   fireEvent.change(screen.getByLabelText('Authenticated user'), { target: { value: JSON.stringify({ userId: 'user-102-manager' }) } });
   expect(screen.queryByLabelText('Generated SQL')).toBeNull();
   expect(within(card()).getByLabelText('Presentation types')).toBeTruthy();
+});
+
+it('after execution shows the result in the classified formats, using the stored result', async () => {
+  const fetch = fakeFetch(); vi.stubGlobal('fetch', fetch);
+  render(<NlPipeline />); await generate();
+  fireEvent.click(screen.getByRole('button', { name: 'Validate & execute' }));
+  const results = await screen.findByLabelText('Results', {}, WAIT);
+  await waitFor(() => expect(within(results).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Single value', 'Table']), WAIT);
+  expect(within(results).getByRole('tabpanel').textContent).toContain('Headcount7');
+  expect(bodiesFor(fetch, PRESENT)).toEqual([{ resultId: 'result-1', user, policy, rules: null,
+    classification: { intent: 'KPI_SINGLE_VALUE', presentation_types: ['single_value'] } }]);
+  expect(JSON.stringify(bodiesFor(fetch, PRESENT))).not.toContain('rows');
+
+  fireEvent.change(screen.getByLabelText('Generated SQL'), { target: { value: sql.replace('COUNT(*)', 'COUNT(id)') } });
+  expect(screen.queryByLabelText('Results')).toBeNull();
+});
+
+it('without a classification asks for formats chosen from the data', async () => {
+  const fetch = fakeFetch(() => reply({ code: 'CLASSIFICATION_UNAVAILABLE', message: 'offline' }, 503)); vi.stubGlobal('fetch', fetch);
+  render(<NlPipeline />);
+  fireEvent.change(screen.getByLabelText('User policy'), { target: { value: JSON.stringify(policy) } });
+  fireEvent.change(screen.getByLabelText('Authenticated user'), { target: { value: JSON.stringify(user) } });
+  typeQuestion('How many employees?');
+  fireEvent.click(generateButton());
+  await waitFor(() => expect(continueAnywayButton()).toBeTruthy(), WAIT);
+  fireEvent.click(continueAnywayButton());
+  await waitFor(() => expect(screen.getByLabelText('Generated SQL').value).toBe(sql));
+  fireEvent.click(screen.getByRole('button', { name: 'Validate & execute' }));
+  await waitFor(() => expect(bodiesFor(fetch, PRESENT)).toHaveLength(1), WAIT);
+  expect(bodiesFor(fetch, PRESENT)[0].classification).toBeNull();
 });

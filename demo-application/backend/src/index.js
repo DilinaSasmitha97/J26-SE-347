@@ -165,6 +165,31 @@ function createApp(dependencies = {}) {
     }
   });
 
+  // Data presentation layer. Renders the masked result the gateway stored for
+  // this user and policy, in the formats the intent classification recommended.
+  app.post('/api/present-result', async (req, res) => {
+    const context = validateContextRequest(req.body);
+    if (context.error) return res.status(400).json({ code: 'INVALID_REQUEST', message: context.error });
+    const { user, effectivePolicy: policy } = context.value;
+    if (typeof req.body?.resultId !== 'string') {
+      return res.status(400).json({ code: 'INVALID_REQUEST', message: 'Provide the resultId of an executed query.' });
+    }
+    const classification = req.body?.classification ?? null;
+    if (classification !== null) {
+      const problem = intentClassificationService.classificationChoiceProblem(classification);
+      if (problem) return res.status(400).json({ code: 'INVALID_REQUEST', message: `Invalid classification: ${problem}.` });
+    }
+    const entry = resultStore.get(req.body.resultId, user, policy);
+    if (!entry) return res.status(404).json({ code: 'RESULT_UNAVAILABLE', message: 'This result expired or is unavailable for the current user and policy. Execute the query again.' });
+    try {
+      return res.json(await presenter.renderResult(entry, classification && {
+        intent: classification.intent, presentation_types: [...classification.presentation_types]
+      }));
+    } catch (error) {
+      return res.status(error.status || 502).json({ code: error.code || 'PRESENTATION_FAILED', message: error.message });
+    }
+  });
+
   app.get('/api/users', (req, res) => {
     res.json([]);
   });
@@ -311,7 +336,11 @@ function createApp(dependencies = {}) {
 
       try {
         const result = await runMaskedQuery(sql, effectivePolicy, user);
-        const presentation = await presenter.presentResult(question, result, user, effectivePolicy);
+        // Prediction is off by default; results are shown through /api/present-result.
+        const predicting = presenter.predictionEnabled ? presenter.predictionEnabled() : true;
+        const presentation = predicting
+          ? await presenter.presentResult(question, result, user, effectivePolicy)
+          : { presentation: null, presentationStatus: 'SKIPPED' };
         const resultId = question ? resultStore.save({ user, policy: effectivePolicy, question, result }) : null;
         return res.json({
           ...baseResponse,

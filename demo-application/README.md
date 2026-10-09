@@ -6,7 +6,19 @@ Vonara's presentation/prediction service, and the React demonstration UI.
 
 ## Request flow
 
-`frontend -> [user clicks Generate SQL] -> backend -> intent classification (question only) -> [user clicks Continue to SQL] -> NL-to-SQL -> Navodya validation -> SQLGlot policy checks -> read-only database -> PII masking -> Vonara presentation/prediction -> frontend`
+`frontend -> [user clicks Generate SQL] -> backend -> intent classification (question only) -> [user clicks Continue to SQL] -> NL-to-SQL -> SQL safety validation -> SQLGlot policy checks -> read-only database -> PII masking -> data presentation (classified formats) -> frontend`
+
+After **Validate & execute** the gateway keeps the masked result under a
+`resultId`, and the page asks `POST /api/present-result` to show it in the
+formats the intent classification recommended. Every recommended format gets a
+tab: tables, a single-value card, Vega-Lite bar, pie and line charts, and a
+summary. The summary is written by the configured LLM from computed facts and
+shown only if every number in it matches those facts; otherwise the facts are
+shown as written. A recommended format the actual rows cannot support (a pie
+chart of 50 departments, a single value from 12 rows) keeps its tab and explains
+why. Without a classification (Continue without classification) the formats are
+chosen from the shape of the data. Prediction is kept but switched off
+(`PRESENTATION_PREDICTION_ENABLED=false`) and will be enabled later.
 
 Intent classification is a separate step that runs before SQL generation. It
 reads only the question and returns the analytical intent (one of
@@ -115,6 +127,12 @@ require MySQL.
   `/api/v4/classify-intent`. The gateway rejects a response that does not echo
   the question exactly, has an unknown intent, contains unknown or repeated types, or lacks a Boolean
   `prediction_needed` (502). An unreachable classifier returns 503.
+- `POST /api/present-result`: `{ user, policy, resultId, classification }` →
+  `{ source, intent, row_count, views: [{ type, label, available, reason, notes, block }] }`.
+  Renders only the masked result the gateway stored for that user and policy
+  (404 otherwise); rows sent by the browser are ignored. `classification` is
+  `{ intent, presentation_types }` from `/api/classify-intent`, or `null` to let
+  the data decide. Charts are Vega-Lite v5 specs.
 - `POST /api/generate-sql`: generate a SQL draft from the question and pasted
   NL-to-SQL rules for review, without execution. It does not classify or
   analyze the question and returns no classification.
@@ -153,7 +171,9 @@ tests with `npm test --prefix .\backend`, frontend tests with
 The frontend build preserves existing output files (`emptyOutDir: false`).
 With the presentation service running, `npm run test:chart --prefix .\frontend`
 also compiles and renders real API forecast/scenario charts to SVG using the
-frontend's installed Vega stack and synthetic validation rows.
+frontend's installed Vega stack and synthetic validation rows, and
+`npm run test:render --prefix .\frontend` does the same for every bar, pie and
+line chart the data presentation layer returns.
 
 LLM-assisted intent classification is enabled. Configure a Groq API key in
 `presentation-service/.env` using that folder's `.env.example`, then restart

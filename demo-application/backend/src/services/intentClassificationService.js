@@ -39,6 +39,18 @@ function classificationProblem(payload, nlQuery) {
   return null;
 }
 
+// Validates a classification the browser sends back for presentation:
+// { intent, presentation_types } from the classifier's vocabulary.
+function classificationChoiceProblem(classification) {
+  if (!classification || typeof classification !== 'object' || Array.isArray(classification)) return 'classification must be an object';
+  if (!INTENTS.includes(classification.intent)) return 'classification.intent is not a supported value';
+  const types = classification.presentation_types;
+  if (!Array.isArray(types) || !types.length) return 'classification.presentation_types must be a non-empty array';
+  if (types.some((type) => !PRESENTATION_TYPES.includes(type))) return 'classification.presentation_types contains an unsupported value';
+  if (new Set(types).size !== types.length) return 'classification.presentation_types contains duplicates';
+  return null;
+}
+
 function serviceUrl() {
   return `${(process.env.PRESENTATION_SERVICE_URL || 'http://127.0.0.1:8004').replace(/\/$/, '')}/api/v4/classify-intent`;
 }
@@ -80,5 +92,6 @@ module.exports = {
   IntentClassificationError,
   validateClassificationRequest,
   classificationProblem,
+  classificationChoiceProblem,
   classifyIntent
 };

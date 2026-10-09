@@ -34,6 +34,15 @@ async function serve(t, dependencies) {
   t.after(() => new Promise((resolve) => server.close(resolve)));
   return server;
 }
+// Prediction is off by default; tests of the prediction path switch it on.
+function withPrediction(t) {
+  const original = process.env.PRESENTATION_PREDICTION_ENABLED;
+  process.env.PRESENTATION_PREDICTION_ENABLED = 'true';
+  t.after(() => {
+    if (original === undefined) delete process.env.PRESENTATION_PREDICTION_ENABLED;
+    else process.env.PRESENTATION_PREDICTION_ENABLED = original;
+  });
+}
 const masked = {
   statementType: 'SELECT', columns: [{ name: 'work_email' }], rows: [['m***@example.com']],
   rowCount: 1, truncated: false, masking: { columns: [{ name: 'work_email', piiType: 'EMAIL' }], maskedCells: 1 }
@@ -85,6 +94,7 @@ test('generation guidance uses only schema-valid fields and keeps historical for
 });
 
 test('only server-masked rows reach presentation and simulation; identity tampering fails', async (t) => {
+  withPrediction(t);
   const calls = [];
   t.mock.method(global, 'fetch', async (url, options) => {
     const body = JSON.parse(options.body);
@@ -121,6 +131,7 @@ test('only server-masked rows reach presentation and simulation; identity tamper
 });
 
 test('presentation outage leaves masked execution successful', async (t) => {
+  withPrediction(t);
   t.mock.method(global, 'fetch', async () => { throw new Error('offline'); });
   const server = await serve(t, { verifySql: async () => decision, executeAndMask: async () => masked });
   const result = await post(server, '/api/secure-query', { ...context(), sql, question: 'List work emails', execute: true });
