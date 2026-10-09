@@ -3,12 +3,15 @@ Contract for the question-only intent classification step.
 
     POST /api/v4/classify-intent
     request:  {"nl_query": "..."}
-    response: {"nl_query": "...", "presentation_types": [...], "prediction_needed": bool}
+    response: {"nl_query": "...", "intent": "...", "presentation_types": [...],
+               "prediction_needed": bool}
 
 The request accepts nothing but the question: no schema, policy, user claims or
 SQL. Extra fields are rejected so context cannot leak into classification.
+Confidences are logged by the service and never appear in the response.
 """
 
+from dataclasses import dataclass
 from typing import Any, List, Literal, Tuple, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
@@ -17,6 +20,13 @@ PresentationType = Literal[
     "table", "single_value", "bar_chart", "pie_chart", "line_chart", "summary"
 ]
 PRESENTATION_TYPES: Tuple[str, ...] = get_args(PresentationType)
+
+Intent = Literal[
+    "TREND_ANALYSIS", "COMPARISON", "RANKING", "PROPORTION", "DISTRIBUTION",
+    "CORRELATION", "ANOMALY_DETECTION", "KPI_SINGLE_VALUE", "DETAIL_LOOKUP",
+]
+INTENTS: Tuple[str, ...] = get_args(Intent)
+
 MAX_QUERY_CHARS = 2000
 
 
@@ -37,6 +47,7 @@ class ClassifyIntentResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     nl_query: str
+    intent: Intent
     presentation_types: List[PresentationType] = Field(min_length=1)
     prediction_needed: StrictBool
 
@@ -52,18 +63,39 @@ class ModelOutputError(ValueError):
     """The model answered, but not with a usable classification."""
 
 
-def parse_model_output(raw: Any) -> Tuple[List[str], bool]:
+@dataclass
+class ModelClassification:
+    intent: str
+    intent_confidence: float
+    presentation_types: List[str]
+    presentation_types_confidence: float
+    prediction_needed: bool
+    prediction_confidence: float
+
+
+def _confidence(value: Any) -> float:
+    """A missing or non-numeric confidence counts as 0, so it is never trusted."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return 0.0
+    return max(0.0, min(float(value), 1.0))
+
+
+def parse_model_output(raw: Any) -> ModelClassification:
     """
     Validate an LLM classification strictly.
 
-    Values are compared after trimming and lower-casing; anything outside the
-    six allowed types, an empty list, or a non-Boolean prediction flag makes the
-    whole answer unusable. Repeated values are collapsed in order. Any
-    `nl_query` the model returns is ignored: the caller echoes the submitted
-    question itself.
+    The intent must be one of the nine labels; presentation types must be a
+    non-empty list of the six allowed values (trimmed, lower-cased, repeats
+    collapsed in order); prediction_needed must be a Boolean. Any violation
+    makes the whole answer unusable. Confidences are clamped to 0-1. Any
+    `nl_query` the model returns is ignored: the caller echoes the question.
     """
     if not isinstance(raw, dict):
         raise ModelOutputError("model output is not a JSON object")
+
+    intent = raw.get("intent")
+    if not isinstance(intent, str) or intent.strip().upper() not in INTENTS:
+        raise ModelOutputError(f"intent {intent!r} is not allowed")
 
     types = raw.get("presentation_types")
     if not isinstance(types, list) or not types:
@@ -83,4 +115,11 @@ def parse_model_output(raw: Any) -> Tuple[List[str], bool]:
     if not isinstance(prediction, bool):
         raise ModelOutputError("prediction_needed must be a Boolean")
 
-    return selected, prediction
+    return ModelClassification(
+        intent=intent.strip().upper(),
+        intent_confidence=_confidence(raw.get("intent_confidence")),
+        presentation_types=selected,
+        presentation_types_confidence=_confidence(raw.get("presentation_types_confidence")),
+        prediction_needed=prediction,
+        prediction_confidence=_confidence(raw.get("prediction_confidence")),
+    )

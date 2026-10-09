@@ -79,7 +79,7 @@ function validateVerificationRequest(body) {
 async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
   const validation = validateWithSecurityLayer(sql, policy);
   const validationCheck = {
-    label: 'Navodya AST safety',
+    label: 'SQL safety (AST) check',
     passed: validation.safe,
     status: validation.safe ? 'PASS' : 'FAIL',
     reason: validation.safe ? null : 'SECURITY_LAYER_REJECTED',

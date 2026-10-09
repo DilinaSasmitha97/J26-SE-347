@@ -121,11 +121,13 @@ def health() -> dict:
 )
 def classify_intent(request: intent_classification.ClassifyIntentRequest) -> dict:
     """
-    Recommend presentation types and say whether a forecast is requested.
+    Classify the intent, recommend presentation types and say whether a
+    forecast is requested.
 
     Reads only the question: no schema, policy, user claims, SQL or rows. The
-    request model rejects any other field. Always answers; the deterministic
-    rules cover a missing provider key or unusable model output.
+    request model rejects any other field. Rules decide first; the LLM is asked
+    only for decisions the rules are unsure about. Always answers; confidences
+    go to the service log, not the response.
     """
     return intent_classification.classify_intent(request.nl_query)
 

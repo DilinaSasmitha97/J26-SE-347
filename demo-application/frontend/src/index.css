@@ -284,6 +284,7 @@ footer span { gap: 6px; }
 .pl-ghost:disabled { opacity: .5; cursor: default; }
 .pl-field-ok { display: flex; align-items: center; gap: 6px; margin: 9px 2px 0; color: var(--green); font-size: .7rem; }
 .pl-actions { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 16px; }
+.pl-action-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .pl-muted { color: var(--muted); font-size: .72rem; line-height: 1.5; margin: 0; }
 .pl-banner { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding: 10px 12px; border-radius: 8px; font-size: .76rem; font-weight: 600; }
 .pl-banner.fail { background: var(--red-soft); color: #a62c2c; }

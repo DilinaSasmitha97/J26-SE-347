@@ -1,7 +1,11 @@
 // Question-only intent classification. Forwards nothing but the question to the
 // presentation service and accepts only a response that satisfies the contract:
-// { nl_query, presentation_types, prediction_needed }.
+// { nl_query, intent, presentation_types, prediction_needed }.
 
+const INTENTS = Object.freeze([
+  'TREND_ANALYSIS', 'COMPARISON', 'RANKING', 'PROPORTION', 'DISTRIBUTION',
+  'CORRELATION', 'ANOMALY_DETECTION', 'KPI_SINGLE_VALUE', 'DETAIL_LOOKUP'
+]);
 const PRESENTATION_TYPES = Object.freeze(['table', 'single_value', 'bar_chart', 'pie_chart', 'line_chart', 'summary']);
 const MAX_QUERY_CHARS = 2000;
 
@@ -26,6 +30,7 @@ function validateClassificationRequest(body) {
 function classificationProblem(payload, nlQuery) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return 'response is not a JSON object';
   if (payload.nl_query !== nlQuery) return 'nl_query does not echo the submitted question';
+  if (!INTENTS.includes(payload.intent)) return 'intent is not a supported value';
   const types = payload.presentation_types;
   if (!Array.isArray(types) || !types.length) return 'presentation_types must be a non-empty array';
   if (types.some((type) => !PRESENTATION_TYPES.includes(type))) return 'presentation_types contains an unsupported value';
@@ -62,12 +67,14 @@ async function classifyIntent(nlQuery, { signal } = {}) {
   if (problem) throw new IntentClassificationError('CLASSIFICATION_INVALID', `The classifier response is invalid: ${problem}.`);
   return {
     nl_query: nlQuery,
+    intent: payload.intent,
     presentation_types: [...payload.presentation_types],
     prediction_needed: payload.prediction_needed
   };
 }
 
 module.exports = {
+  INTENTS,
   PRESENTATION_TYPES,
   MAX_QUERY_CHARS,
   IntentClassificationError,

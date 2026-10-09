@@ -43,13 +43,17 @@ classification, set `PRESENTATION_USE_LLM=false` in `demo-application/.env`.
 
 Internal routes:
 
-- `POST /api/v4/classify-intent`: question-only classification into recommended
-  presentation types and a prediction flag (package `intent_classification/`).
-  The request accepts only `nl_query`; any other field is rejected (422). With a
-  provider key the LLM classifies (one attempt); missing keys, transport errors
-  or output outside the six allowed types fall back to deterministic rules. A
-  declined forecast ("without predictions") and "only <format>" always override
-  the model. The response echoes the submitted question unchanged.
+- `POST /api/v4/classify-intent`: question-only classification (package
+  `intent_classification/`). Returns `nl_query` (echoed unchanged), `intent`,
+  `presentation_types` and `prediction_needed`. The request accepts only
+  `nl_query`; any other field is rejected (422). Rules run first, using the
+  stage-8 Vonara lexicon and confidence formula copied into
+  `intent_classification/vonara_rules.py`; formats follow the intent or the
+  formats the user names. A decision below 0.55 confidence is sent to the LLM
+  (one attempt), which replaces it only at 0.60 or more. No key, a transport
+  error or invalid output keeps the rule answers. A declined forecast and
+  "only <format>" always win. Each request logs one line with the confidences
+  and `classified_by` (rules, llm or rules+llm); confidences are never returned.
 - `POST /api/v4/analyze`: question understanding before generation.
 - `POST /api/v4/present`: full processing of masked execution results.
 - `POST /api/v4/simulate`: a scenario over already-authorized masked rows.

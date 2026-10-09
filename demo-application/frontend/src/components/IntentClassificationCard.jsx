@@ -1,5 +1,17 @@
 import React from 'react';
 
+export const INTENT_LABELS = Object.freeze({
+  TREND_ANALYSIS: 'Trend analysis',
+  COMPARISON: 'Comparison',
+  RANKING: 'Ranking',
+  PROPORTION: 'Proportion',
+  DISTRIBUTION: 'Distribution',
+  CORRELATION: 'Correlation',
+  ANOMALY_DETECTION: 'Anomaly detection',
+  KPI_SINGLE_VALUE: 'Single KPI value',
+  DETAIL_LOOKUP: 'Detail lookup'
+});
+
 export const PRESENTATION_TYPE_LABELS = Object.freeze({
   table: 'Table',
   single_value: 'Single value',
@@ -11,16 +23,16 @@ export const PRESENTATION_TYPE_LABELS = Object.freeze({
 
 const STATUS = {
   idle: { pill: '', text: 'Waiting' },
-  pending: { pill: 'loading', text: 'Waiting' },
   loading: { pill: 'loading', text: 'Classifying' },
   ready: { pill: 'pass', text: 'Classified' },
   error: { pill: 'error', text: 'Error' }
 };
 
 /**
- * Shows the question-only classification: recommended presentation formats and
- * whether a forecast was requested. The result is a recommendation; whether the
- * returned rows support a format or forecast is decided after execution.
+ * Shows the question-only classification: intent, recommended presentation
+ * formats and whether a forecast was requested. The formats are a
+ * recommendation; whether the returned rows support a format or a forecast is
+ * decided after execution.
  */
 export default function IntentClassificationCard({ status, result, error, onRetry, disabled = false }) {
   const { pill, text } = STATUS[status] || STATUS.idle;
@@ -32,8 +44,7 @@ export default function IntentClassificationCard({ status, result, error, onRetr
         <span className={`pl-pill ${pill ? `pl-pill-${pill}` : ''}`}>{status === 'loading' && <i className="pl-dot-spin" />}{text}</span>
       </div>
 
-      {status === 'idle' && <p className="pl-muted">Type a question to see the recommended presentation formats.</p>}
-      {status === 'pending' && <p className="pl-muted">The question is classified when you stop typing.</p>}
+      {status === 'idle' && <p className="pl-muted">Click Generate SQL to classify the question before any SQL is generated.</p>}
       {status === 'loading' && <p className="pl-muted" role="status">Classifying the question…</p>}
 
       {status === 'error' && (
@@ -45,6 +56,10 @@ export default function IntentClassificationCard({ status, result, error, onRetr
 
       {status === 'ready' && result && (
         <>
+          <div className="pl-intent-row">
+            <span className="pl-intent-label">Intent</span>
+            <span className="pl-chip ok" aria-label="Intent">{INTENT_LABELS[result.intent] || result.intent}</span>
+          </div>
           <div className="pl-intent-row">
             <span className="pl-intent-label">Recommended formats</span>
             <ul className="pl-intent-types" aria-label="Presentation types">

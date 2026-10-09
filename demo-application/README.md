@@ -6,14 +6,25 @@ Vonara's presentation/prediction service, and the React demonstration UI.
 
 ## Request flow
 
-`frontend -> backend -> intent classification (question only) -> [user clicks Generate SQL] -> NL-to-SQL -> Navodya validation -> SQLGlot policy checks -> read-only database -> PII masking -> Vonara presentation/prediction -> frontend`
+`frontend -> [user clicks Generate SQL] -> backend -> intent classification (question only) -> [user clicks Continue to SQL] -> NL-to-SQL -> Navodya validation -> SQLGlot policy checks -> read-only database -> PII masking -> Vonara presentation/prediction -> frontend`
 
 Intent classification is a separate step that runs before SQL generation. It
-reads only the question and returns recommended presentation types (`table`,
-`single_value`, `bar_chart`, `pie_chart`, `line_chart`, `summary`) and whether a
-forecast is requested. It uses no schema, policy, user claims or rules, so it
-works while those editors are empty. These are recommendations: whether the
-returned rows support a chart type or a forecast is decided after execution.
+reads only the question and returns the analytical intent (one of
+`TREND_ANALYSIS`, `COMPARISON`, `RANKING`, `PROPORTION`, `DISTRIBUTION`,
+`CORRELATION`, `ANOMALY_DETECTION`, `KPI_SINGLE_VALUE`, `DETAIL_LOOKUP`),
+recommended presentation types (`table`, `single_value`, `bar_chart`,
+`pie_chart`, `line_chart`, `summary`) and whether a forecast is requested. It
+uses no schema, policy, user claims or rules, so it works while those editors
+are empty. These are recommendations: whether the returned rows support a chart
+type or a forecast is decided after execution.
+
+Rules decide first: the stage-8 Vonara keyword scoring gives each decision a
+confidence. A decision at or above 0.55 is final; a weaker one is sent to the
+LLM, whose answer replaces it only when the LLM's own confidence is at least
+0.60. Without a provider key, or if the LLM fails, the rule answers stay. A
+declined forecast ("without predictions") and "only <format>" always win.
+Confidences and the deciding source appear only in the presentation service's
+console log, never in the response.
 
 The frontend calls only the Node backend. User policy, Authenticated user and
 NL-to-SQL rules start empty and remain editable. Paste or upload your own JSON;
@@ -35,16 +46,18 @@ schema, entity and relationship hints internally. The submitted rules appear
 under the SQL draft without overwriting your editors. Editing any context field
 invalidates the draft. User policy is applied during SQL validation and execution.
 
-In the pipeline UI, the question is classified about 600 ms after you stop
-typing. The intent card shows the recommended formats, **Prediction needed:
-Yes/No**, and the structured JSON. **Generate SQL** is enabled only after the
-current question has been classified; SQL is never generated automatically.
-Changing the question cancels the pending classification and clears its result,
-the SQL draft and execution results; late responses for an older question are
-ignored. Editing policy, user or rules invalidates the SQL draft but keeps the
-classification of an unchanged question.
+In the pipeline UI, nothing is classified while you type. Click **Generate
+SQL** to classify the question: the intent card shows the intent, the
+recommended formats, **Prediction needed: Yes/No**, and the structured JSON. No
+SQL is generated yet. Click **Continue to SQL** to send the question to the
+NL-to-SQL service. If classification fails, the card shows the error with
+**Retry classification**, and **Continue without classification** generates SQL
+anyway. Changing the question cancels a pending classification and clears its
+result, the SQL draft and execution results; late responses for an older
+question are ignored. Editing policy, user or rules invalidates the SQL draft
+but keeps the classification of an unchanged question.
 
-Click **Generate SQL** to create a draft, then review or edit
+After **Continue to SQL** creates a draft, review or edit
 the SQL in step 2. Click **Validate & execute** to run security and policy checks
 on that edited SQL before read-only execution and masking. Generation does not
 execute the query, and editing SQL clears results from the previous version.
@@ -97,10 +110,10 @@ require MySQL.
 ## Main endpoints
 
 - `POST /api/classify-intent`: `{ "nl_query": "..." }` (1-2,000 characters) →
-  `{ "nl_query", "presentation_types", "prediction_needed" }`. Needs no user,
+  `{ "nl_query", "intent", "presentation_types", "prediction_needed" }`. Needs no user,
   policy or rules; only `nl_query` is forwarded to the presentation service's
   `/api/v4/classify-intent`. The gateway rejects a response that does not echo
-  the question exactly, contains unknown or repeated types, or lacks a Boolean
+  the question exactly, has an unknown intent, contains unknown or repeated types, or lacks a Boolean
   `prediction_needed` (502). An unreachable classifier returns 503.
 - `POST /api/generate-sql`: generate a SQL draft from the question and pasted
   NL-to-SQL rules for review, without execution. It does not classify or
@@ -144,7 +157,10 @@ frontend's installed Vega stack and synthetic validation rows.
 
 LLM-assisted intent classification is enabled. Configure a Groq API key in
 `presentation-service/.env` using that folder's `.env.example`, then restart
-the presentation service and gateway. Until a key is configured, classification
-falls back to rules. Set `PRESENTATION_USE_LLM=false` in this folder's `.env` to
-disable the LLM requests. Summaries remain deterministic. No key is sent to the
+the presentation service and gateway. Intent classification always decides with
+rules first and asks the LLM only for low-confidence decisions; without a key
+those decisions keep the rule answer. To keep classification rules-only, set
+`PRESENTATION_LLM_PROVIDER=none` in `presentation-service/.env`. Set
+`PRESENTATION_USE_LLM=false` in this folder's `.env` to disable the LLM requests
+of the post-execution analysis. Summaries remain deterministic. No key is sent to the
 browser, and the NL-to-SQL provider settings remain independent.

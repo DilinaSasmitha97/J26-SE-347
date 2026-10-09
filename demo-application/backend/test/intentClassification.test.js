@@ -6,7 +6,7 @@ const { createApp } = require('../src/index');
 const { classificationProblem } = require('../src/services/intentClassificationService');
 
 const question = 'Give me the gender distribution in my company';
-const contract = { nl_query: question, presentation_types: ['table', 'pie_chart', 'bar_chart'], prediction_needed: false };
+const contract = { nl_query: question, intent: 'PROPORTION', presentation_types: ['table', 'pie_chart', 'bar_chart'], prediction_needed: false };
 
 function post(server, path, body) {
   return new Promise((resolve, reject) => {
@@ -41,14 +41,15 @@ function upstream(t, reply) {
 }
 
 test('classification forwards only the question and needs no user, policy or rules', async (t) => {
-  const calls = upstream(t, () => ({ ok: true, json: async () => ({ ...contract, source: 'llm' }) }));
+  const calls = upstream(t, () => ({ ok: true, json: async () => ({ ...contract, confidence: 0.9, classified_by: 'llm' }) }));
   const server = await serve(t);
   const response = await post(server, '/api/classify-intent', {
     nl_query: question,
     user: { userId: 'u-1', tenantId: 101 }, policy: { allowedTables: ['employees'] }, rules: { constraints: ['x'] }
   });
   assert.equal(response.status, 200);
-  assert.deepEqual(response.body, contract, 'Only the three contract fields are returned');
+  assert.deepEqual(response.body, contract, 'Only the four contract fields are returned');
+  assert.deepEqual(Object.keys(response.body), ['nl_query', 'intent', 'presentation_types', 'prediction_needed']);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'http://127.0.0.1:8004/api/v4/classify-intent');
   assert.deepEqual(calls[0].body, { nl_query: question });
@@ -60,7 +61,7 @@ test('classification forwards only the question and needs no user, policy or rul
 
 test('the submitted question is forwarded and echoed without trimming', async (t) => {
   const spaced = '  How many employees?  ';
-  const calls = upstream(t, () => ({ ok: true, json: async () => ({ nl_query: spaced, presentation_types: ['single_value'], prediction_needed: false }) }));
+  const calls = upstream(t, () => ({ ok: true, json: async () => ({ nl_query: spaced, intent: 'KPI_SINGLE_VALUE', presentation_types: ['single_value'], prediction_needed: false }) }));
   const response = await post(await serve(t), '/api/classify-intent', { nl_query: spaced });
   assert.equal(response.status, 200);
   assert.equal(calls[0].body.nl_query, spaced);
@@ -81,12 +82,15 @@ test('invalid questions are rejected before the classifier is called', async (t)
 test('out-of-contract classifier responses are rejected', async (t) => {
   const invalid = [
     { ...contract, nl_query: 'Show every salary' },
+    { ...contract, intent: 'GENDER_SPLIT' },
+    { ...contract, intent: undefined },
+    { ...contract, intent: 'proportion' },
     { ...contract, presentation_types: [] },
     { ...contract, presentation_types: ['table', 'donut_chart'] },
     { ...contract, presentation_types: ['table', 'table'] },
     { ...contract, presentation_types: 'table' },
     { ...contract, prediction_needed: 'false' },
-    { nl_query: question, presentation_types: ['table'] },
+    { nl_query: question, intent: 'PROPORTION', presentation_types: ['table'] },
     [contract]
   ];
   let next = 0;

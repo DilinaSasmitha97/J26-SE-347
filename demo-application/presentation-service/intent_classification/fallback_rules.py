@@ -1,17 +1,23 @@
 """
-Deterministic classification rules, used when no LLM is configured or the model
-returns unusable output. They read the question text only.
+Rule-based presentation types with confidence, plus the hard guards.
 
-Two rules also guard LLM answers (see classifier.py), because the requirements
-make them non-negotiable: a declined forecast is never requested, and "only
-<format>" returns exactly the named formats.
+Formats come from one of two places, read from the question text only:
+  * formats the user names ("as a pie chart", "a table")   -> confidence 0.95
+  * otherwise the formats that suit the rule intent        -> the intent's confidence
+
+The guards apply to every answer, whichever source produced it, because the
+requirements make them non-negotiable: a declined forecast is never requested,
+"only <format>" returns exactly the named formats, and an excluded format
+("no table") is never returned.
 """
 
 import re
 from typing import List, Optional, Tuple
 
+EXPLICIT_FORMAT_CONFIDENCE = 0.95
+
 # --------------------------------------------------------------------------
-# Prediction
+# Prediction decline (hard guard)
 # --------------------------------------------------------------------------
 
 _FORECAST_WORDS = (
@@ -23,13 +29,6 @@ PREDICTION_DECLINED = re.compile(
     r"\b(?:no|not|without|never|skip|skipping|exclude|excluding|omit|omitting|"
     r"leave out|don'?t|doesn'?t|no need (?:for|to))\s+(?:\w+\s+){0,3}?"
     + _FORECAST_WORDS + r"\b"
-)
-
-PREDICTION_REQUESTED = re.compile(
-    r"\b(?:forecast\w*|predict\w*|projections?|projected|extrapolat\w*|outlook)\b"
-    r"|\bproject\s+(?:the|our|my|future|next|for|forward|ahead|how)\b"
-    r"|\bwhat will\b|\bhow (?:many|much)\b(?:\s+\w+){0,4}?\s+will\b"
-    r"|\bexpected to\b|\bin the future\b|\bfuture\b|\bgoing forward\b"
 )
 
 # --------------------------------------------------------------------------
@@ -76,45 +75,34 @@ _NEGATION = (
 _ONLY = re.compile(r"\b(?:only|just|solely|exclusively)\b")
 
 # --------------------------------------------------------------------------
-# Analytical shape of the question
+# Formats by intent
 # --------------------------------------------------------------------------
 
-_TIME_SERIES = re.compile(
-    r"\bover time\b|\btrend(?:s|ing)?\b|\btime[- ]series\b|\btimeline\b"
-    r"|\b(?:monthly|weekly|daily|yearly|annually|quarterly)\b"
-    r"|\b(?:per|by|each|every)\s+(?:day|week|month|quarter|year|date)\b"
-    r"|\b(?:month|year|quarter|week)[- ]over[- ](?:month|year|quarter|week)\b"
-    r"|\bover the (?:years|months|quarters|weeks)\b"
-    r"|\bgrowth\b|\b(?:grow|grew|grown|evolv\w*|evolution)\b"
-    r"|\bhow (?:has|have|did)\b(?:\s+\w+){0,6}?\s+chang\w*\b|\bchanges? over\b"
-)
+INTENT_FORMATS = {
+    "TREND_ANALYSIS": ["table", "line_chart"],
+    "ANOMALY_DETECTION": ["table", "line_chart"],
+    "COMPARISON": ["table", "bar_chart"],
+    "RANKING": ["table", "bar_chart"],
+    "DISTRIBUTION": ["table", "bar_chart"],
+    "PROPORTION": ["table", "pie_chart", "bar_chart"],
+    "CORRELATION": ["table", "summary"],
+    "KPI_SINGLE_VALUE": ["single_value"],
+    "DETAIL_LOOKUP": ["table"],
+}
 
-_DISTRIBUTION = re.compile(
-    r"\bdistribution\b|\bdistributed\b|\bbreak ?down\b|\bbroken down\b|\bshares?\b"
-    r"|\bproportions?\b|\bpercentages?\b|\bpercent\b|\bsplit\b|\bcomposition\b"
-    r"|\bmake-?up\b|\bratios?\b|\bmix\b"
-)
-_SCALAR_SHARE = re.compile(r"\bwhat (?:percentage|percent|proportion|share|fraction|ratio)\b")
-
-_COMPARISON = re.compile(
-    r"\bcompar\w*\b|\bversus\b|\bvs\b|\branking\b|\brank\b|\b(?:top|bottom) \d+\b"
-    r"|\bwhich \w+ (?:has|have|had) the (?:most|fewest|least|highest|lowest|largest|smallest)\b"
-    r"|\bdifference between\b"
-)
-
-_ORDERING = re.compile(
-    r"\b(?:sort|sorted|order|ordered|rank|ranked|arrange|arranged)\s+(?:them\s+)?by\s+\w+"
-    r"(?:\s+(?:asc|desc|ascending|descending))?"
-)
-_GROUPING = re.compile(r"\b(?:by|per|each|every|across|grouped by|broken down by)\s+(?!\d)\w+")
-
-# A forecast phrased as one number ("how many employees will we have next month?").
-_SCALAR_FORECAST = re.compile(r"\bhow (?:many|much)\b|\bwhat will (?:the |our |my )?(?:total|average|number|count)\b")
-
-_AGGREGATE = re.compile(
-    r"\bhow (?:many|much)\b|\bnumber of\b|\bcount\b|\btotal\b|\bsum\b|\baverage\b|\bavg\b"
-    r"|\bmean\b|\bmedian\b|\bmaximum\b|\bminimum\b|\bmax\b|\bmin\b|\bheadcount\b"
-)
+# Formats that can sensibly show each intent. Used to drop suggestions that do
+# not fit the final intent (a pie chart for a trend). table and summary fit all.
+_COMPATIBLE_EXTRA = {
+    "TREND_ANALYSIS": {"line_chart", "bar_chart"},
+    "ANOMALY_DETECTION": {"line_chart", "bar_chart"},
+    "COMPARISON": {"bar_chart"},
+    "RANKING": {"bar_chart"},
+    "DISTRIBUTION": {"bar_chart"},
+    "PROPORTION": {"pie_chart", "bar_chart"},
+    "CORRELATION": set(),
+    "KPI_SINGLE_VALUE": {"single_value", "bar_chart"},
+    "DETAIL_LOOKUP": set(),
+}
 
 
 def normalize(text: str) -> str:
@@ -123,13 +111,6 @@ def normalize(text: str) -> str:
 
 def prediction_declined(text: str) -> bool:
     return PREDICTION_DECLINED.search(normalize(text)) is not None
-
-
-def prediction_needed(text: str) -> bool:
-    lowered = normalize(text)
-    if PREDICTION_DECLINED.search(lowered):
-        return False
-    return PREDICTION_REQUESTED.search(lowered) is not None
 
 
 def _negated(lowered: str, pattern: re.Pattern) -> bool:
@@ -165,6 +146,10 @@ def _named_formats(lowered: str) -> Tuple[List[str], List[str], bool]:
     return requested, excluded, generic
 
 
+def excluded_formats(text: str) -> List[str]:
+    return _named_formats(normalize(text))[1]
+
+
 def explicit_only_formats(text: str) -> Optional[List[str]]:
     """Formats the user restricted the answer to ("show only a pie chart"), else None."""
     lowered = normalize(text)
@@ -174,61 +159,41 @@ def explicit_only_formats(text: str) -> Optional[List[str]]:
     return requested or None
 
 
-def _shape(lowered: str, predicting: bool) -> str:
-    grouped = _GROUPING.search(_ORDERING.sub(" ", lowered)) is not None
-    aggregate = _AGGREGATE.search(lowered) is not None
-
-    if _TIME_SERIES.search(lowered):
-        return "time"
-    if predicting:
-        return "scalar_forecast" if _SCALAR_FORECAST.search(lowered) and not grouped else "time"
-    if _SCALAR_SHARE.search(lowered) and not grouped:
-        return "scalar"
-    if _DISTRIBUTION.search(lowered):
-        return "distribution"
-    if _COMPARISON.search(lowered) or (aggregate and grouped):
-        return "comparison"
-    if aggregate:
-        return "scalar"
-    return "records"
+def default_formats(intent: str) -> List[str]:
+    return list(INTENT_FORMATS.get(intent, ["table"]))
 
 
-_SHAPE_FORMATS = {
-    "time": ["table", "line_chart"],
-    "scalar_forecast": ["single_value", "line_chart"],
-    "distribution": ["table", "pie_chart", "bar_chart"],
-    "comparison": ["table", "bar_chart"],
-    "scalar": ["single_value"],
-    "records": ["table"],
-}
+def rule_presentation_types(text: str, intent: str, intent_confidence: float) -> Tuple[List[str], float, bool]:
+    """
+    Return (presentation_types, confidence, named_by_user).
 
-# A generic "chart" or "graph" request takes the chart type that suits the shape.
-_SHAPE_CHARTS = {
-    "time": ["line_chart"],
-    "scalar_forecast": ["line_chart"],
-    "distribution": ["pie_chart", "bar_chart"],
-    "comparison": ["bar_chart"],
-    "scalar": ["bar_chart"],
-    "records": ["bar_chart"],
-}
-
-
-def classify(text: str) -> Tuple[List[str], bool]:
-    """Return (presentation_types, prediction_needed) from the question alone."""
+    Formats the user names are taken as given (0.95). A summary word on its own
+    adds `summary` to the intent's formats, and a generic "chart" picks the
+    chart types that suit the intent; in both cases the formats still depend on
+    the intent, so they carry the intent's confidence.
+    """
     lowered = normalize(text)
-    predicting = prediction_needed(text)
     requested, excluded, generic_chart = _named_formats(lowered)
-    shape = _shape(lowered, predicting)
+    defaults = default_formats(intent)
 
-    if requested or generic_chart:
-        # Explicit instructions take priority over the shape-based guidance.
-        types = list(requested)
-        if generic_chart:
-            types.extend(name for name in _SHAPE_CHARTS[shape] if name not in types)
+    named = [name for name in requested if name != "summary"]
+    if named:
+        types, confidence, by_user = list(requested), EXPLICIT_FORMAT_CONFIDENCE, True
+    elif generic_chart:
+        charts = [name for name in defaults if name in _CHART_TYPES] or ["bar_chart"]
+        types, confidence, by_user = charts + [n for n in requested if n not in charts], intent_confidence, False
     else:
-        types = list(_SHAPE_FORMATS[shape])
+        types = defaults + [n for n in requested if n not in defaults]
+        confidence, by_user = intent_confidence, False
 
     types = [name for name in types if name not in excluded]
     if not types:
         types = ["summary"] if "table" in excluded else ["table"]
-    return types, predicting
+    return types, round(confidence, 4), by_user
+
+
+def fit_to_intent(types: List[str], intent: str) -> List[str]:
+    """Drop formats that cannot show the intent; fall back to the intent's formats."""
+    allowed = {"table", "summary"} | _COMPATIBLE_EXTRA.get(intent, set())
+    kept = [name for name in types if name in allowed]
+    return kept or default_formats(intent)
