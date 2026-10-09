@@ -1,15 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '../App.jsx';
-import PresentationResult, { IntentPreview } from '../components/PresentationResult.jsx';
+import PresentationResult from '../components/PresentationResult.jsx';
+import IntentClassificationCard, { PRESENTATION_TYPE_LABELS } from '../components/IntentClassificationCard.jsx';
 
 // The browser supplies the operator's pasted context to the Node demo gateway.
 // The gateway validates it before generation, verification and masked execution.
 const SECURE_QUERY_URL = '/api/secure-query';
 const GENERATE_SQL_URL = '/api/generate-sql';
+const CLASSIFY_INTENT_URL = '/api/classify-intent';
 
 const MAX_FILE_BYTES = 256 * 1024; // matches the backend's JSON body limit
 const MAX_QUESTION_CHARS = 2000;
 const PIPELINE_TIMEOUT_MS = 120000; // LLM calls with self-refinement can be slow
+const CLASSIFY_DEBOUNCE_MS = 600;
+const CLASSIFY_TIMEOUT_MS = 40000;
+const NO_CLASSIFICATION = { status: 'idle', question: '', result: null, error: null };
 const KNOWN_STATEMENTS = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
 
 const SAMPLE_QUESTION = 'Show the first name, last name and work email of employees in my department';
@@ -29,9 +34,23 @@ function parseObject(label, text) {
   }
 }
 
-async function postJson(url, body, timeoutMs) {
+// The classification must match the question it was requested for; the model
+// cannot rewrite the question or choose formats outside the six allowed types.
+function classificationProblem(data, question) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return 'the response is not a JSON object';
+  if (data.nl_query !== question) return 'the response is for a different question';
+  const types = data.presentation_types;
+  if (!Array.isArray(types) || !types.length) return 'no presentation types were returned';
+  if (types.some((type) => !Object.hasOwn(PRESENTATION_TYPE_LABELS, type))) return 'an unsupported presentation type was returned';
+  if (new Set(types).size !== types.length) return 'duplicate presentation types were returned';
+  if (typeof data.prediction_needed !== 'boolean') return 'prediction_needed is not a Boolean';
+  return null;
+}
+
+async function postJson(url, body, timeoutMs, signal) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  signal?.addEventListener('abort', () => controller.abort(), { once: true });
   const started = performance.now();
   try {
     const response = await fetch(url, {
@@ -46,7 +65,7 @@ async function postJson(url, body, timeoutMs) {
     return { ok: response.ok, status: response.status, data, ms: Math.round(performance.now() - started) };
   } catch (error) {
     return {
-      ok: false, status: 0, data: null, network: true,
+      ok: false, status: 0, data: null, network: true, cancelled: Boolean(signal?.aborted),
       aborted: error.name === 'AbortError', ms: Math.round(performance.now() - started)
     };
   } finally {
@@ -411,6 +430,65 @@ export default function NlPipeline() {
 
   const setFile = (key) => (name) => setFiles((current) => ({ ...current, [key]: name }));
 
+  // ---- Intent classification: question only, stored apart from the SQL draft --
+  const [classification, setClassification] = useState(NO_CLASSIFICATION);
+  const classifyTimer = useRef(null);
+  const classifyController = useRef(null);
+  const classifySeq = useRef(0);
+  const trimmedQuestion = question.trim();
+
+  // Cancels the debounce and any in-flight request; a late response for an
+  // older question no longer matches classifySeq and is ignored.
+  const cancelClassification = () => {
+    clearTimeout(classifyTimer.current);
+    classifyController.current?.abort();
+    classifyController.current = null;
+    classifySeq.current += 1;
+  };
+
+  const runClassification = async (q) => {
+    cancelClassification();
+    const seq = classifySeq.current;
+    const controller = new AbortController();
+    classifyController.current = controller;
+    setClassification({ status: 'loading', question: q, result: null, error: null });
+    const res = await postJson(CLASSIFY_INTENT_URL, { nl_query: q }, CLASSIFY_TIMEOUT_MS, controller.signal);
+    if (seq !== classifySeq.current || res.cancelled) return;
+    classifyController.current = null;
+
+    const problem = res.ok ? classificationProblem(res.data, q) : null;
+    if (!res.ok || problem) {
+      const message = problem ? `The classifier response was rejected: ${problem}.` : describeError(res, CLASSIFY_TIMEOUT_MS);
+      setClassification({ status: 'error', question: q, result: null, error: message });
+      log('INTENT', 'error', `Intent classification failed after ${res.ms} ms: ${message}`, res.data || undefined);
+      return;
+    }
+    setClassification({ status: 'ready', question: q, result: res.data, error: null });
+    log('INTENT', 'success', `Question classified in ${res.ms} ms: ${res.data.presentation_types.map((type) => PRESENTATION_TYPE_LABELS[type]).join(', ')}; prediction needed: ${res.data.prediction_needed ? 'yes' : 'no'}.`, res.data);
+  };
+
+  useEffect(() => {
+    if (!trimmedQuestion || trimmedQuestion.length > MAX_QUESTION_CHARS) {
+      cancelClassification();
+      setClassification(NO_CLASSIFICATION);
+      return undefined;
+    }
+    setClassification({ status: 'pending', question: trimmedQuestion, result: null, error: null });
+    classifyTimer.current = setTimeout(() => runClassification(trimmedQuestion), CLASSIFY_DEBOUNCE_MS);
+    return cancelClassification;
+  }, [trimmedQuestion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Until the effect runs, a classification for the previous question is never shown or used.
+  const currentClassification = classification.question === trimmedQuestion ? classification : NO_CLASSIFICATION;
+  const classified = currentClassification.status === 'ready' && currentClassification.result?.nl_query === trimmedQuestion;
+
+  // Changing the question clears the draft and results; the effect above
+  // cancels the old classification and schedules a new one.
+  const changeQuestion = (value) => {
+    setQuestion(value);
+    if (value.trim() !== trimmedQuestion) invalidateDraft();
+  };
+
   const resetAll = () => {
     setQuestion(SAMPLE_QUESTION);
     setPolicyText('');
@@ -424,7 +502,7 @@ export default function NlPipeline() {
 
   // ---- Step 1: generate an editable draft without executing it ------------
   const submit = async () => {
-    if (busy) return;
+    if (busy || !classified) return;
     setGenerated(null); setSql(''); setGenError(null);
     clearVerification();
     log('STEP 1', 'info', 'Generate SQL clicked. Validating the question and the three JSON inputs.');
@@ -475,10 +553,7 @@ export default function NlPipeline() {
     const metadata = pipeline.generation?.metadata || {};
     log('NL-TO-SQL', 'success', `SQL generated through the backend gateway in ${res.ms} ms.`, predicted);
     log('NL-TO-SQL', 'info', `Tokens: ${metadata.total_tokens ?? '?'} (prompt ${metadata.prompt_tokens ?? '?'}, completion ${metadata.completion_tokens ?? '?'}) · refinement attempts: ${metadata.refinement_attempts ?? 0} · self-healed: ${metadata.healed ? 'yes' : 'no'}.`, metadata);
-    setGenerated({ sql: predicted, metadata, ms: res.ms, question: pipeline.question, userId: u.userId, context: { user: u, policy: policy.value, rules: rules.value }, injectedRules: pipeline.generation?.injectedRules, analysis: pipeline.analysis, analysisStatus: pipeline.analysisStatus });
-    log('INTENT', pipeline.analysis ? 'success' : 'warn', pipeline.analysis
-      ? `Intent: ${pipeline.analysis.intent.primary_intent}; response: ${pipeline.analysis.response_intent.intent}.`
-      : 'Intent analysis unavailable. Generation continued with the question and pasted NL-to-SQL rules.');
+    setGenerated({ sql: predicted, metadata, ms: res.ms, question: pipeline.question, userId: u.userId, context: { user: u, policy: policy.value, rules: rules.value }, injectedRules: pipeline.generation?.injectedRules });
     setSql(predicted);
     setGenState('pass');
     log('STEP 2', 'info', 'Review or edit the generated SQL, then click Validate & execute. Security and policy checks will run on the SQL in the editor before execution.');
@@ -544,7 +619,9 @@ export default function NlPipeline() {
   };
 
   const inspectState = !inspect ? (verifyState === 'loading' ? 'loading' : 'idle') : inspect.error ? 'fail' : 'pass';
+  const intentStepState = { pending: 'active', loading: 'active', ready: 'pass', error: 'fail' }[currentClassification.status] || 'idle';
   const steps = [
+    { label: 'Intent', state: intentStepState },
     { label: 'Inputs', state: genState === 'idle' ? 'active' : genState === 'invalid' ? 'fail' : 'pass' },
     { label: 'NL → SQL', state: genState === 'loading' ? 'active' : genState === 'pass' ? 'pass' : genState === 'fail' ? 'fail' : 'idle' },
     { label: 'Navodya', state: navodya ? (navodya.safe ? 'pass' : 'fail') : verifyState === 'loading' ? 'active' : 'idle' },
@@ -571,8 +648,8 @@ export default function NlPipeline() {
         <div className="page-heading">
           <div>
             <p className="kicker">End-to-end pipeline</p>
-            <h1>Generate SQL, review it, then execute</h1>
-            <p>Generate a SQL draft from your question, edit it below, then validate and execute it to see masked results.</p>
+            <h1>Classify, generate SQL, review it, then execute</h1>
+            <p>Your question is classified as you type. Then generate a SQL draft, edit it below, and validate and execute it to see masked results.</p>
           </div>
           <Stepper steps={steps} />
         </div>
@@ -589,12 +666,15 @@ export default function NlPipeline() {
 
               <label className="pl-label" htmlFor="pl-question">Natural language question</label>
               <textarea id="pl-question" className="pl-question" value={question} maxLength={MAX_QUESTION_CHARS} disabled={busy}
-                onChange={(event) => { setQuestion(event.target.value); invalidateDraft(); }} placeholder="e.g. Show employees who joined this year" />
+                onChange={(event) => changeQuestion(event.target.value)} placeholder="e.g. Show employees who joined this year" />
               <div className="pl-counter">{question.length} / {MAX_QUESTION_CHARS}</div>
               <div className="vp-examples" aria-label="Example questions">
-                {['How many employees are in my department?', 'List employee names and work emails in my department', 'Chart monthly new hires in my department and forecast the next 3 months'].map((example) =>
-                  <button key={example} type="button" className="pl-ghost" disabled={busy} onClick={() => { setQuestion(example); invalidateDraft(); }}>{example}</button>)}
+                {['How many employees are in my department?', 'Give me the gender distribution in my company', 'List employee names and work emails in my department', 'Chart monthly new hires in my department and forecast the next 3 months'].map((example) =>
+                  <button key={example} type="button" className="pl-ghost" disabled={busy} onClick={() => changeQuestion(example)}>{example}</button>)}
               </div>
+
+              <IntentClassificationCard status={currentClassification.status} result={currentClassification.result}
+                error={currentClassification.error} onRetry={() => runClassification(trimmedQuestion)} disabled={busy} />
 
               <div className="pl-json-grid">
                 <JsonUpload number="A" icon="file" title="User policy" description="Paste the policy to apply to this query"
@@ -607,8 +687,10 @@ export default function NlPipeline() {
 
               {genError && <div className="pl-banner fail"><Icon name="close" size={16} /> {genError}</div>}
               <div className="pl-actions">
-                <span className="pl-muted">Generate a draft, then review and edit the SQL in step 2.</span>
-                <button className="verify-button" type="button" onClick={submit} disabled={busy}>
+                <span className="pl-muted">{classified
+                  ? 'Generate a draft, then review and edit the SQL in step 2.'
+                  : 'Generate SQL is available once the current question has been classified.'}</span>
+                <button className="verify-button" type="button" onClick={submit} disabled={busy || !classified}>
                   <Icon name="bolt" size={17} /> {genState === 'loading' ? 'Generating SQL…' : 'Generate SQL'}
                 </button>
               </div>
@@ -633,7 +715,6 @@ export default function NlPipeline() {
                     <span className={generated.metadata.is_valid === false ? 'bad' : 'ok'}>Engine valid: {generated.metadata.is_valid === false ? 'no' : 'yes'}</span>
                     {generated.metadata.healed && <span className="ok">Self-healed</span>}
                   </div>
-                  <IntentPreview analysis={generated.analysis} status={generated.analysisStatus} />
                   {generated.injectedRules && <details><summary>NL-to-SQL rules sent</summary><pre>{typeof generated.injectedRules === 'string' ? generated.injectedRules : pretty(generated.injectedRules)}</pre></details>}
                   <label className="pl-label" htmlFor="pl-sql">SQL to validate and execute</label>
                   <textarea id="pl-sql" className="code-input sql-input" value={sql} spellCheck="false" aria-label="Generated SQL" disabled={busy}
@@ -680,7 +761,7 @@ export default function NlPipeline() {
 
       <footer>
         <span><Icon name="shield" size={14} /> Raw database rows stay in the backend; the browser receives masked values only.</span>
-        <span>NL-to-SQL → Navodya → SQLGlot → Policy → Read-only DB → PII mask</span>
+        <span>Intent → NL-to-SQL → Navodya → SQLGlot → Policy → Read-only DB → PII mask</span>
       </footer>
     </div>
   );

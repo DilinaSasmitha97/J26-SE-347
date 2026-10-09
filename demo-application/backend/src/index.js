@@ -13,6 +13,7 @@ const {
   getSecurityRuntimeHealth
 } = require('./services/secureQueryService');
 const presentationService = require('./services/presentationService');
+const intentClassificationService = require('./services/intentClassificationService');
 const { createResultStore } = require('./services/resultStore');
 
 function createEffectivePolicy(context, policy) {
@@ -118,6 +119,7 @@ async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
 function createApp(dependencies = {}) {
   const app = express();
   const presenter = dependencies.presentationService || presentationService;
+  const classifier = dependencies.intentClassificationService || intentClassificationService;
   const runMaskedQuery = dependencies.executeAndMask || executeAndMask;
   const verifyQuery = dependencies.verifySql || verifySql;
   const resultStore = dependencies.resultStore || createResultStore();
@@ -199,6 +201,28 @@ function createApp(dependencies = {}) {
     }
   });
 
+  // Classification reads only the question. It needs no user, policy or rules,
+  // and its result is never added to the SQL-generation request.
+  app.post('/api/classify-intent', async (req, res) => {
+    const request = intentClassificationService.validateClassificationRequest(req.body);
+    if (request.error) return res.status(400).json({ code: 'INVALID_REQUEST', message: request.error });
+
+    // Abort the upstream call when the browser cancels a superseded question.
+    const disconnected = new AbortController();
+    res.on('close', () => { if (!res.writableFinished) disconnected.abort(); });
+
+    try {
+      return res.json(await classifier.classifyIntent(request.value, { signal: disconnected.signal }));
+    } catch (error) {
+      if (disconnected.signal.aborted) return undefined;
+      console.error('Intent classification failed:', error.code || '', error.message);
+      return res.status(error.status || 502).json({
+        code: error.code || 'CLASSIFICATION_FAILED',
+        message: error.message || 'The question could not be classified.'
+      });
+    }
+  });
+
   app.post('/api/generate-sql', async (req, res) => {
     const started = Date.now();
     const context = validateContextRequest(req.body);
@@ -214,10 +238,8 @@ function createApp(dependencies = {}) {
     }
 
     try {
-      const understanding = await presenter.analyzeQuestion(question, user, effectivePolicy);
-      if (understanding.analysis?.response_intent?.is_data_request === false) {
-        return res.status(400).json({ code: 'NOT_A_DATA_REQUEST', message: 'Ask a question about the data, such as a count, trend, comparison or list.', ...understanding });
-      }
+      // Intent was classified in its own step (/api/classify-intent); generation
+      // neither repeats it nor returns a result that could replace it.
       const generation = await translateQuestion(question, rules);
       return res.json({
         status: 'GENERATED',
@@ -225,7 +247,6 @@ function createApp(dependencies = {}) {
         user,
         effectivePolicy,
         generation,
-        ...understanding,
         sql: generation.sql,
         elapsedMs: Date.now() - started
       });

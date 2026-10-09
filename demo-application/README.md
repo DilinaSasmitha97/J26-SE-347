@@ -6,7 +6,14 @@ Vonara's presentation/prediction service, and the React demonstration UI.
 
 ## Request flow
 
-`frontend -> backend -> Vonara intent analysis -> NL-to-SQL -> Navodya validation -> SQLGlot policy checks -> read-only database -> PII masking -> Vonara presentation/prediction -> frontend`
+`frontend -> backend -> intent classification (question only) -> [user clicks Generate SQL] -> NL-to-SQL -> Navodya validation -> SQLGlot policy checks -> read-only database -> PII masking -> Vonara presentation/prediction -> frontend`
+
+Intent classification is a separate step that runs before SQL generation. It
+reads only the question and returns recommended presentation types (`table`,
+`single_value`, `bar_chart`, `pie_chart`, `line_chart`, `summary`) and whether a
+forecast is requested. It uses no schema, policy, user claims or rules, so it
+works while those editors are empty. These are recommendations: whether the
+returned rows support a chart type or a forecast is decided after execution.
 
 The frontend calls only the Node backend. User policy, Authenticated user and
 NL-to-SQL rules start empty and remain editable. Paste or upload your own JSON;
@@ -21,13 +28,23 @@ Queries missing the supplied policy's required tenant/user filters are rejected.
 
 The gateway sends exactly two fields to the NL-to-SQL service: `user_query`
 (the question) and `injected_rules` (your pasted rules JSON object, or `null`).
-It does not append user-policy constraints or Vonara analysis hints. The SQL
+It does not append user-policy constraints, Vonara analysis hints or the
+intent classification. The SQL
 service formats the provided JSON for its model prompt and generates its own
 schema, entity and relationship hints internally. The submitted rules appear
 under the SQL draft without overwriting your editors. Editing any context field
 invalidates the draft. User policy is applied during SQL validation and execution.
 
-In the pipeline UI, click **Generate SQL** to create a draft, then review or edit
+In the pipeline UI, the question is classified about 600 ms after you stop
+typing. The intent card shows the recommended formats, **Prediction needed:
+Yes/No**, and the structured JSON. **Generate SQL** is enabled only after the
+current question has been classified; SQL is never generated automatically.
+Changing the question cancels the pending classification and clears its result,
+the SQL draft and execution results; late responses for an older question are
+ignored. Editing policy, user or rules invalidates the SQL draft but keeps the
+classification of an unchanged question.
+
+Click **Generate SQL** to create a draft, then review or edit
 the SQL in step 2. Click **Validate & execute** to run security and policy checks
 on that edited SQL before read-only execution and masking. Generation does not
 execute the query, and editing SQL clears results from the previous version.
@@ -79,11 +96,15 @@ require MySQL.
 
 ## Main endpoints
 
+- `POST /api/classify-intent`: `{ "nl_query": "..." }` (1-2,000 characters) →
+  `{ "nl_query", "presentation_types", "prediction_needed" }`. Needs no user,
+  policy or rules; only `nl_query` is forwarded to the presentation service's
+  `/api/v4/classify-intent`. The gateway rejects a response that does not echo
+  the question exactly, contains unknown or repeated types, or lacks a Boolean
+  `prediction_needed` (502). An unreachable classifier returns 503.
 - `POST /api/generate-sql`: generate a SQL draft from the question and pasted
-  NL-to-SQL rules for review, without execution. Returns
-  `analysis` and `analysisStatus`; questions identified as non-data requests are
-  rejected before generation. If analysis is unavailable, policy-grounded SQL
-  generation from the question and pasted rules remains available.
+  NL-to-SQL rules for review, without execution. It does not classify or
+  analyze the question and returns no classification.
 - `POST /api/secure-query`: authoritative generation, validation, policy check,
   optional read-only execution, classification and masking.
 - `GET /api/security-health`: database, NER and in-process validation health.

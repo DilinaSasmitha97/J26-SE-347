@@ -4,6 +4,7 @@ REST gateway for Component 4.
 Mirrors the conventions of Member 1's FastAPI gateway so the middleware chain
 exposes one consistent surface. Three endpoints:
 
+  POST /api/v4/classify-intent  Question-only presentation/prediction classification
   POST /api/v4/analyze    Part 1 only - called BEFORE SQL generation
   POST /api/v4/present    Full pipeline - called AFTER Member 2 returns rows
   POST /api/v4/simulate   Re-run a what-if against an existing result set
@@ -18,6 +19,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
 import input_adapter
+import intent_classification
 import llm
 import pipeline
 
@@ -108,8 +110,24 @@ def health() -> dict:
             "sarima": importlib.util.find_spec("statsmodels") is not None,
             "deterministic_fallback": True,
             "grounded_summary_verification": True,
+            "intent_classification": True,
         },
     }
+
+
+@app.post(
+    "/api/v4/classify-intent",
+    response_model=intent_classification.ClassifyIntentResponse,
+)
+def classify_intent(request: intent_classification.ClassifyIntentRequest) -> dict:
+    """
+    Recommend presentation types and say whether a forecast is requested.
+
+    Reads only the question: no schema, policy, user claims, SQL or rows. The
+    request model rejects any other field. Always answers; the deterministic
+    rules cover a missing provider key or unusable model output.
+    """
+    return intent_classification.classify_intent(request.nl_query)
 
 
 @app.post("/api/v4/analyze")

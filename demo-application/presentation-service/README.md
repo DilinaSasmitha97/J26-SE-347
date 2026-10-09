@@ -43,6 +43,13 @@ classification, set `PRESENTATION_USE_LLM=false` in `demo-application/.env`.
 
 Internal routes:
 
+- `POST /api/v4/classify-intent`: question-only classification into recommended
+  presentation types and a prediction flag (package `intent_classification/`).
+  The request accepts only `nl_query`; any other field is rejected (422). With a
+  provider key the LLM classifies (one attempt); missing keys, transport errors
+  or output outside the six allowed types fall back to deterministic rules. A
+  declined forecast ("without predictions") and "only <format>" always override
+  the model. The response echoes the submitted question unchanged.
 - `POST /api/v4/analyze`: question understanding before generation.
 - `POST /api/v4/present`: full processing of masked execution results.
 - `POST /api/v4/simulate`: a scenario over already-authorized masked rows.
@@ -68,7 +75,7 @@ Differences from the original prototype:
 From this folder, run the integration tests:
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest test_demo_integration -v
+.\.venv\Scripts\python.exe -m unittest test_demo_integration test_intent_classification -v
 ```
 
 Permissions come from the supplied policy JSON. No role policy files are loaded
