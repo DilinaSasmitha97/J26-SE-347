@@ -26,11 +26,13 @@ function post(server, path, body) {
 }
 
 test('separate generation and execution workflow', async (t) => {
-  const server = createApp({ presentationService: {
-    analyzeQuestion: async () => ({ analysis: { intent: { primary_intent: 'KPI_SINGLE_VALUE' },
-      response_intent: { is_data_request: true }, semantic_roles: { metrics: [{ table: 'employees', column: 'is_active', aggregation: 'COUNT' }] } }, analysisStatus: 'READY' }),
-    generationGuidance: () => { assert.fail('Vonara hints must not be used for SQL generation'); }
-  } }).listen(0, '127.0.0.1');
+  const server = createApp({
+    presentationService: {
+      analyzeQuestion: async () => { assert.fail('Generate SQL must not analyze the question again'); },
+      generationGuidance: () => { assert.fail('Vonara hints must not be used for SQL generation'); }
+    },
+    intentClassificationService: { classifyIntent: async () => { assert.fail('Generate SQL must not classify the question again'); } }
+  }).listen(0, '127.0.0.1');
   await once(server, 'listening');
   t.after(() => new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve())));
 
@@ -41,7 +43,7 @@ test('separate generation and execution workflow', async (t) => {
     return { ok: true, json: async () => ({ status: 'SUCCESS', predicted_sql: draft, metadata: { total_tokens: 25 } }) };
   });
 
-  await t.test('generation forwards only question and pasted JSON rules despite policy and Vonara analysis', async () => {
+  await t.test('generation forwards only question and pasted JSON rules and returns no classification', async () => {
     const response = await post(server, '/api/generate-sql', {
       question: ' Show employee names ', execute: true,
       policy, user, rules: { constraints: ['Sort employee names alphabetically.'] }
@@ -56,6 +58,9 @@ test('separate generation and execution workflow', async (t) => {
     assert.equal(response.body.generation.metadata.total_tokens, 25);
     assert.equal(response.body.decision, undefined);
     assert.equal(response.body.result, undefined);
+    for (const key of ['analysis', 'analysisStatus', 'presentation_types', 'prediction_needed']) {
+      assert.equal(response.body[key], undefined, `${key} must not come from generation`);
+    }
     assert.equal(calls.length, 1);
     assert.deepEqual(calls[0].body, { user_query: 'Show employee names',
       injected_rules: { constraints: ['Sort employee names alphabetically.'] } });

@@ -43,6 +43,25 @@ classification, set `PRESENTATION_USE_LLM=false` in `demo-application/.env`.
 
 Internal routes:
 
+- `POST /api/v4/classify-intent`: question-only classification (package
+  `intent_classification/`). Returns `nl_query` (echoed unchanged), `intent`,
+  `presentation_types` and `prediction_needed`. The request accepts only
+  `nl_query`; any other field is rejected (422). Rules run first, using the
+  stage-8 Vonara lexicon and confidence formula copied into
+  `intent_classification/vonara_rules.py`; formats follow the intent or the
+  formats the user names. A decision below 0.55 confidence is sent to the LLM
+  (one attempt), which replaces it only at 0.60 or more. No key, a transport
+  error or invalid output keeps the rule answers. A declined forecast and
+  "only <format>" always win. Each request logs one line with the confidences
+  and `classified_by` (rules, llm or rules+llm); confidences are never returned.
+- `POST /api/v4/render`: data presentation layer (package `data_presentation/`).
+  `{member2_result, user_query, intent, presentation_types}` → one view per
+  type, in order, each `available` or with a `reason`. Tables reuse
+  `response_renderer.build_table_block`; charts are Vega-Lite v5 built per
+  requested type (pie 2–8 non-negative slices, bar top 25, line needs a time
+  axis); the summary uses `summarization.summarize` with verified LLM narration
+  (`PRESENTATION_LLM_SUMMARY=false` keeps it to computed facts). No forecasting
+  code runs here.
 - `POST /api/v4/analyze`: question understanding before generation.
 - `POST /api/v4/present`: full processing of masked execution results.
 - `POST /api/v4/simulate`: a scenario over already-authorized masked rows.
@@ -68,7 +87,7 @@ Differences from the original prototype:
 From this folder, run the integration tests:
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest test_demo_integration -v
+.\.venv\Scripts\python.exe -m unittest test_demo_integration test_intent_classification test_data_presentation -v
 ```
 
 Permissions come from the supplied policy JSON. No role policy files are loaded

@@ -13,6 +13,7 @@ const {
   getSecurityRuntimeHealth
 } = require('./services/secureQueryService');
 const presentationService = require('./services/presentationService');
+const intentClassificationService = require('./services/intentClassificationService');
 const { createResultStore } = require('./services/resultStore');
 
 function createEffectivePolicy(context, policy) {
@@ -78,7 +79,7 @@ function validateVerificationRequest(body) {
 async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
   const validation = validateWithSecurityLayer(sql, policy);
   const validationCheck = {
-    label: 'Navodya AST safety',
+    label: 'SQL safety (AST) check',
     passed: validation.safe,
     status: validation.safe ? 'PASS' : 'FAIL',
     reason: validation.safe ? null : 'SECURITY_LAYER_REJECTED',
@@ -118,6 +119,7 @@ async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
 function createApp(dependencies = {}) {
   const app = express();
   const presenter = dependencies.presentationService || presentationService;
+  const classifier = dependencies.intentClassificationService || intentClassificationService;
   const runMaskedQuery = dependencies.executeAndMask || executeAndMask;
   const verifyQuery = dependencies.verifySql || verifySql;
   const resultStore = dependencies.resultStore || createResultStore();
@@ -163,6 +165,31 @@ function createApp(dependencies = {}) {
     }
   });
 
+  // Data presentation layer. Renders the masked result the gateway stored for
+  // this user and policy, in the formats the intent classification recommended.
+  app.post('/api/present-result', async (req, res) => {
+    const context = validateContextRequest(req.body);
+    if (context.error) return res.status(400).json({ code: 'INVALID_REQUEST', message: context.error });
+    const { user, effectivePolicy: policy } = context.value;
+    if (typeof req.body?.resultId !== 'string') {
+      return res.status(400).json({ code: 'INVALID_REQUEST', message: 'Provide the resultId of an executed query.' });
+    }
+    const classification = req.body?.classification ?? null;
+    if (classification !== null) {
+      const problem = intentClassificationService.classificationChoiceProblem(classification);
+      if (problem) return res.status(400).json({ code: 'INVALID_REQUEST', message: `Invalid classification: ${problem}.` });
+    }
+    const entry = resultStore.get(req.body.resultId, user, policy);
+    if (!entry) return res.status(404).json({ code: 'RESULT_UNAVAILABLE', message: 'This result expired or is unavailable for the current user and policy. Execute the query again.' });
+    try {
+      return res.json(await presenter.renderResult(entry, classification && {
+        intent: classification.intent, presentation_types: [...classification.presentation_types]
+      }));
+    } catch (error) {
+      return res.status(error.status || 502).json({ code: error.code || 'PRESENTATION_FAILED', message: error.message });
+    }
+  });
+
   app.get('/api/users', (req, res) => {
     res.json([]);
   });
@@ -199,6 +226,28 @@ function createApp(dependencies = {}) {
     }
   });
 
+  // Classification reads only the question. It needs no user, policy or rules,
+  // and its result is never added to the SQL-generation request.
+  app.post('/api/classify-intent', async (req, res) => {
+    const request = intentClassificationService.validateClassificationRequest(req.body);
+    if (request.error) return res.status(400).json({ code: 'INVALID_REQUEST', message: request.error });
+
+    // Abort the upstream call when the browser cancels a superseded question.
+    const disconnected = new AbortController();
+    res.on('close', () => { if (!res.writableFinished) disconnected.abort(); });
+
+    try {
+      return res.json(await classifier.classifyIntent(request.value, { signal: disconnected.signal }));
+    } catch (error) {
+      if (disconnected.signal.aborted) return undefined;
+      console.error('Intent classification failed:', error.code || '', error.message);
+      return res.status(error.status || 502).json({
+        code: error.code || 'CLASSIFICATION_FAILED',
+        message: error.message || 'The question could not be classified.'
+      });
+    }
+  });
+
   app.post('/api/generate-sql', async (req, res) => {
     const started = Date.now();
     const context = validateContextRequest(req.body);
@@ -214,10 +263,8 @@ function createApp(dependencies = {}) {
     }
 
     try {
-      const understanding = await presenter.analyzeQuestion(question, user, effectivePolicy);
-      if (understanding.analysis?.response_intent?.is_data_request === false) {
-        return res.status(400).json({ code: 'NOT_A_DATA_REQUEST', message: 'Ask a question about the data, such as a count, trend, comparison or list.', ...understanding });
-      }
+      // Intent was classified in its own step (/api/classify-intent); generation
+      // neither repeats it nor returns a result that could replace it.
       const generation = await translateQuestion(question, rules);
       return res.json({
         status: 'GENERATED',
@@ -225,7 +272,6 @@ function createApp(dependencies = {}) {
         user,
         effectivePolicy,
         generation,
-        ...understanding,
         sql: generation.sql,
         elapsedMs: Date.now() - started
       });
@@ -290,7 +336,11 @@ function createApp(dependencies = {}) {
 
       try {
         const result = await runMaskedQuery(sql, effectivePolicy, user);
-        const presentation = await presenter.presentResult(question, result, user, effectivePolicy);
+        // Prediction is off by default; results are shown through /api/present-result.
+        const predicting = presenter.predictionEnabled ? presenter.predictionEnabled() : true;
+        const presentation = predicting
+          ? await presenter.presentResult(question, result, user, effectivePolicy)
+          : { presentation: null, presentationStatus: 'SKIPPED' };
         const resultId = question ? resultStore.save({ user, policy: effectivePolicy, question, result }) : null;
         return res.json({
           ...baseResponse,

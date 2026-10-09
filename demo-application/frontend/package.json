@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:chart": "node scripts/check-presentation-chart.mjs"
+    "test:chart": "node scripts/check-presentation-chart.mjs",
+    "test:render": "node scripts/check-render-charts.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

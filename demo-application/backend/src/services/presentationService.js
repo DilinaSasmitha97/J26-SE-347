@@ -12,6 +12,9 @@ class PresentationError extends Error {
 
 function enabled() { return process.env.PRESENTATION_ENABLED !== 'false'; }
 function useLlm() { return process.env.PRESENTATION_USE_LLM !== 'false'; }
+// Prediction (forecasts, anomalies, what-if) is kept but off until it is
+// re-enabled; the data presentation layer works without it.
+function predictionEnabled() { return process.env.PRESENTATION_PREDICTION_ENABLED === 'true'; }
 
 // This metadata is read locally, never fetched from a browser or from an LLM.
 // The allowlist remains the authority even when a type is absent from the DDL.
@@ -126,6 +129,19 @@ async function presentResult(question, result, user, policy) {
   }
 }
 
+// Data presentation layer: the stored masked result in the classified formats.
+// Only the result kept by the gateway is sent; the browser never supplies rows.
+async function renderResult(entry, classification) {
+  const payload = await call('render', {
+    member2_result: entry.result,
+    user_query: entry.question || '',
+    intent: classification ? classification.intent : null,
+    presentation_types: classification ? classification.presentation_types : null
+  }, Number(process.env.PRESENTATION_RENDER_TIMEOUT_MS || 30000));
+  if (!Array.isArray(payload.views)) throw new PresentationError('INVALID_PRESENTATION', 'Invalid presentation contract.');
+  return payload;
+}
+
 async function simulateResult(entry, scenarioText, user, policy) {
   return call('simulate', {
     user_query: entry.question, member2_result: entry.result, scenario_text: scenarioText,
@@ -139,4 +155,4 @@ async function presentationHealth() {
   catch { return { status: 'unavailable' }; }
 }
 
-module.exports = { PresentationError, permittedSchema, trustedContext, generationGuidance, analyzeQuestion, presentResult, simulateResult, presentationHealth };
+module.exports = { PresentationError, permittedSchema, trustedContext, generationGuidance, analyzeQuestion, presentResult, renderResult, predictionEnabled, simulateResult, presentationHealth };

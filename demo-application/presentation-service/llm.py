@@ -81,7 +81,7 @@ def get_client():
                 raise LLMUnavailable("GROQ_API_KEY is not set in .env")
             from groq import Groq
 
-        _groq_client = Groq(api_key=key, timeout=15.0, max_retries=0)
+            _groq_client = Groq(api_key=key, timeout=15.0, max_retries=0)
         return _groq_client
 
     raise LLMUnavailable(f"No usable PRESENTATION_LLM_PROVIDER configured (got '{PROVIDER}')")

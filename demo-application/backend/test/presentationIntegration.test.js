@@ -34,6 +34,15 @@ async function serve(t, dependencies) {
   t.after(() => new Promise((resolve) => server.close(resolve)));
   return server;
 }
+// Prediction is off by default; tests of the prediction path switch it on.
+function withPrediction(t) {
+  const original = process.env.PRESENTATION_PREDICTION_ENABLED;
+  process.env.PRESENTATION_PREDICTION_ENABLED = 'true';
+  t.after(() => {
+    if (original === undefined) delete process.env.PRESENTATION_PREDICTION_ENABLED;
+    else process.env.PRESENTATION_PREDICTION_ENABLED = original;
+  });
+}
 const masked = {
   statementType: 'SELECT', columns: [{ name: 'work_email' }], rows: [['m***@example.com']],
   rowCount: 1, truncated: false, masking: { columns: [{ name: 'work_email', piiType: 'EMAIL' }], maskedCells: 1 }
@@ -85,6 +94,7 @@ test('generation guidance uses only schema-valid fields and keeps historical for
 });
 
 test('only server-masked rows reach presentation and simulation; identity tampering fails', async (t) => {
+  withPrediction(t);
   const calls = [];
   t.mock.method(global, 'fetch', async (url, options) => {
     const body = JSON.parse(options.body);
@@ -121,6 +131,7 @@ test('only server-masked rows reach presentation and simulation; identity tamper
 });
 
 test('presentation outage leaves masked execution successful', async (t) => {
+  withPrediction(t);
   t.mock.method(global, 'fetch', async () => { throw new Error('offline'); });
   const server = await serve(t, { verifySql: async () => decision, executeAndMask: async () => masked });
   const result = await post(server, '/api/secure-query', { ...context(), sql, question: 'List work emails', execute: true });
@@ -138,25 +149,20 @@ test('blocked SQL never executes or calls presentation', async (t) => {
   assert.equal(result.body.presentation, undefined);
 });
 
-test('invalid intent precondition stops generation; analysis outage forwards only question and provided rules', async (t) => {
+test('generation calls only the SQL service, even when the presentation service is offline', async (t) => {
   const calls = [];
-  let offline = false;
   t.mock.method(global, 'fetch', async (url, options) => {
     calls.push({ url, body: JSON.parse(options.body) });
-    if (url.endsWith('/analyze')) {
-      if (offline) throw new Error('offline');
-      return { ok: true, json: async () => ({ status: 'SUCCESS', analysis: { intent: {}, response_intent: { is_data_request: false } } }) };
-    }
+    if (url.includes('/api/v4/')) throw new Error('presentation offline');
     return { ok: true, json: async () => ({ status: 'SUCCESS', predicted_sql: sql }) };
   });
   const server = await serve(t);
-  assert.equal((await post(server, '/api/generate-sql', { ...context(), question: 'hello' })).body.code, 'NOT_A_DATA_REQUEST');
-  assert.equal(calls.length, 1);
-  offline = true;
   const result = await post(server, '/api/generate-sql', { ...context(), question: 'List employees' });
   assert.equal(result.body.status, 'GENERATED');
-  assert.equal(result.body.analysisStatus, 'UNAVAILABLE');
-  assert.deepEqual(calls[2].body, { user_query: 'List employees', injected_rules: null });
+  assert.equal(result.body.analysis, undefined);
+  assert.equal(result.body.analysisStatus, undefined);
+  assert.deepEqual(calls.map((call) => call.body), [{ user_query: 'List employees', injected_rules: null }]);
+  assert.doesNotMatch(calls[0].url, /\/api\/v4\//);
 });
 
 test('secure-query generation forwards only question and JSON rules and still checks supplied policy', async (t) => {

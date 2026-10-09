@@ -284,6 +284,7 @@ footer span { gap: 6px; }
 .pl-ghost:disabled { opacity: .5; cursor: default; }
 .pl-field-ok { display: flex; align-items: center; gap: 6px; margin: 9px 2px 0; color: var(--green); font-size: .7rem; }
 .pl-actions { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 16px; }
+.pl-action-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .pl-muted { color: var(--muted); font-size: .72rem; line-height: 1.5; margin: 0; }
 .pl-banner { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding: 10px 12px; border-radius: 8px; font-size: .76rem; font-weight: 600; }
 .pl-banner.fail { background: var(--red-soft); color: #a62c2c; }
@@ -322,6 +323,18 @@ footer span { gap: 6px; }
 .pl-chip { font-family: var(--mono); font-size: .62rem; padding: 2px 6px; border-radius: 5px; background: #eef2f0; color: #43514b; }
 .pl-chip.ok { background: var(--green-soft); color: var(--green-dark); }
 .pl-chip.bad { background: var(--red-soft); color: #a62c2c; font-weight: 600; }
+
+.pl-intent-card { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: #fff; margin: 4px 0 18px; display: grid; gap: 10px; }
+.pl-intent-card.is-pass { border-color: #b9dcc9; }
+.pl-intent-card.is-fail { border-color: #efc4c4; }
+.pl-intent-card .pl-result-head { margin-bottom: 0; }
+.pl-intent-card .pl-ghost { justify-self: start; }
+.pl-intent-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: .78rem; }
+.pl-intent-label { font-size: .7rem; font-weight: 800; color: #3a4842; min-width: 132px; }
+.pl-intent-types { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.pl-intent-types .pl-chip { font-size: .7rem; padding: 3px 8px; }
+.pl-intent-json summary { cursor: pointer; font-size: .72rem; font-weight: 700; color: var(--muted); }
+.pl-intent-json pre { margin: 8px 0 0; padding: 10px 12px; border-radius: 8px; background: #f8faf9; border: 1px solid #e8ecea; font-family: var(--mono); font-size: .68rem; overflow-x: auto; }
 
 .pl-log-panel { position: sticky; top: 90px; max-height: calc(100vh - 110px); min-height: 0; }
 .pl-log-panel .result-panel-header { min-height: 58px; }
