@@ -17,6 +17,13 @@
     "ADMIN": {
       "default": "clear",
       "SECRET": "redact"
+    },
+    "ANALYST": {
+      "default": "fpe",
+      "DATE_OF_BIRTH": "partial",
+      "SECRET": "redact",
+      "ADDRESS": "redact",
+      "UNVERIFIED": "redact"
     }
   },
   "columns": {
@@ -29,7 +36,8 @@
     },
     "employee_bank_accounts.account_number": {
       "MANAGER": "redact",
-      "EMPLOYEE": "redact"
+      "EMPLOYEE": "redact",
+      "ANALYST": "redact"
     }
   }
 }
