@@ -110,6 +110,7 @@ it('Continue to SQL sends exactly the question and rules, keeps the classificati
   expect(within(card()).getByText('Single value')).toBeTruthy();
 
   fireEvent.change(screen.getByLabelText('User policy'), { target: { value: JSON.stringify({ ...policy, version: 2 }) } });
+  expect(screen.getByLabelText('Generated SQL').value).toBe(sql);
   fireEvent.change(screen.getByLabelText('NL-to-SQL rules'), { target: { value: '{"constraints":[]}' } });
   expect(screen.queryByLabelText('Generated SQL')).toBeNull();
   expect(bodiesFor(fetch, CLASSIFY).length).toBe(1);
@@ -185,13 +186,13 @@ it('starts and resets with empty context fields and uses pasted rules without ov
   expect(screen.getByLabelText('NL-to-SQL rules').value).toBe(JSON.stringify(rules));
   expect(screen.getByText('NL-to-SQL rules sent').parentElement.querySelector('pre').textContent).toBe(JSON.stringify(rules, null, 2));
   fireEvent.change(screen.getByLabelText('User policy'), { target: { value: '{}' } });
-  expect(screen.queryByLabelText('Generated SQL')).toBeNull();
+  expect(screen.getByLabelText('Generated SQL').value).toBe(sql);
   fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
   for (const label of ['User policy', 'Authenticated user', 'NL-to-SQL rules']) expect(screen.getByLabelText(label).value).toBe('');
   expect(within(card()).queryByLabelText('Presentation types')).toBeNull();
 });
 
-it('question changes clear the classification and SQL draft; identity changes clear only the draft', async () => {
+it('question changes clear the classification and SQL draft; identity changes preserve both', async () => {
   vi.stubGlobal('fetch', fakeFetch());
   render(<NlPipeline />); await generate();
   typeQuestion('Show employees');
@@ -200,8 +201,68 @@ it('question changes clear the classification and SQL draft; identity changes cl
   expect(continueButton()).toBeNull();
   await generate();
   fireEvent.change(screen.getByLabelText('Authenticated user'), { target: { value: JSON.stringify({ userId: 'user-102-manager' }) } });
-  expect(screen.queryByLabelText('Generated SQL')).toBeNull();
+  expect(screen.getByLabelText('Generated SQL').value).toBe(sql);
   expect(within(card()).getByLabelText('Presentation types')).toBeTruthy();
+});
+
+it('retests the same edited SQL with each current policy and identity, clearing previous results without regeneration', async () => {
+  const fetch = fakeFetch(); vi.stubGlobal('fetch', fetch);
+  render(<NlPipeline />); await generate();
+  const edited = sql.replace('COUNT(*)', 'COUNT(id)');
+  fireEvent.change(screen.getByLabelText('Generated SQL'), { target: { value: edited } });
+  const validate = () => fireEvent.click(screen.getByRole('button', { name: 'Validate & execute' }));
+  const secureCalls = () => bodiesFor(fetch, '/api/secure-query');
+  validate();
+  await screen.findByLabelText('Results', {}, WAIT);
+
+  const testUser = { userId: 'user-102-manager', role: 'MANAGER', tenantId: 102 };
+  const testPolicy = { ...policy, policyId: 'test-policy', deniedColumns: ['employees.id'] };
+  // Exercise intermediate invalid text as well as a changed userId and tenant.
+  fireEvent.change(screen.getByLabelText('User policy'), { target: { value: '{' } });
+  expect(screen.queryByLabelText('Results')).toBeNull();
+  expect(screen.queryByLabelText('Direct answer')).toBeNull();
+  expect(screen.queryByText('Query approved')).toBeNull();
+  expect(screen.getByLabelText('Generated SQL').value).toBe(edited);
+  fireEvent.change(screen.getByLabelText('User policy'), { target: { value: JSON.stringify(testPolicy) } });
+  fireEvent.change(screen.getByLabelText('Authenticated user'), { target: { value: JSON.stringify(testUser) } });
+  validate();
+  await screen.findByLabelText('Results', {}, WAIT);
+  expect(secureCalls()[1]).toEqual({ sql: edited, question: 'How many employees?', user: testUser, policy: testPolicy, rules: null, execute: true });
+  expect(bodiesFor(fetch, PRESENT)[1]).toEqual({ resultId: 'result-1', user: testUser, policy: testPolicy, rules: null,
+    classification: { intent: 'KPI_SINGLE_VALUE', presentation_types: ['single_value'] } });
+
+  fireEvent.change(screen.getByLabelText('User policy'), { target: { value: JSON.stringify(policy) } });
+  fireEvent.change(screen.getByLabelText('Authenticated user'), { target: { value: JSON.stringify({ ...testUser, tenantId: 101 }) } });
+  validate();
+  await screen.findByLabelText('Results', {}, WAIT);
+  expect(secureCalls()[2]).toEqual({ sql: edited, question: 'How many employees?', user: { ...testUser, tenantId: 101 }, policy, rules: null, execute: true });
+  expect(screen.getByLabelText('Generated SQL').value).toBe(edited);
+  expect(bodiesFor(fetch, GENERATE)).toHaveLength(1);
+  expect(bodiesFor(fetch, CLASSIFY)).toHaveLength(1);
+});
+
+it('rejects invalid testing context without losing SQL or submitting a verification request', async () => {
+  const fetch = fakeFetch(); vi.stubGlobal('fetch', fetch);
+  render(<NlPipeline />); await generate();
+  const validate = () => fireEvent.click(screen.getByRole('button', { name: 'Validate & execute' }));
+  for (const text of ['{', '{}', '[]', '']) {
+    fireEvent.change(screen.getByLabelText('User policy'), { target: { value: text } });
+    validate();
+    expect(bodiesFor(fetch, '/api/secure-query')).toHaveLength(0);
+    expect(screen.getByLabelText('Generated SQL').value).toBe(sql);
+  }
+  fireEvent.change(screen.getByLabelText('User policy'), { target: { value: JSON.stringify(policy) } });
+  for (const text of ['{', '{}', '{"userId":" "}', '{"userId":123}']) {
+    fireEvent.change(screen.getByLabelText('Authenticated user'), { target: { value: text } });
+    validate();
+    expect(bodiesFor(fetch, '/api/secure-query')).toHaveLength(0);
+    expect(screen.getByLabelText('Generated SQL').value).toBe(sql);
+  }
+  fireEvent.change(screen.getByLabelText('Authenticated user'), { target: { value: JSON.stringify(user) } });
+  validate();
+  await screen.findByLabelText('Results', {}, WAIT);
+  expect(bodiesFor(fetch, '/api/secure-query')).toHaveLength(1);
+  expect(bodiesFor(fetch, GENERATE)).toHaveLength(1);
 });
 
 it('after execution shows the result in the classified formats, using the stored result', async () => {
