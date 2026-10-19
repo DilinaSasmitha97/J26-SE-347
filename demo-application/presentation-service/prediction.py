@@ -1332,6 +1332,24 @@ def _fit_sarima(values: list, horizon: int, period: int, confidence: float) -> t
         return None
 
 
+SARIMA_DIVERGENCE_FACTOR = 10.0
+
+
+def _sarima_diverged(values: list, fitted: list, skip: int) -> bool:
+    """
+    True when a SARIMA fit's in-sample values leave the data's own scale.
+
+    After the start-up span, a sound fit stays near the series. A fitted value
+    further from the observation than SARIMA_DIVERGENCE_FACTOR times the
+    series' whole range is a numerical failure, not a forecast error.
+    """
+    if not values or not fitted:
+        return False
+    scale = max(values) - min(values) or abs(max(values)) or 1.0
+    limit = SARIMA_DIVERGENCE_FACTOR * scale
+    return any(abs(f - a) > limit for a, f in zip(values[skip:], fitted[skip:]))
+
+
 def _accuracy(actual: list, fitted: list) -> tuple:
     """In-sample RMSE, MAE, MAPE over the overlapping span."""
     pairs = [(a, f) for a, f in zip(actual, fitted)]
@@ -1402,6 +1420,15 @@ def project_series(
             used = ForecastModel.EXPONENTIAL_SMOOTHING
             fallback_note = (f" [SARIMA took longer than {SARIMA_TIMEOUT_SECONDS:g}s; "
                              "fell back to exponential smoothing]")
+            fitted, forecasts = _fit_holt(values, horizon)
+        elif sarima and _sarima_diverged(values, sarima[0], seasonal_period + 1):
+            # A fit can converge to a near-unit-root MA term whose in-sample
+            # fitted values swing to +/-1e16 before settling; the forecast looks
+            # plausible but the residual band explodes (found on a monthly
+            # payroll series with a yearly bonus spike, MySQL HRMS data).
+            used = ForecastModel.EXPONENTIAL_SMOOTHING
+            fallback_note = (" [SARIMA fit was numerically unstable (in-sample fitted values "
+                             "diverged); fell back to exponential smoothing]")
             fitted, forecasts = _fit_holt(values, horizon)
         elif sarima:
             fitted, forecasts, lower_direct, upper_direct = sarima

@@ -82,6 +82,19 @@ describe('prediction card', () => {
     expect(within(panel()).getByRole('note').textContent).toMatch(/Anomalies were not checked/);
   });
 
+  it('shows one forecast per category for a multi-series result', () => {
+    const perType = { ...ready, readiness: { ...ready.readiness, verdict: 'MULTI_SERIES', reason: 'One series per employment_type.' },
+      forecast: { ...ready.forecast, generated: false, points: [] },
+      strategy_result: { executed: true, details: { categories: [
+        { category: 'PERMANENT', points: [{ label: '2026', predicted: 4.2, lower: 0.4, upper: 8 }] },
+        { category: 'INTERN', points: [{ label: '2026', predicted: 1, lower: 0, upper: 3.7 }] }] } } };
+    render(<PredictionCard status="ready" data={perType} />);
+    expect(screen.getByLabelText('Readiness').textContent).toBe('Forecast per category');
+    fireEvent.click(tab('Forecast table'));
+    const rows = within(within(panel()).getByRole('table', { name: 'Forecast table' })).getAllByRole('row');
+    expect(rows.map((row) => row.textContent)).toEqual(['CategoryPeriodPredictionLower boundUpper bound', 'PERMANENT20264.20.48', 'INTERN2026103.7']);
+  });
+
   it('anomaly-only questions get no forecast tabs', () => {
     const anomalyOnly = { ...ready, mode: 'ANOMALY_ONLY', readiness: { ...ready.readiness, verdict: 'NOT_REQUESTED' },
       forecast: { ...ready.forecast, generated: false, points: [] }, anomalies: { ...ready.anomalies, predictive_warnings: [] } };

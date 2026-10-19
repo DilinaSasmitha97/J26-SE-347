@@ -104,6 +104,13 @@ class ReadinessTests(RulesOnly):
         self.assertIn("at least", r["forecast"]["skipped_reason"])
         self.assertIsNone(r["chart"])
 
+    def test_an_empty_result_explains_that_no_history_was_returned(self):
+        r = run_prediction(table(["hire_year", "hires"], []), "TREND_ANALYSIS", True, "Predict yearly hires for the next 2 years")
+        self.assertEqual(r["readiness"]["verdict"], "INSUFFICIENT_POINTS")
+        self.assertIn("returned no rows", r["readiness"]["reason"])
+        self.assertIn("future dates", r["forecast"]["skipped_reason"])
+        self.assertFalse(r["forecast"]["generated"])
+
     def test_truncated_input_is_refused(self):
         r = run_prediction(table(TREND["columns"] and ["month", "hires"], TREND["rows"], truncated=True, row_count=500),
                            "TREND_ANALYSIS", True, "Forecast hires")
@@ -115,6 +122,28 @@ class ReadinessTests(RulesOnly):
         r = run_prediction(categories, "TREND_ANALYSIS", True, "Forecast headcount")
         self.assertFalse(r["forecast"]["generated"])
         self.assertFalse(r["readiness"]["is_ready"])
+
+
+class SarimaStabilityTests(unittest.TestCase):
+    def test_a_diverged_sarima_fit_is_detected(self):
+        import prediction
+        values = [500.0 + 10 * i for i in range(40)]
+        sane = [v + 3 for v in values]
+        exploded = sane[:20] + [1e16] + sane[21:]
+        self.assertFalse(prediction._sarima_diverged(values, sane, 13))
+        self.assertTrue(prediction._sarima_diverged(values, exploded, 13))
+        self.assertFalse(prediction._sarima_diverged(values, [1e16] * 13 + sane[13:], 13), "start-up span is ignored")
+
+    def test_project_series_falls_back_instead_of_returning_an_exploded_band(self):
+        import prediction
+        values = [700.0 + 5 * i + (600 if i % 12 == 2 else 0) for i in range(57)]
+        unstable = ([v + 1 for v in values[:13]] + [1e16 * (-1) ** i for i in range(13, 37)] + values[37:],
+                    [1355.0] * 3, None, None)
+        with patch.object(prediction, "_fit_sarima", return_value=unstable):
+            result = prediction.project_series(values, "SARIMA", 3)
+        self.assertEqual(result["model"], "EXPONENTIAL_SMOOTHING")
+        self.assertIn("numerically unstable", result["fallback_note"])
+        self.assertLess(max(result["upper"]), 10 * max(values))
 
 
 class AnomalyTests(RulesOnly):
