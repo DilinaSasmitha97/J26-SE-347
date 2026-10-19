@@ -87,6 +87,14 @@ def run_prediction(result, intent: Optional[str], prediction_needed: bool, quest
             input_info={"truncated": adapted.truncated, "row_count": adapted.row_count,
                         "rows_received": adapted.rows_received},
         )
+        if not rows:
+            # An empty result has no time axis, but "not temporal" hides the real
+            # cause: the SQL found no history (often a filter on future dates).
+            readiness.verdict = ReadinessVerdict.INSUFFICIENT_POINTS.value
+            readiness.is_ready = False
+            readiness.reason = ("The query returned no rows, so there is no history to forecast. "
+                                "A forecast needs past data: check that the SQL does not filter "
+                                "on future dates (such as joined_date >= today).")
     else:
         readiness.verdict = ReadinessVerdict.NOT_REQUESTED.value
         readiness.reason = ("No forecast was requested; anomalies are checked on the history."

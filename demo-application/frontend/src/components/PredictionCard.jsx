@@ -21,7 +21,28 @@ function ForecastChartView({ data }) {
   );
 }
 
-function ForecastTableView({ forecast }) {
+// Per-category forecasts (one series per category, e.g. hires per employment type).
+const categoryForecasts = (data) => (data.strategy_result?.executed && data.strategy_result.details?.categories) || [];
+
+function CategoryForecastTable({ categories, confidence }) {
+  return (
+    <>
+      <div className="pl-table-wrap">
+        <table className="pl-data-table" aria-label="Forecast table">
+          <thead><tr><th>Category</th><th>Period</th><th className="dp-num">Prediction</th><th className="dp-num">Lower bound</th><th className="dp-num">Upper bound</th></tr></thead>
+          <tbody>{categories.flatMap((category) => (category.points || []).map((point) => (
+            <tr key={`${category.category}-${point.label}`}><td>{category.category}</td><td>{point.label}</td>
+              <td className="dp-num">{cellText(point.predicted)}</td><td className="dp-num">{cellText(point.lower)}</td><td className="dp-num">{cellText(point.upper)}</td></tr>
+          )))}</tbody>
+        </table>
+      </div>
+      <p className="pl-muted">Each category is forecast separately. {Math.round(confidence * 100)}% prediction range.</p>
+    </>
+  );
+}
+
+function ForecastTableView({ forecast, categories = [] }) {
+  if (!forecast.generated && categories.length) return <CategoryForecastTable categories={categories} confidence={forecast.confidence_level || 0.95} />;
   if (!forecast.generated) return <div className="dp-unavailable" role="note"><strong>No forecast was produced.</strong><p>{forecast.skipped_reason}</p></div>;
   return (
     <>
@@ -109,7 +130,7 @@ export default function PredictionCard({ status, data, error, onRetry }) {
   const forecastMode = data.mode === 'FORECAST';
   const views = [
     { id: 'chart', label: forecastMode ? 'Forecast' : 'Anomaly chart', body: <ForecastChartView data={data} /> },
-    ...(forecastMode ? [{ id: 'table', label: 'Forecast table', body: <ForecastTableView forecast={data.forecast} /> }] : []),
+    ...(forecastMode ? [{ id: 'table', label: 'Forecast table', body: <ForecastTableView forecast={data.forecast} categories={categoryForecasts(data)} /> }] : []),
     { id: 'anomalies', label: 'Anomalies', body: <AnomaliesView anomalies={data.anomalies} /> },
     { id: 'method', label: 'Readiness & method', body: <MethodView data={data} /> },
     { id: 'summary', label: 'Summary', body: <SummaryView block={data.summary} /> }
@@ -120,7 +141,9 @@ export default function PredictionCard({ status, data, error, onRetry }) {
     if (event.key in moves) { event.preventDefault(); select(moves[event.key]); }
   };
   const verdict = data.readiness.verdict;
-  const tone = VERDICT_TONE[verdict] ?? 'bad';
+  const perCategory = categoryForecasts(data).length > 0;
+  // A result with one series per category is forecast per category, not refused.
+  const tone = perCategory ? 'ok' : VERDICT_TONE[verdict] ?? 'bad';
   const periods = PERIODS[data.forecast.granularity] || 'periods';
 
   return (
@@ -128,7 +151,7 @@ export default function PredictionCard({ status, data, error, onRetry }) {
       <div className="pl-result-head">
         <h3>{forecastMode ? 'Prediction' : 'Anomaly check'}
           {forecastMode && data.forecast.generated && <> · {data.forecast.horizon} {periods} ahead</>}</h3>
-        <span className={`pl-chip ${tone}`} aria-label="Readiness">{forecastMode ? capitalised(verdict) : 'History only'}</span>
+        <span className={`pl-chip ${tone}`} aria-label="Readiness">{!forecastMode ? 'History only' : perCategory ? 'Forecast per category' : capitalised(verdict)}</span>
       </div>
       {forecastMode && data.forecast.generated && <p className="pl-muted">Model: {words(data.forecast.model)} · strategy: {words(data.strategy.strategy)}</p>}
       <div className="dp-tabs" role="tablist" aria-label="Prediction views" onKeyDown={onKeyDown}>

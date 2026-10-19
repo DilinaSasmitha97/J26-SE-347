@@ -1,0 +1,281 @@
+CREATE TABLE tenants (
+    id BIGINT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    code VARCHAR(30) NOT NULL UNIQUE,
+    email VARCHAR(150),
+    phone VARCHAR(30),
+    address VARCHAR(255),
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE departments (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    code VARCHAR(40) NOT NULL,
+    description VARCHAR(255),
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_department_code (tenant_id, code),
+    KEY idx_departments_tenant (tenant_id),
+    CONSTRAINT fk_departments_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+);
+
+CREATE TABLE designations (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    title VARCHAR(120) NOT NULL,
+    code VARCHAR(40) NOT NULL,
+    level_no INT NOT NULL DEFAULT 1,
+    description VARCHAR(255),
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_designation_code (tenant_id, code),
+    KEY idx_designations_tenant (tenant_id),
+    CONSTRAINT fk_designations_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+);
+
+CREATE TABLE employees (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    employee_no VARCHAR(40) NOT NULL,
+    department_id BIGINT NOT NULL,
+    designation_id BIGINT NOT NULL,
+    first_name VARCHAR(80) NOT NULL,
+    middle_name VARCHAR(80),
+    last_name VARCHAR(80) NOT NULL,
+    gender ENUM('MALE','FEMALE','OTHER') NOT NULL,
+    date_of_birth DATE NOT NULL,
+    nic_number VARCHAR(30),
+    passport_number VARCHAR(30),
+    work_email VARCHAR(150),
+    personal_email VARCHAR(150),
+    address_line1 VARCHAR(150),
+    address_line2 VARCHAR(150),
+    city VARCHAR(80),
+    district VARCHAR(80),
+    postal_code VARCHAR(20),
+    employment_type ENUM('PERMANENT','CONTRACT','TEMPORARY','INTERN','PART_TIME') NOT NULL,
+    employment_status ENUM('ACTIVE','PROBATION','RESIGNED','TERMINATED','RETIRED') NOT NULL,
+    joined_date DATE NOT NULL,
+    confirmation_date DATE,
+    resignation_date DATE,
+    supervisor_id BIGINT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_employee_no (tenant_id, employee_no),
+    KEY idx_employees_tenant (tenant_id),
+    KEY idx_employees_department (department_id),
+    KEY idx_employees_designation (designation_id),
+    CONSTRAINT fk_employees_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_employees_department FOREIGN KEY (department_id) REFERENCES departments(id),
+    CONSTRAINT fk_employees_designation FOREIGN KEY (designation_id) REFERENCES designations(id),
+    CONSTRAINT fk_employees_supervisor FOREIGN KEY (supervisor_id) REFERENCES employees(id)
+);
+
+CREATE TABLE employee_phone_numbers (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    phone_type ENUM('MOBILE','HOME','WORK','EMERGENCY') NOT NULL,
+    phone_number VARCHAR(30) NOT NULL,
+    is_primary TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_emp_phone_tenant (tenant_id),
+    KEY idx_emp_phone_employee (employee_id),
+    CONSTRAINT fk_emp_phone_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_emp_phone_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
+CREATE TABLE employee_children (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    first_name VARCHAR(80) NOT NULL,
+    last_name VARCHAR(80) NOT NULL,
+    gender ENUM('MALE','FEMALE','OTHER') NOT NULL,
+    date_of_birth DATE NOT NULL,
+    relationship ENUM('SON','DAUGHTER','OTHER') NOT NULL,
+    is_dependent TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_children_tenant (tenant_id),
+    KEY idx_children_employee (employee_id),
+    CONSTRAINT fk_children_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_children_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
+CREATE TABLE employee_bank_accounts (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    bank_name VARCHAR(100) NOT NULL,
+    branch_name VARCHAR(100) NOT NULL,
+    branch_code VARCHAR(20),
+    account_number VARCHAR(40) NOT NULL,
+    account_holder_name VARCHAR(160) NOT NULL,
+    account_type ENUM('SAVINGS','CURRENT') NOT NULL DEFAULT 'SAVINGS',
+    is_primary TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_bank_tenant (tenant_id),
+    KEY idx_bank_employee (employee_id),
+    CONSTRAINT fk_bank_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_bank_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
+CREATE TABLE employee_salary (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    basic_salary DECIMAL(12,2) NOT NULL,
+    fixed_allowance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    transport_allowance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    meal_allowance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    other_allowance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    effective_from DATE NOT NULL,
+    effective_to DATE NULL,
+    currency CHAR(3) NOT NULL DEFAULT 'LKR',
+    status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_salary_tenant (tenant_id),
+    KEY idx_salary_employee (employee_id),
+    CONSTRAINT fk_salary_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_salary_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
+CREATE TABLE attendance (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    attendance_date DATE NOT NULL,
+    check_in_time TIME NULL,
+    check_out_time TIME NULL,
+    work_minutes INT NOT NULL DEFAULT 0,
+    late_minutes INT NOT NULL DEFAULT 0,
+    early_leave_minutes INT NOT NULL DEFAULT 0,
+    attendance_status ENUM('PRESENT','ABSENT','HALF_DAY','LEAVE','HOLIDAY','WEEKEND','WORK_FROM_HOME') NOT NULL,
+    check_in_method ENUM('BIOMETRIC','MOBILE','WEB','MANUAL') NULL,
+    check_out_method ENUM('BIOMETRIC','MOBILE','WEB','MANUAL') NULL,
+    remarks VARCHAR(255),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_attendance_day (tenant_id, employee_id, attendance_date),
+    KEY idx_attendance_tenant_date (tenant_id, attendance_date),
+    CONSTRAINT fk_attendance_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_attendance_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
+CREATE TABLE overtime_records (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    attendance_id BIGINT NULL,
+    overtime_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    ot_hours DECIMAL(6,2) NOT NULL,
+    hourly_rate DECIMAL(10,2) NOT NULL,
+    ot_multiplier DECIMAL(4,2) NOT NULL DEFAULT 1.50,
+    ot_amount DECIMAL(12,2) NOT NULL,
+    ot_type ENUM('NORMAL','WEEKEND','HOLIDAY','NIGHT') NOT NULL,
+    approval_status ENUM('PENDING','APPROVED','REJECTED','PAID') NOT NULL,
+    approved_by BIGINT NULL,
+    approved_at DATETIME NULL,
+    remarks VARCHAR(255),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_ot_tenant (tenant_id),
+    KEY idx_ot_employee (employee_id),
+    CONSTRAINT fk_ot_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_ot_employee FOREIGN KEY (employee_id) REFERENCES employees(id),
+    CONSTRAINT fk_ot_attendance FOREIGN KEY (attendance_id) REFERENCES attendance(id),
+    CONSTRAINT fk_ot_approver FOREIGN KEY (approved_by) REFERENCES employees(id)
+);
+
+CREATE TABLE payroll_periods (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    year_no INT NOT NULL,
+    month_no INT NOT NULL,
+    period_start DATE NOT NULL,
+    period_end DATE NOT NULL,
+    payment_date DATE NOT NULL,
+    status ENUM('DRAFT','PROCESSING','APPROVED','PAID','CLOSED') NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_payroll_period (tenant_id, year_no, month_no),
+    CONSTRAINT fk_payroll_period_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+);
+
+CREATE TABLE payroll (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    payroll_period_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    basic_salary DECIMAL(12,2) NOT NULL,
+    fixed_allowance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    transport_allowance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    meal_allowance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    other_allowance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    overtime_hours DECIMAL(8,2) NOT NULL DEFAULT 0,
+    overtime_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    bonus_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    gross_salary DECIMAL(12,2) NOT NULL,
+    epf_employee DECIMAL(12,2) NOT NULL DEFAULT 0,
+    epf_employer DECIMAL(12,2) NOT NULL DEFAULT 0,
+    etf_employer DECIMAL(12,2) NOT NULL DEFAULT 0,
+    tax_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    loan_deduction DECIMAL(12,2) NOT NULL DEFAULT 0,
+    advance_deduction DECIMAL(12,2) NOT NULL DEFAULT 0,
+    other_deduction DECIMAL(12,2) NOT NULL DEFAULT 0,
+    total_deductions DECIMAL(12,2) NOT NULL,
+    net_salary DECIMAL(12,2) NOT NULL,
+    payment_status ENUM('PENDING','APPROVED','PAID','FAILED') NOT NULL,
+    payment_method ENUM('BANK_TRANSFER','CASH','CHEQUE') NOT NULL DEFAULT 'BANK_TRANSFER',
+    payment_reference VARCHAR(80),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_payroll_employee_period (tenant_id, payroll_period_id, employee_id),
+    KEY idx_payroll_tenant (tenant_id),
+    KEY idx_payroll_employee (employee_id),
+    CONSTRAINT fk_payroll_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_payroll_period FOREIGN KEY (payroll_period_id) REFERENCES payroll_periods(id),
+    CONSTRAINT fk_payroll_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
+CREATE TABLE payroll_allowances (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    payroll_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    allowance_type ENUM('TRANSPORT','MEAL','PHONE','HOUSING','PERFORMANCE','TRAVEL','OTHER') NOT NULL,
+    description VARCHAR(255),
+    amount DECIMAL(12,2) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_allowance_tenant (tenant_id),
+    CONSTRAINT fk_allowance_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_allowance_payroll FOREIGN KEY (payroll_id) REFERENCES payroll(id),
+    CONSTRAINT fk_allowance_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
+CREATE TABLE payroll_deductions (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    payroll_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    deduction_type ENUM('EPF','TAX','LOAN','ADVANCE','LATE','NO_PAY','OTHER') NOT NULL,
+    description VARCHAR(255),
+    amount DECIMAL(12,2) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_deduction_tenant (tenant_id),
+    CONSTRAINT fk_deduction_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_deduction_payroll FOREIGN KEY (payroll_id) REFERENCES payroll(id),
+    CONSTRAINT fk_deduction_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
