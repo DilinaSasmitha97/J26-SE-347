@@ -54,6 +54,16 @@ Internal routes:
   error or invalid output keeps the rule answers. A declined forecast and
   "only <format>" always win. Each request logs one line with the confidences
   and `classified_by` (rules, llm or rules+llm); confidences are never returned.
+- `POST /api/v4/predict`: prediction layer (package `prediction_layer/`).
+  `{member2_result, user_query, intent, prediction_needed}`. Drives the
+  stage-2..8 modules from the intent classification instead of the old
+  analyzer: Stage 1 `map_intent_to_strategy`, Stage 2 `assess_readiness`,
+  Stage 3 `select_model` (benchmark guard), Stage 4 `generate_forecast` (95%
+  bands, horizon from the question), `strategies.execute`, Stage 5
+  `detect_anomalies(method="COMBINED")`, Stage 7 `summarize` with verified LLM
+  narration. Forecast charts extend the line chart with
+  `visualization.extend_with_forecast`. Modes: FORECAST, or ANOMALY_ONLY for an
+  anomaly question. No what-if simulation (Stage 6).
 - `POST /api/v4/render`: data presentation layer (package `data_presentation/`).
   `{member2_result, user_query, intent, presentation_types}` → one view per
   type, in order, each `available` or with a `reason`. Tables reuse
@@ -87,7 +97,7 @@ Differences from the original prototype:
 From this folder, run the integration tests:
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest test_demo_integration test_intent_classification test_data_presentation -v
+.\.venv\Scripts\python.exe -m unittest test_demo_integration test_intent_classification test_data_presentation test_prediction_layer -v
 ```
 
 Permissions come from the supplied policy JSON. No role policy files are loaded

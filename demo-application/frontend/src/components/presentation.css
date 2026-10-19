@@ -48,3 +48,13 @@
 /* vega-embed renders its container inline-block, which collapses
    width: "container" specs to 0 px; give it the full panel width. */
 .vp-chart-wrap .vega-embed { display: block; width: 100%; }
+
+/* Prediction layer card */
+.pr-card { border-top-color: #4c78a8; }
+.pr-card .pl-chip.warn { background: #fff4dc; color: #8a6200; }
+.pr-anomalies h4 { margin: 14px 0 6px; font-size: .78rem; }
+.pr-anomalies ul { margin: 0; padding-left: 18px; font-size: .76rem; line-height: 1.7; }
+.pr-anomalies small { color: var(--muted); }
+.pr-method dd { flex-direction: column; align-items: flex-start; }
+.pr-method dt { min-width: 0; }
+.pr-method ul { margin: 6px 0 0; padding-left: 16px; }

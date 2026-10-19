@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:chart": "node scripts/check-presentation-chart.mjs",
-    "test:render": "node scripts/check-render-charts.mjs"
+    "test:render": "node scripts/check-render-charts.mjs",
+    "test:forecast": "node scripts/check-forecast-charts.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

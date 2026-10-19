@@ -6,6 +6,7 @@ exposes one consistent surface. Three endpoints:
 
   POST /api/v4/classify-intent  Question-only presentation/prediction classification
   POST /api/v4/render     Data presentation: masked result in the classified formats
+  POST /api/v4/predict    Prediction layer: forecast, readiness, anomalies, verified summary
   POST /api/v4/analyze    Part 1 only - called BEFORE SQL generation
   POST /api/v4/present    Full pipeline - called AFTER Member 2 returns rows
   POST /api/v4/simulate   Re-run a what-if against an existing result set
@@ -17,7 +18,7 @@ Run:  uvicorn api:app --reload --port 8004
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 
 import data_presentation
 import input_adapter
@@ -25,6 +26,7 @@ import intent_classification
 from intent_classification.schema import Intent, PresentationType
 import llm
 import pipeline
+import prediction_layer
 
 app = FastAPI(
     title="Secure NLIDB - Presentation & Prediction Layer",
@@ -107,6 +109,17 @@ class RenderRequest(BaseModel):
         return value
 
 
+class PredictRequest(BaseModel):
+    """Masked result plus the classification that asked for a prediction."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    member2_result: Dict[str, Any]
+    user_query: str = Field(default="", max_length=2000)
+    intent: Intent
+    prediction_needed: StrictBool
+
+
 def _ctx(model: Optional[SecurityContext]) -> dict:
     return model.model_dump() if model else {}
 
@@ -173,6 +186,26 @@ def render(request: RenderRequest) -> dict:
         return {"status": "ERROR", "error_code": "INPUT_FORMAT_ERROR", "detail": str(exc)}
     except Exception as exc:  # noqa: BLE001
         return {"status": "ERROR", "error_code": "RENDER_FAILED", "detail": str(exc)}
+
+
+@app.post("/api/v4/predict")
+def predict(request: PredictRequest) -> dict:
+    """
+    Prediction layer: intent-to-strategy mapping, data readiness, model
+    selection, a confidence-bounded forecast, dual-dimension anomalies and a
+    verified unified summary. Runs for a forecast request, or for an anomaly
+    question on its own. No what-if simulation.
+    """
+    if prediction_layer.prediction_mode(request.intent, request.prediction_needed) is None:
+        return {"status": "ERROR", "error_code": "PREDICTION_NOT_REQUESTED",
+                "detail": "The classification asks for neither a forecast nor anomaly detection."}
+    try:
+        return prediction_layer.run_prediction(
+            request.member2_result, request.intent, request.prediction_needed, request.user_query)
+    except input_adapter.InputFormatError as exc:
+        return {"status": "ERROR", "error_code": "INPUT_FORMAT_ERROR", "detail": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "ERROR", "error_code": "PREDICTION_FAILED", "detail": str(exc)}
 
 
 @app.post("/api/v4/analyze")
