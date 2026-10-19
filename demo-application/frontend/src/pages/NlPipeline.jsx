@@ -640,17 +640,21 @@ export default function NlPipeline() {
   const verifySql = async () => {
     if (busy || !generated || !sql.trim()) return;
     clearVerification();
+    const policy = parseObject('User policy', policyText);
     const user = parseObject('Authenticated user', userText);
-    if (user.value?.userId && user.value.userId !== generated.userId) {
-      log('STEP 2', 'error', 'The selected identity changed. Generate a fresh SQL draft.');
-      invalidateDraft();
-      return;
-    }
-    if (user.error || !user.value?.userId || !sql.trim() || user.value.userId !== generated.userId) {
-      [user.error, !user.value?.userId && 'Authenticated user must contain userId.', !sql.trim() && 'SQL is empty.'].filter(Boolean).forEach((e) => log('STEP 2', 'error', e));
+    const rules = rulesText.trim() ? parseObject('NL-to-SQL rules', rulesText) : { value: null };
+    const problems = [
+      policy.error, user.error, rules.error,
+      policy.value && !Array.isArray(policy.value.allowedTables) && 'User policy must include an "allowedTables" array.',
+      user.value && (typeof user.value.userId !== 'string' || !user.value.userId.trim()) && 'Authenticated user must contain a non-empty userId.'
+    ].filter(Boolean);
+    if (problems.length) {
+      problems.forEach((message) => log('STEP 2', 'error', message));
       setVerifyState('fail');
       return;
     }
+    // Each test uses the current editors, independently of the generation context.
+    const context = { user: user.value, policy: policy.value, rules: rules.value };
     if (sql.trim() !== generated?.sql.trim()) {
       log('SECURITY', 'warn', 'The SQL was edited by hand after generation. The edited text is what gets verified.', sql);
     }
@@ -659,7 +663,7 @@ export default function NlPipeline() {
     const response = await postJson(SECURE_QUERY_URL, {
       sql: sql.trim(),
       question: generated.question,
-      ...generated.context,
+      ...context,
       execute: true
     }, PIPELINE_TIMEOUT_MS);
 
@@ -680,7 +684,7 @@ export default function NlPipeline() {
       `${check.label}: ${check.passed ? 'PASS' : 'FAIL'} - ${check.message}`, check.reason ? { reason: check.reason } : undefined));
     if (pipeline.status === 'COMPLETED') {
       setExecution({ result: pipeline.result });
-      setPresentation({ envelope: pipeline.presentation, status: pipeline.presentationStatus, error: pipeline.presentationError, resultId: pipeline.resultId, context: generated.context, question: pipeline.question });
+      setPresentation({ envelope: pipeline.presentation, status: pipeline.presentationStatus, error: pipeline.presentationError, resultId: pipeline.resultId, context, question: pipeline.question });
       if (pipeline.presentationStatus === 'READY') log('PREDICTION', 'success', 'Prediction analysis completed using masked results.');
       if (pipeline.resultId) presentResult({ resultId: pipeline.resultId, context: generated.context, classification: generated.classification });
       if (pipeline.resultId && wantsPrediction(generated.classification)) {
@@ -755,9 +759,9 @@ export default function NlPipeline() {
 
               <div className="pl-json-grid">
                 <JsonUpload number="A" icon="file" title="User policy" description="Paste the policy to apply to this query"
-                  text={policyText} onText={(value) => { setPolicyText(value); invalidateDraft(); }} fileName={files.policy} onFileName={setFile('policy')} log={log} disabled={busy} />
+                  text={policyText} onText={(value) => { setPolicyText(value); clearVerification(); }} fileName={files.policy} onFileName={setFile('policy')} log={log} disabled={busy} />
                 <JsonUpload number="B" icon="user" title="Authenticated user" description="Paste the identity claims used to resolve policy filters"
-                  text={userText} onText={(value) => { setUserText(value); invalidateDraft(); }} fileName={files.user} onFileName={setFile('user')} log={log} disabled={busy} />
+                  text={userText} onText={(value) => { setUserText(value); clearVerification(); }} fileName={files.user} onFileName={setFile('user')} log={log} disabled={busy} />
                 <JsonUpload number="C" icon="code" title="NL-to-SQL rules" description="Optional additional instructions for SQL generation"
                   text={rulesText} onText={(value) => { setRulesText(value); invalidateDraft(); }} fileName={files.rules} onFileName={setFile('rules')} log={log} disabled={busy} optional />
               </div>
@@ -811,6 +815,7 @@ export default function NlPipeline() {
                     {generated.metadata.healed && <span className="ok">Self-healed</span>}
                   </div>
                   {generated.injectedRules && <details><summary>NL-to-SQL rules sent</summary><pre>{typeof generated.injectedRules === 'string' ? generated.injectedRules : pretty(generated.injectedRules)}</pre></details>}
+                  <p className="pl-muted">For testing, change User policy or Authenticated user above, then click Validate &amp; execute again. The SQL stays in the editor; each run uses the current JSON and replaces the previous results.</p>
                   <label className="pl-label" htmlFor="pl-sql">SQL to validate and execute</label>
                   <textarea id="pl-sql" className="code-input sql-input" value={sql} spellCheck="false" aria-label="Generated SQL" disabled={busy}
                     onChange={(event) => { setSql(event.target.value); clearVerification(); }} />
