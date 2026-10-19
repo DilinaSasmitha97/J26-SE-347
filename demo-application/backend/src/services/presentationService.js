@@ -142,6 +142,21 @@ async function renderResult(entry, classification) {
   return payload;
 }
 
+// Prediction layer: forecast, readiness, anomalies and a verified summary for
+// the stored masked result. No what-if simulation.
+async function predictResult(entry, classification) {
+  const payload = await call('predict', {
+    member2_result: entry.result,
+    user_query: entry.question || '',
+    intent: classification.intent,
+    prediction_needed: classification.prediction_needed
+  }, Number(process.env.PRESENTATION_PREDICT_TIMEOUT_MS || 60000));
+  if (!payload.readiness || !payload.forecast || !payload.anomalies) {
+    throw new PresentationError('INVALID_PREDICTION', 'Invalid prediction contract.');
+  }
+  return payload;
+}
+
 async function simulateResult(entry, scenarioText, user, policy) {
   return call('simulate', {
     user_query: entry.question, member2_result: entry.result, scenario_text: scenarioText,
@@ -155,4 +170,4 @@ async function presentationHealth() {
   catch { return { status: 'unavailable' }; }
 }
 
-module.exports = { PresentationError, permittedSchema, trustedContext, generationGuidance, analyzeQuestion, presentResult, renderResult, predictionEnabled, simulateResult, presentationHealth };
+module.exports = { PresentationError, permittedSchema, trustedContext, generationGuidance, analyzeQuestion, presentResult, renderResult, predictResult, predictionEnabled, simulateResult, presentationHealth };

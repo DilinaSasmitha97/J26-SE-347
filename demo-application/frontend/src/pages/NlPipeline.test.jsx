@@ -12,6 +12,14 @@ const sql = 'SELECT COUNT(*) AS headcount FROM employees WHERE tenant_id = 101 A
 const CLASSIFY = '/api/classify-intent';
 const GENERATE = '/api/generate-sql';
 const PRESENT = '/api/present-result';
+const PREDICT = '/api/predict-result';
+const predicted = { status: 'SUCCESS', mode: 'FORECAST', intent: 'TREND_ANALYSIS', horizon: { value: 3, unit: 'MONTH', source: 'EXPLICIT' },
+  strategy: { strategy: 'TEMPORAL_FORECAST', rationale: 'A measure tracked over time extends into future periods.' },
+  readiness: { verdict: 'READY', reason: 'Ready.', warnings: [], checks: [] }, model: { model: 'HOLT', reason: 'Trend present.' },
+  forecast: { generated: true, model: 'HOLT', model_reason: 'Trend present.', granularity: 'MONTH', horizon: 3, confidence_level: 0.95,
+    points: [{ label: 'Jan 2025', predicted: 12, lower_bound: 10, upper_bound: 14 }], skipped_reason: '' },
+  anomalies: { evaluated: true, historical_anomalies: [], predictive_warnings: [], skipped_reason: '' },
+  strategy_result: { executed: true }, chart: null, chart_reason: 'none', summary: { text: 'Hires rise.', mode: 'DETERMINISTIC', claims: [] } };
 const rendered = { status: 'SUCCESS', source: 'classification', intent: 'KPI_SINGLE_VALUE', row_count: 1, views: [
   { type: 'single_value', label: 'Single value', available: true, reason: '', notes: [], block: { label: 'Headcount', display_value: '7' } },
   { type: 'table', label: 'Table', available: true, reason: '', notes: [], block: { columns: [{ name: 'headcount', label: 'Headcount', align: 'right' }], rows: [{ headcount: 7 }], row_count: 1 } }
@@ -28,6 +36,7 @@ function fakeFetch(classify = (body) => reply(classified(body.nl_query))) {
     const body = JSON.parse(options.body);
     if (url === CLASSIFY) return classify(body, options);
     if (url === PRESENT) return reply(rendered);
+    if (url === PREDICT) return reply(predicted);
     return reply(url === GENERATE
       ? { sql, question: 'How many employees?', user, effectivePolicy: policy, generation: { metadata: {}, injectedRules: body.rules } }
       : { status: 'COMPLETED', question: 'How many employees?', user, effectivePolicy: policy, resultId: 'result-1',
@@ -273,7 +282,8 @@ it('after execution shows the result in the classified formats, using the stored
   await waitFor(() => expect(within(results).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Single value', 'Table']), WAIT);
   expect(within(results).getByRole('tabpanel').textContent).toContain('Headcount7');
   expect(bodiesFor(fetch, PRESENT)).toEqual([{ resultId: 'result-1', user, policy, rules: null,
-    classification: { intent: 'KPI_SINGLE_VALUE', presentation_types: ['single_value'] } }]);
+    classification: { intent: 'KPI_SINGLE_VALUE', presentation_types: ['single_value'], prediction_needed: false } }]);
+  expect(bodiesFor(fetch, PREDICT)).toEqual([]);
   expect(JSON.stringify(bodiesFor(fetch, PRESENT))).not.toContain('rows');
 
   fireEvent.change(screen.getByLabelText('Generated SQL'), { target: { value: sql.replace('COUNT(*)', 'COUNT(id)') } });
@@ -293,4 +303,25 @@ it('without a classification asks for formats chosen from the data', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Validate & execute' }));
   await waitFor(() => expect(bodiesFor(fetch, PRESENT)).toHaveLength(1), WAIT);
   expect(bodiesFor(fetch, PRESENT)[0].classification).toBeNull();
+});
+
+it('a forecast question also runs the prediction layer on the stored result', async () => {
+  const forecastQuestion = 'Forecast monthly hires for the next 3 months';
+  const fetch = fakeFetch((body) => reply(classified(body.nl_query, 'TREND_ANALYSIS', ['table', 'line_chart'], true)));
+  vi.stubGlobal('fetch', fetch);
+  render(<NlPipeline />);
+  fireEvent.change(screen.getByLabelText('User policy'), { target: { value: JSON.stringify(policy) } });
+  fireEvent.change(screen.getByLabelText('Authenticated user'), { target: { value: JSON.stringify(user) } });
+  await classify(forecastQuestion);
+  fireEvent.click(continueButton());
+  await waitFor(() => expect(screen.getByLabelText('Generated SQL').value).toBe(sql));
+  fireEvent.click(screen.getByRole('button', { name: 'Validate & execute' }));
+  const card = await screen.findByLabelText('Prediction', {}, WAIT);
+  await waitFor(() => expect(within(card).getAllByRole('tab').map((t) => t.textContent))
+    .toEqual(['Forecast', 'Forecast table', 'Anomalies', 'Readiness & method', 'Summary']), WAIT);
+  expect(bodiesFor(fetch, PREDICT)).toEqual([{ resultId: 'result-1', user, policy, rules: null,
+    classification: { intent: 'TREND_ANALYSIS', presentation_types: ['table', 'line_chart'], prediction_needed: true } }]);
+
+  fireEvent.change(screen.getByLabelText('Generated SQL'), { target: { value: sql.replace('COUNT(*)', 'COUNT(id)') } });
+  expect(screen.queryByLabelText('Prediction')).toBeNull();
 });

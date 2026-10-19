@@ -17,8 +17,23 @@ shown only if every number in it matches those facts; otherwise the facts are
 shown as written. A recommended format the actual rows cannot support (a pie
 chart of 50 departments, a single value from 12 rows) keeps its tab and explains
 why. Without a classification (Continue without classification) the formats are
-chosen from the shape of the data. Prediction is kept but switched off
-(`PRESENTATION_PREDICTION_ENABLED=false`) and will be enabled later.
+chosen from the shape of the data.
+
+When the classification asks for a forecast (`prediction_needed`), or the
+question is about anomalies (`ANOMALY_DETECTION`), the page also calls
+`POST /api/predict-result`. The prediction layer maps the intent to a
+predictive strategy, checks data readiness (points, missing periods,
+stationarity, signal quality, truncation) and refuses with a reason when the
+data cannot support a forecast. Otherwise it selects a model (linear regression,
+Holt, SARIMA, seasonal naive or naive, kept only if it beats the naive
+benchmarks on the series' own history) and forecasts the requested horizon
+("next 6 months"; 3 periods by default) with 95% prediction bands. It also flags
+historical anomalies and predicted threshold breaches (IQR fence + Z-score) and
+writes a unified historical + predictive summary whose numbers are verified.
+The result appears in a separate Prediction card with Forecast, Forecast table,
+Anomalies, Readiness & method and Summary tabs. What-if simulation is not part
+of this flow. The older all-in-one prediction pipeline stays switched off
+(`PRESENTATION_PREDICTION_ENABLED=false`).
 
 Intent classification is a separate step that runs before SQL generation. It
 reads only the question and returns the analytical intent (one of
@@ -127,6 +142,12 @@ require MySQL.
   `/api/v4/classify-intent`. The gateway rejects a response that does not echo
   the question exactly, has an unknown intent, contains unknown or repeated types, or lacks a Boolean
   `prediction_needed` (502). An unreachable classifier returns 503.
+- `POST /api/predict-result`: `{ user, policy, resultId, classification }` where
+  `classification` is `{ intent, presentation_types, prediction_needed }`.
+  Runs only for a forecast request or an `ANOMALY_DETECTION` intent (400
+  `PREDICTION_NOT_REQUESTED` otherwise), on the masked result stored for that
+  user and policy (404 otherwise). Returns `{ mode, strategy, readiness, model,
+  forecast, anomalies, chart, summary }`.
 - `POST /api/present-result`: `{ user, policy, resultId, classification }` →
   `{ source, intent, row_count, views: [{ type, label, available, reason, notes, block }] }`.
   Renders only the masked result the gateway stored for that user and policy
@@ -172,6 +193,8 @@ The frontend build preserves existing output files (`emptyOutDir: false`).
 With the presentation service running, `npm run test:chart --prefix .\frontend`
 also compiles and renders real API forecast/scenario charts to SVG using the
 frontend's installed Vega stack and synthetic validation rows, and
+`npm run test:forecast --prefix .\frontend` renders the prediction layer's
+forecast and anomaly charts, and
 `npm run test:render --prefix .\frontend` does the same for every bar, pie and
 line chart the data presentation layer returns.
 

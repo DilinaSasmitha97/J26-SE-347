@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '../App.jsx';
 import PresentationResult from '../components/PresentationResult.jsx';
 import DataPresentation from '../components/DataPresentation.jsx';
+import PredictionCard from '../components/PredictionCard.jsx';
 import IntentClassificationCard, { INTENT_LABELS, PRESENTATION_TYPE_LABELS } from '../components/IntentClassificationCard.jsx';
 
 // The browser supplies the operator's pasted context to the Node demo gateway.
@@ -10,6 +11,7 @@ const SECURE_QUERY_URL = '/api/secure-query';
 const GENERATE_SQL_URL = '/api/generate-sql';
 const CLASSIFY_INTENT_URL = '/api/classify-intent';
 const PRESENT_RESULT_URL = '/api/present-result';
+const PREDICT_RESULT_URL = '/api/predict-result';
 
 const MAX_FILE_BYTES = 256 * 1024; // matches the backend's JSON body limit
 const MAX_QUESTION_CHARS = 2000;
@@ -18,6 +20,10 @@ const CLASSIFY_TIMEOUT_MS = 40000;
 const NO_CLASSIFICATION = { status: 'idle', question: '', result: null, error: null };
 const PRESENT_TIMEOUT_MS = 45000; // includes the verified AI summary
 const NO_DISPLAY = { status: 'idle', data: null, error: null, request: null };
+const PREDICT_TIMEOUT_MS = 70000; // model fitting + verified AI summary
+// The prediction layer runs for a forecast request or an anomaly question.
+const wantsPrediction = (classification) => Boolean(classification
+  && (classification.prediction_needed || classification.intent === 'ANOMALY_DETECTION'));
 const KNOWN_STATEMENTS = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
 
 const SAMPLE_QUESTION = 'Show the first name, last name and work email of employees in my department';
@@ -418,12 +424,15 @@ export default function NlPipeline() {
   const [presentation, setPresentation] = useState(null); // prediction envelope, when enabled
   const [display, setDisplay] = useState(NO_DISPLAY);     // data presentation layer
   const displaySeq = useRef(0);
+  const [prediction, setPrediction] = useState(NO_DISPLAY); // prediction layer
+  const predictionSeq = useRef(0);
   const [verifiedPolicy, setVerifiedPolicy] = useState(null);
   const busy = genState === 'loading' || verifyState === 'loading';
 
   const clearVerification = () => {
     setVerifyState('idle'); setInspect(null); setVerify(null); setSqlSafety(null); setExecution(null); setVerifiedPolicy(null); setPresentation(null);
     displaySeq.current += 1; setDisplay(NO_DISPLAY);
+    predictionSeq.current += 1; setPrediction(NO_DISPLAY);
   };
 
   const invalidateDraft = () => {
@@ -571,7 +580,7 @@ export default function NlPipeline() {
     log('NL-TO-SQL', 'info', `Tokens: ${metadata.total_tokens ?? '?'} (prompt ${metadata.prompt_tokens ?? '?'}, completion ${metadata.completion_tokens ?? '?'}) · refinement attempts: ${metadata.refinement_attempts ?? 0} · self-healed: ${metadata.healed ? 'yes' : 'no'}.`, metadata);
     setGenerated({ sql: predicted, metadata, ms: res.ms, question: pipeline.question, userId: u.userId, context: { user: u, policy: policy.value, rules: rules.value }, injectedRules: pipeline.generation?.injectedRules,
       // Kept apart from the SQL request; used only to present the executed result.
-      classification: withoutClassification ? null : { intent: currentClassification.result.intent, presentation_types: [...currentClassification.result.presentation_types] } });
+      classification: withoutClassification ? null : { intent: currentClassification.result.intent, presentation_types: [...currentClassification.result.presentation_types], prediction_needed: currentClassification.result.prediction_needed } });
     setSql(predicted);
     setGenState('pass');
     log('STEP 2', 'info', 'Review or edit the generated SQL, then click Validate & execute. Security and policy checks will run on the SQL in the editor before execution.');
@@ -579,6 +588,32 @@ export default function NlPipeline() {
   };
 
   // ---- Step 3: show the masked result in the classified formats ------------
+  // ---- Step 4: forecast / anomalies for the same stored result -------------
+  const predictResult = async (request) => {
+    const seq = ++predictionSeq.current;
+    setPrediction({ status: 'loading', data: null, error: null, request });
+    const { resultId, context, classification } = request;
+    log('PREDICTION', 'info', classification.prediction_needed
+      ? 'Forecast requested: checking data readiness, selecting a model and forecasting.'
+      : 'Anomaly question: checking the history for anomalies.');
+    const res = await postJson(PREDICT_RESULT_URL, { resultId, ...context, classification }, PREDICT_TIMEOUT_MS);
+    if (seq !== predictionSeq.current) return;
+    if (!res.ok || !res.data?.readiness) {
+      const message = describeError(res, PREDICT_TIMEOUT_MS);
+      setPrediction({ status: 'error', data: null, error: message, request });
+      log('PREDICTION', 'error', `Prediction failed after ${res.ms} ms: ${message}`, res.data || undefined);
+      return;
+    }
+    setPrediction({ status: 'ready', data: res.data, error: null, request });
+    const { forecast, readiness, anomalies } = res.data;
+    log('PREDICTION', forecast.generated || res.data.mode === 'ANOMALY_ONLY' ? 'success' : 'warn',
+      (forecast.generated
+        ? `Forecast ready in ${res.ms} ms: ${forecast.points.length} periods with ${forecast.model.toLowerCase().replaceAll('_', ' ')} (readiness ${readiness.verdict}).`
+        : res.data.mode === 'ANOMALY_ONLY' ? `Anomaly check done in ${res.ms} ms.` : `No forecast: ${forecast.skipped_reason || readiness.reason}`)
+      + (anomalies.evaluated ? ` ${anomalies.historical_anomalies.length} historical anomal${anomalies.historical_anomalies.length === 1 ? 'y' : 'ies'}, ${anomalies.predictive_warnings.length} predicted breach(es).` : ''),
+    { readiness: readiness.verdict, model: forecast.model, strategy: res.data.strategy.strategy });
+  };
+
   const presentResult = async (request) => {
     const seq = ++displaySeq.current;
     setDisplay({ status: 'loading', data: null, error: null, request });
@@ -651,7 +686,10 @@ export default function NlPipeline() {
       setExecution({ result: pipeline.result });
       setPresentation({ envelope: pipeline.presentation, status: pipeline.presentationStatus, error: pipeline.presentationError, resultId: pipeline.resultId, context, question: pipeline.question });
       if (pipeline.presentationStatus === 'READY') log('PREDICTION', 'success', 'Prediction analysis completed using masked results.');
-      if (pipeline.resultId) presentResult({ resultId: pipeline.resultId, context, classification: generated.classification });
+      if (pipeline.resultId) presentResult({ resultId: pipeline.resultId, context: generated.context, classification: generated.classification });
+      if (pipeline.resultId && wantsPrediction(generated.classification)) {
+        predictResult({ resultId: pipeline.resultId, context: generated.context, classification: generated.classification });
+      }
       else log('PRESENTATION', 'warn', 'The gateway kept no result to present; the masked rows are shown below.');
       log('EXECUTION', 'success', `Read-only query returned ${pipeline.result.rowCount} row(s); ${pipeline.result.masking.maskedCells} cell(s) were masked before the response left the backend.`, pipeline.result.masking);
       if (pipeline.result.ner?.warnings?.length) pipeline.result.ner.warnings.forEach((warning) => log('NER', 'warn', warning));
@@ -673,7 +711,8 @@ export default function NlPipeline() {
     { label: 'SQLGlot', state: inspectState === 'loading' ? 'active' : inspectState },
     { label: 'Policy', state: verifyState === 'loading' && inspect ? 'active' : verifyState === 'pass' ? 'pass' : verifyState === 'fail' ? 'fail' : 'idle' },
     { label: 'Mask', state: execution?.result ? 'pass' : execution?.error ? 'fail' : 'idle' },
-    { label: 'Present', state: { loading: 'active', ready: 'pass', error: 'fail' }[display.status] || 'idle' }
+    { label: 'Present', state: { loading: 'active', ready: 'pass', error: 'fail' }[display.status] || 'idle' },
+    { label: 'Predict', state: { loading: 'active', ready: 'pass', error: 'fail' }[prediction.status] || 'idle' }
   ];
 
   return (
@@ -803,6 +842,8 @@ export default function NlPipeline() {
                       <DecisionCard verify={verify} />
                       <DataPresentation status={display.status} data={display.data} error={display.error}
                         onRetry={display.request ? () => presentResult(display.request) : undefined} />
+                      <PredictionCard status={prediction.status} data={prediction.data} error={prediction.error}
+                        onRetry={prediction.request ? () => predictResult(prediction.request) : undefined} />
                       {presentation?.envelope && <PresentationResult key={presentation.resultId || 'unavailable'} {...presentation}
                         onSimulate={presentation.resultId ? async (scenarioText) => {
                           const response = await postJson('/api/simulate', { resultId: presentation.resultId, ...presentation.context, scenarioText }, 65000);
@@ -824,7 +865,7 @@ export default function NlPipeline() {
 
       <footer>
         <span><Icon name="shield" size={14} /> Raw database rows stay in the backend; the browser receives masked values only.</span>
-        <span>Inputs → Intent → NL-to-SQL → SQL safety → SQLGlot → Policy → Read-only DB → PII mask → Present</span>
+        <span>Inputs → Intent → NL-to-SQL → SQL safety → SQLGlot → Policy → Read-only DB → PII mask → Present → Predict</span>
       </footer>
     </div>
   );

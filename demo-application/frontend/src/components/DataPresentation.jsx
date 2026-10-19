@@ -8,7 +8,7 @@ const SUMMARY_MODES = {
   DETERMINISTIC: { tone: '', text: 'Computed facts' }
 };
 
-const cellText = (value) => value == null || value === '' ? '—'
+export const cellText = (value) => value == null || value === '' ? '—'
   : typeof value === 'number' ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : String(value);
 
 function Notes({ notes }) {
@@ -46,7 +46,7 @@ function SingleValueView({ block }) {
   );
 }
 
-function SummaryView({ block }) {
+export function SummaryView({ block }) {
   const mode = SUMMARY_MODES[block.mode] || SUMMARY_MODES.DETERMINISTIC;
   return (
     <div className="dp-summary" aria-label="Summary">

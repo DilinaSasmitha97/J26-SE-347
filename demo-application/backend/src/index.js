@@ -190,6 +190,33 @@ function createApp(dependencies = {}) {
     }
   });
 
+  // Prediction layer. Forecast (prediction_needed) or anomaly detection
+  // (ANOMALY_DETECTION) over the masked result stored for this user and policy.
+  app.post('/api/predict-result', async (req, res) => {
+    const context = validateContextRequest(req.body);
+    if (context.error) return res.status(400).json({ code: 'INVALID_REQUEST', message: context.error });
+    const { user, effectivePolicy: policy } = context.value;
+    if (typeof req.body?.resultId !== 'string') {
+      return res.status(400).json({ code: 'INVALID_REQUEST', message: 'Provide the resultId of an executed query.' });
+    }
+    const classification = req.body?.classification;
+    const problem = intentClassificationService.classificationChoiceProblem(classification)
+      || (typeof classification?.prediction_needed !== 'boolean' ? 'classification.prediction_needed must be a Boolean' : null);
+    if (problem) return res.status(400).json({ code: 'INVALID_REQUEST', message: `Invalid classification: ${problem}.` });
+    if (!classification.prediction_needed && classification.intent !== 'ANOMALY_DETECTION') {
+      return res.status(400).json({ code: 'PREDICTION_NOT_REQUESTED', message: 'This question asks for neither a forecast nor anomaly detection.' });
+    }
+    const entry = resultStore.get(req.body.resultId, user, policy);
+    if (!entry) return res.status(404).json({ code: 'RESULT_UNAVAILABLE', message: 'This result expired or is unavailable for the current user and policy. Execute the query again.' });
+    try {
+      return res.json(await presenter.predictResult(entry, {
+        intent: classification.intent, prediction_needed: classification.prediction_needed
+      }));
+    } catch (error) {
+      return res.status(error.status || 502).json({ code: error.code || 'PREDICTION_FAILED', message: error.message });
+    }
+  });
+
   app.get('/api/users', (req, res) => {
     res.json([]);
   });
