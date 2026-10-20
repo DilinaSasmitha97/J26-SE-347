@@ -67,9 +67,8 @@ function serializeValidation(result) {
   };
 }
 
-function validateWithSecurityLayer(sql, policy) {
-  const allowlist = buildPolicyAllowlist(policy);
-  return serializeValidation(validate(sql, false, { allowlist }));
+function validateWithSecurityLayer(sql) {
+  return serializeValidation(validate(sql, false));
 }
 
 function policyToInjectedRules(policy) {
@@ -180,8 +179,9 @@ function executeSqliteRead(sql) {
 }
 
 async function executeAndMask(sql, policy, user, options = {}) {
-  const allowlist = buildPolicyAllowlist(policy);
-  const validation = validate(sql, false, { allowlist });
+  // The gateway's policy stage authorizes table/column access before execution.
+  // Recheck SQL safety here without repeating policy checks in the validator.
+  const validation = validate(sql, false);
   if (!validation.safe) {
     throw new SecureQueryError(
       'SECURITY_LAYER_REJECTED',
@@ -191,7 +191,6 @@ async function executeAndMask(sql, policy, user, options = {}) {
     );
   }
   const executor = createQueryExecutor(options.pool || getPool(), {
-    allowlist,
     maxRows: Number(process.env.QUERY_MAX_ROWS || 100),
     timeoutMs: Number(process.env.QUERY_TIMEOUT_MS || 5000)
   });

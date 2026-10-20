@@ -1,8 +1,11 @@
+const { parse, checkAllowlist } = require('security-validation-layer');
+const { buildPolicyAllowlist } = require('../../services/secureQueryService');
+
 function normalized(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-function checkTableColumns(sqlAnalysis, policy) {
+function checkTableColumns(sqlAnalysis, policy, sql = sqlAnalysis?.normalizedSql) {
   const tables = Array.isArray(sqlAnalysis?.tables) ? sqlAnalysis.tables : [];
   const columns = Array.isArray(sqlAnalysis?.columns) ? sqlAnalysis.columns : [];
   const allowedTables = new Set(
@@ -48,13 +51,22 @@ function checkTableColumns(sqlAnalysis, policy) {
     problems.push(`Column ownership could not be resolved safely: ${ambiguousColumns.join(', ')}`);
   }
 
+  // Run the schema/policy allowlist here, after SQLGlot inspection. The AST
+  // check also covers wildcards and nested queries absent from column summaries.
+  const accessViolations = sql
+    ? checkAllowlist(parse(sql).ast, buildPolicyAllowlist(policy))
+    : [];
+  problems.push(...accessViolations.map((violation) => violation.detail));
+  let reason = null;
+  if (blockedTables.length) reason = 'TABLE_NOT_ALLOWED';
+  else if (blockedColumns.length) reason = 'BLOCKED_COLUMN';
+  else if (ambiguousColumns.length) reason = 'AMBIGUOUS_COLUMN';
+  else if (accessViolations.some((violation) => violation.type === 'table_not_allowed')) reason = 'TABLE_NOT_ALLOWED';
+  else if (accessViolations.length) reason = 'COLUMN_NOT_ALLOWED';
+
   return {
     status: problems.length ? 'FAIL' : 'PASS',
-    reason: blockedTables.length
-      ? 'TABLE_NOT_ALLOWED'
-      : (blockedColumns.length
-        ? 'BLOCKED_COLUMN'
-        : (ambiguousColumns.length ? 'AMBIGUOUS_COLUMN' : null)),
+    reason,
     message: problems.length
       ? `${problems.join('. ')}.`
       : `${usedTables.join(', ')} and ${resolvedColumns.length} referenced ${resolvedColumns.length === 1 ? 'column are' : 'columns are'} allowed.`,
@@ -62,7 +74,8 @@ function checkTableColumns(sqlAnalysis, policy) {
     checkedColumns: resolvedColumns,
     blockedTables,
     blockedColumns,
-    ambiguousColumns
+    ambiguousColumns,
+    accessViolations
   };
 }
 

@@ -1,3 +1,4 @@
+//1
 {
   "policyId": "policy-manager-001",
   "version": "1.0",
@@ -19,8 +20,7 @@
     }
   ]
 }
-
-
+//2
 {
   "userId": "user-101-manager",
   "tenantId": 101,
@@ -28,9 +28,7 @@
   "departmentId": 1,
   "region": "Colombo"
 }
-
-
-
+//3
 {
   "rowRules": [
     {

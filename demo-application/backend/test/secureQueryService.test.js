@@ -32,13 +32,19 @@ test('Navodya validation accepts a compliant read query', () => {
   assert.equal(result.statementType, 'SELECT');
 });
 
-test('Navodya validation blocks policy-denied columns', () => {
+test('SQL safety leaves policy-denied columns for the policy stage', () => {
   const result = validateWithSecurityLayer(
     'SELECT e.nic_number FROM employees e WHERE e.tenant_id = 101 AND e.department_id = 1',
     policy
   );
-  assert.equal(result.safe, false);
-  assert.ok(result.violations.some((item) => item.type === 'column_not_allowed'));
+  assert.equal(result.safe, true);
+  assert.deepEqual(result.violations, []);
+});
+
+test('SQL safety leaves table permissions for the policy stage', () => {
+  const result = validateWithSecurityLayer('SELECT net_salary FROM payroll', policy);
+  assert.equal(result.safe, true);
+  assert.deepEqual(result.violations, []);
 });
 
 test('Navodya validation blocks destructive statements', () => {

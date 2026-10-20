@@ -23,10 +23,10 @@ const user = {
 function analysis(overrides = {}) {
   return {
     statementType: 'SELECT',
-    normalizedSql: 'SELECT name FROM employees WHERE tenant_id = 101 AND department_id = 1',
+    normalizedSql: 'SELECT first_name FROM employees WHERE tenant_id = 101 AND department_id = 1',
     tables: [{ name: 'employees', alias: null }],
     columns: [
-      { table: null, column: 'name' },
+      { table: null, column: 'first_name' },
       { table: null, column: 'tenant_id' },
       { table: null, column: 'department_id' }
     ],
