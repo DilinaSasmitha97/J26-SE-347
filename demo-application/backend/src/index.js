@@ -77,14 +77,14 @@ function validateVerificationRequest(body) {
 }
 
 async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
-  const validation = validateWithSecurityLayer(sql, policy);
+  const validation = validateWithSecurityLayer(sql);
   const validationCheck = {
     label: 'SQL safety (AST) check',
     passed: validation.safe,
     status: validation.safe ? 'PASS' : 'FAIL',
     reason: validation.safe ? null : 'SECURITY_LAYER_REJECTED',
     message: validation.safe
-      ? `${validation.statementType} passed dangerous-query and schema-allowlist validation.`
+      ? `${validation.statementType} passed SQL safety validation.`
       : validation.violations.map((item) => `${item.type}: ${item.detail}`).join('; ')
   };
 
@@ -107,7 +107,7 @@ async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
   }
 
   const analysis = await inspectSql(sql, dialect);
-  const policyResult = evaluateSqlSecurity(analysis, policy, user);
+  const policyResult = evaluateSqlSecurity(analysis, policy, user, sql);
   return {
     ...policyResult,
     checks: [validationCheck, ...policyResult.checks],

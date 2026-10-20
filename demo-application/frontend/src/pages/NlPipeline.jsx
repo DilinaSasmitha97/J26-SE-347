@@ -299,7 +299,7 @@ function SqlSafetyCard({ validation }) {
       <dl className="pl-facts">
         <div><dt>Parser verdict</dt><dd>{validation.safe ? 'Safe to continue' : 'Blocked before execution'}</dd></div>
         <div><dt>Statement</dt><dd><span className={`pl-chip ${validation.safe ? 'ok' : 'bad'}`}>{validation.statementType}</span></dd></div>
-        <div><dt>Protection</dt><dd>Single statement, read-only operation, dangerous functions, system schemas and policy-derived allowlist</dd></div>
+        <div><dt>Protection</dt><dd>Single statement, read-only operation, dangerous functions, system schemas and unsafe query patterns</dd></div>
       </dl>
       {validation.violations?.length > 0 && (
         <div className="pl-violation-list">

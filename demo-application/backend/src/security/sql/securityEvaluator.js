@@ -12,7 +12,7 @@ function toCheck(label, result) {
   };
 }
 
-function evaluateSqlSecurity(sqlAnalysis, policy, user) {
+function evaluateSqlSecurity(sqlAnalysis, policy, user, sql) {
   const operation = String(sqlAnalysis?.statementType || 'UNKNOWN').toUpperCase();
   const allowedOperations = Array.isArray(policy?.allowedOperations)
     ? policy.allowedOperations.map((item) => String(item).toUpperCase())
@@ -24,7 +24,7 @@ function evaluateSqlSecurity(sqlAnalysis, policy, user) {
       ? `${operation} is permitted by this policy.`
       : `${operation} is not an allowed operation.`
   };
-  const tableColumnResult = checkTableColumns(sqlAnalysis, policy);
+  const tableColumnResult = checkTableColumns(sqlAnalysis, policy, sql);
   const tenantResult = checkTenant(sqlAnalysis, policy, user);
   const rowFilterResult = checkRowFilters(sqlAnalysis, policy, user);
   const checks = [
