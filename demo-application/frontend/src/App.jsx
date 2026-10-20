@@ -30,7 +30,9 @@ export function Icon({ name, size = 18 }) {
     check: <path d="m5 12 4 4L19 6" />,
     close: <path d="m6 6 12 12M18 6 6 18" />,
     refresh: <><path d="M20 7v5h-5" /><path d="M19 12a7 7 0 1 0-2 5" /></>,
-    bolt: <path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z" />
+    bolt: <path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z" />,
+    expand: <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />,
+    format: <path d="M4 6h16M4 12h10M4 18h13" />
   };
 
   return (

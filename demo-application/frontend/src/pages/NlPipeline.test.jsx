@@ -238,7 +238,7 @@ it('retests the same edited SQL with each current policy and identity, clearing 
   await screen.findByLabelText('Results', {}, WAIT);
   expect(secureCalls()[1]).toEqual({ sql: edited, question: 'How many employees?', user: testUser, policy: testPolicy, rules: null, execute: true });
   expect(bodiesFor(fetch, PRESENT)[1]).toEqual({ resultId: 'result-1', user: testUser, policy: testPolicy, rules: null,
-    classification: { intent: 'KPI_SINGLE_VALUE', presentation_types: ['single_value'] } });
+    classification: { intent: 'KPI_SINGLE_VALUE', presentation_types: ['single_value'], prediction_needed: false } });
 
   fireEvent.change(screen.getByLabelText('User policy'), { target: { value: JSON.stringify(policy) } });
   fireEvent.change(screen.getByLabelText('Authenticated user'), { target: { value: JSON.stringify({ ...testUser, tenantId: 101 }) } });
@@ -324,4 +324,64 @@ it('a forecast question also runs the prediction layer on the stored result', as
 
   fireEvent.change(screen.getByLabelText('Generated SQL'), { target: { value: sql.replace('COUNT(*)', 'COUNT(id)') } });
   expect(screen.queryByLabelText('Prediction')).toBeNull();
+});
+
+const pretty = (value) => JSON.stringify(value, null, 2);
+
+it('formats pasted, uploaded and typed JSON, and leaves invalid JSON untouched', async () => {
+  vi.stubGlobal('fetch', fakeFetch());
+  render(<NlPipeline />);
+  const policyBox = screen.getByLabelText('User policy');
+  fireEvent.paste(policyBox);
+  fireEvent.change(policyBox, { target: { value: JSON.stringify(policy) } });
+  expect(policyBox.value).toBe(pretty(policy));
+
+  const userBox = screen.getByLabelText('Authenticated user');
+  fireEvent.change(userBox, { target: { value: JSON.stringify(user) } });
+  expect(userBox.value).toBe(JSON.stringify(user), 'typing is not reformatted mid-edit');
+  fireEvent.blur(userBox);
+  expect(userBox.value).toBe(pretty(user));
+
+  fireEvent.change(userBox, { target: { value: '{ "userId": ' } });
+  fireEvent.blur(userBox);
+  expect(userBox.value).toBe('{ "userId": ');
+  expect(screen.getByRole('button', { name: 'Format Authenticated user JSON' }).disabled).toBe(true);
+
+  const upload = screen.getAllByText('Upload .json')[2].closest('section').querySelector('input[type="file"]');
+  const rules = { constraints: ['Always add WHERE tenant_id = 101.'] };
+  fireEvent.change(upload, { target: { files: [new File([JSON.stringify(rules)], 'rules.json', { type: 'application/json' })] } });
+  await waitFor(() => expect(screen.getByLabelText('NL-to-SQL rules').value).toBe(pretty(rules)));
+});
+
+it('the Format button reformats without clearing the SQL draft', async () => {
+  vi.stubGlobal('fetch', fakeFetch());
+  render(<NlPipeline />);
+  fireEvent.change(screen.getByLabelText('NL-to-SQL rules'), { target: { value: '{"constraints":["Use only employees."]}' } });
+  await generate();
+  fireEvent.click(screen.getByRole('button', { name: 'Format NL-to-SQL rules JSON' }));
+  expect(screen.getByLabelText('NL-to-SQL rules').value).toBe(pretty({ constraints: ['Use only employees.'] }));
+  expect(screen.getByLabelText('Generated SQL').value).toBe(sql);
+});
+
+it('expands a JSON card to a full-screen editor that edits the same content', async () => {
+  vi.stubGlobal('fetch', fakeFetch());
+  render(<NlPipeline />);
+  const expand = screen.getByRole('button', { name: 'Expand User policy to full screen' });
+  fireEvent.click(expand);
+  const dialog = screen.getByRole('dialog', { name: 'User policy' });
+  const editor = within(dialog).getByLabelText('User policy editor');
+  expect(document.activeElement).toBe(editor);
+  fireEvent.paste(editor);
+  fireEvent.change(editor, { target: { value: JSON.stringify(policy) } });
+  expect(editor.value).toBe(pretty(policy));
+  expect(within(dialog).getByText(/Valid JSON · 2 keys/)).toBeTruthy();
+
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(screen.getByLabelText('User policy').value).toBe(pretty(policy));
+  await waitFor(() => expect(document.activeElement).toBe(expand));
+
+  fireEvent.click(expand);
+  fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Done' }));
+  expect(screen.queryByRole('dialog')).toBeNull();
 });

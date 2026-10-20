@@ -249,6 +249,26 @@ footer span { gap: 6px; }
 }
 /* ---- NL -> SQL pipeline page (pages/NlPipeline.jsx) ---- */
 .pl-link { text-decoration: none; }
+/* Pipeline page: the step indicator sits in the sticky header, between the
+   brand and the actions; connectors stretch to fill the space. */
+.pl-topbar { gap: 20px; }
+.pl-topbar .brand, .pl-topbar .topbar-actions { flex: 0 0 auto; }
+.pl-topbar .brand > div > span { display: none; }
+.pipeline.pl-stepper { flex: 1 1 auto; min-width: 0; padding: 6px 4px; border: 0; background: none; box-shadow: none; overflow-x: auto; scrollbar-width: none; }
+.pipeline.pl-stepper::-webkit-scrollbar { display: none; }
+.pipeline.pl-stepper span { font-size: .66rem; }
+.pipeline.pl-stepper span span { display: inline; }
+.pipeline.pl-stepper i { flex: 1 1 auto; min-width: 8px; margin: 0 6px; }
+@media (max-width: 1280px) {
+  /* Numbers only, except the step in progress or failed; names show on hover. */
+  .pipeline.pl-stepper .pl-step-label { display: none; }
+  .pipeline.pl-stepper .pl-step-active .pl-step-label, .pipeline.pl-stepper .pl-step-fail .pl-step-label { display: inline; }
+}
+@media (max-width: 720px) {
+  .pl-topbar { flex-wrap: wrap; row-gap: 6px; }
+  .pipeline.pl-stepper { order: 3; flex-basis: 100%; }
+}
+.pl-sql-autosize { height: auto; min-height: 105px; overflow-y: hidden; resize: none; }
 .pipeline .pl-step-active { color: var(--green-dark); }
 .pipeline .pl-step-active b { border-color: var(--green); color: var(--green); }
 .pipeline .pl-step-pass b { background: var(--green); color: #fff; border-color: var(--green); }
@@ -276,6 +296,24 @@ footer span { gap: 6px; }
 .pl-json-input { height: 210px; min-height: 140px; font-size: .7rem; }
 .pl-upload-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; min-width: 0; }
 .pl-file-name { font-family: var(--mono); font-size: .62rem; color: #7b8781; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-json-tools { display: flex; gap: 4px; margin-left: auto; flex: 0 0 auto; }
+.pl-icon-button { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: #4f5d56; cursor: pointer; }
+.pl-icon-button:hover:not(:disabled) { border-color: #9cb8aa; color: var(--green-dark); }
+.pl-icon-button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.pl-icon-button:disabled { opacity: .4; cursor: default; }
+
+/* Full-screen JSON editor */
+.pl-modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 24px; background: rgba(16, 26, 22, .55); }
+.pl-modal { display: flex; flex-direction: column; gap: 12px; width: min(1100px, 100%); height: min(860px, 100%); padding: 20px; border-radius: 14px; background: var(--panel); box-shadow: 0 24px 60px rgba(0, 0, 0, .25); }
+.pl-modal-head { display: flex; align-items: flex-start; gap: 12px; }
+.pl-modal-head h2 { margin: 0; font-size: 1.05rem; }
+.pl-modal-head .step-number { position: static; display: inline-grid; place-items: center; flex: 0 0 auto; width: 30px; height: 30px; border-radius: 8px; background: var(--ink); color: #aee6c9; font-family: var(--mono); font-size: .8rem; }
+.pl-modal-head p { margin: 2px 0 0; color: var(--muted); font-size: .76rem; }
+.pl-modal-actions { display: flex; gap: 8px; margin-left: auto; }
+.pl-modal-input { flex: 1; min-height: 0; height: auto; resize: none; font-size: .86rem; line-height: 1.6; tab-size: 2; }
+.pl-modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pl-modal-foot p { margin: 0; }
+@media (max-width: 640px) { .pl-modal-backdrop { padding: 0; } .pl-modal { height: 100%; border-radius: 0; padding: 14px; } .pl-modal-head p { display: none; } }
 .pl-ghost {
   display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; border: 1px solid var(--line); background: #fff; color: #43514b;
   padding: 6px 10px; border-radius: 7px; font-size: .7rem; font-weight: 700; cursor: pointer;

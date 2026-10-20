@@ -6,6 +6,22 @@ from profiler import time_block, log_step, trace
 import llm
 import prompts
 
+def connection_dialect(db_conn) -> str:
+    """
+    SQL dialect of a live connection: 'sqlite', 'mysql' or 'mssql'.
+
+    Without a connection the engine generates for SQLite, as before. MySQL
+    connections (pymysql) used to fall through to 'mssql', so the LLM was asked
+    for SQL Server syntax (GETDATE, DATEADD) and the dry run sent SQL Server's
+    SET NOEXEC, which MySQL rejects for every query.
+    """
+    if db_conn is None or isinstance(db_conn, sqlite3.Connection):
+        return "sqlite"
+    if type(db_conn).__module__.split(".")[0] == "pymysql":
+        return "mysql"
+    return "mssql"
+
+
 def categorize_compiler_error(error_msg: str) -> Tuple[str, List[str]]:
     """
     Parses compiler diagnostic error message to classify the error type 
@@ -47,9 +63,22 @@ def categorize_compiler_error(error_msg: str) -> Tuple[str, List[str]]:
         missing_entities.append(tbl_name)
         return "SCHEMA_LINKING_ERROR", missing_entities
 
-    # 3. SQLite / MSSQL Syntax Errors
+    # 2b. MySQL Schema Linking Errors
+    # e.g. "Unknown column 'e.salary' in 'field list'", "Table 'hr.employee' doesn't exist"
+    mysql_col = re.search(r"Unknown column '([^']+)'", err_str, re.IGNORECASE)
+    if mysql_col:
+        missing_entities.append(mysql_col.group(1).split('.')[-1])
+        return "SCHEMA_LINKING_ERROR", missing_entities
+
+    mysql_tbl = re.search(r"Table '([^']+)' doesn't exist", err_str, re.IGNORECASE)
+    if mysql_tbl:
+        missing_entities.append(mysql_tbl.group(1).split('.')[-1])
+        return "SCHEMA_LINKING_ERROR", missing_entities
+
+    # 3. SQLite / MSSQL / MySQL Syntax Errors
     # e.g. "near 'WHRE': syntax error", "Incorrect syntax near 'FROM'"
-    if "syntax error" in err_lower or "incorrect syntax" in err_lower or "unrecognized token" in err_lower or "incomplete input" in err_lower:
+    if ("syntax error" in err_lower or "incorrect syntax" in err_lower or "unrecognized token" in err_lower
+            or "incomplete input" in err_lower or "error in your sql syntax" in err_lower):
         return "SYNTAX_ERROR", []
 
     # 4. Aggregation / Grouping / Ambiguity Errors
@@ -151,7 +180,20 @@ def dry_run_validate(sql: str, db_conn=None) -> Tuple[bool, str, str]:
             err_type, _ = categorize_compiler_error(err_msg)
             return False, err_msg, err_type
 
-    # Case 3: Microsoft SQL Server Connection (Live ERP via pyodbc)
+    # Case 3: MySQL Connection (pymysql). EXPLAIN plans the query against the
+    # live schema without executing it, like SQLite's EXPLAIN.
+    if connection_dialect(db_conn) == "mysql":
+        try:
+            with db_conn.cursor() as cursor:
+                cursor.execute(f"EXPLAIN {clean_sql}")
+                cursor.fetchall()
+            return True, "", ""
+        except Exception as e:
+            err_msg = str(e)
+            err_type, _ = categorize_compiler_error(err_msg)
+            return False, err_msg, err_type
+
+    # Case 4: Microsoft SQL Server Connection (Live ERP via pyodbc)
     try:
         cursor = db_conn.cursor()
         # Compile and check schema bindings without executing rows or locks
@@ -345,15 +387,7 @@ def execute_refinement_loop(
                     return sanitized_sql, True, 0, refinement_stats
 
         # Determine target SQL dialect
-        if not dialect:
-            if isinstance(db_conn, sqlite3.Connection):
-                active_dialect = "sqlite"
-            elif db_conn is not None:
-                active_dialect = "mssql"
-            else:
-                active_dialect = "sqlite"
-        else:
-            active_dialect = dialect
+        active_dialect = dialect or connection_dialect(db_conn)
 
         log_step(f"Dry-run validation failed on initial SQL ({err_type}): {error_msg}. Starting refinement loop ({active_dialect.upper()}, max {max_attempts} attempts)...", level="WARN")
 
