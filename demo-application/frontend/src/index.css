@@ -342,6 +342,10 @@ footer span { gap: 6px; }
 .pl-result-card { border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: #fff; min-width: 0; }
 .pl-result-card.is-fail { border-color: #efc4c4; }
 .pl-result-card.is-pass { border-color: #b9dcc9; }
+.pl-tenant-card { margin-top: 16px; }
+.pl-tenant-card pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; border-radius: 8px; background: #f4f7f5; font-size: .75rem; }
+.pl-tenant-card caption { text-align: left; font-size: .75rem; padding: 8px 0; color: #506059; }
+.pl-tenant-card ul { font-size: .8rem; line-height: 1.7; padding-left: 20px; }
 .pl-result-card.decision-result { min-height: 0; }
 .pl-result-card .decision-title-row h2 { font-size: 1.7rem; }
 .pl-result-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }

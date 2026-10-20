@@ -153,7 +153,7 @@ function sqliteFallbackEnabled() {
   return process.env.SQLITE_FALLBACK !== 'false';
 }
 
-function executeSqliteRead(sql) {
+function executeSqliteRead(sql, parameters = []) {
   const { DatabaseSync } = require('node:sqlite');
   const dbPath = process.env.SQLITE_DATABASE_PATH
     || path.resolve(__dirname, '..', '..', '..', 'shared-database', 'multitenant_hr.db');
@@ -161,7 +161,7 @@ function executeSqliteRead(sql) {
   const started = process.hrtime.bigint();
   const database = new DatabaseSync(dbPath, { readOnly: true });
   try {
-    const objectRows = database.prepare(sql).all();
+    const objectRows = database.prepare(sql).all(...parameters);
     const names = objectRows.length ? Object.keys(objectRows[0]) : [];
     const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
     return {
@@ -179,6 +179,7 @@ function executeSqliteRead(sql) {
 }
 
 async function executeAndMask(sql, policy, user, options = {}) {
+  const parameters = options.parameters || [];
   // The gateway's policy stage authorizes table/column access before execution.
   // Recheck SQL safety here without repeating policy checks in the validator.
   const validation = validate(sql, false);
@@ -198,10 +199,10 @@ async function executeAndMask(sql, policy, user, options = {}) {
   let result;
   const preferSqlite = process.env.DB_TYPE === 'sqlite';
   if (preferSqlite) {
-    result = executeSqliteRead(sql);
+    result = executeSqliteRead(sql, parameters);
   } else {
     try {
-      result = await executor.run(sql);
+      result = await executor.run(sql, parameters);
       result.engine = 'mysql';
     } catch (error) {
       const connectionFailure = !error.status || [
@@ -211,7 +212,7 @@ async function executeAndMask(sql, policy, user, options = {}) {
         'ER_BAD_DB_ERROR'
       ].includes(error.code);
       if (sqliteFallbackEnabled() && connectionFailure && !options.pool) {
-        result = executeSqliteRead(sql);
+        result = executeSqliteRead(sql, parameters);
         result.fallbackReason = `MySQL unavailable: ${error.message}`;
       } else {
         throw new SecureQueryError(

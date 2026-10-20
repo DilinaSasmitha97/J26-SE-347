@@ -12,7 +12,7 @@ function toCheck(label, result) {
   };
 }
 
-function evaluateSqlSecurity(sqlAnalysis, policy, user, sql) {
+function evaluateSqlSecurity(sqlAnalysis, policy, user, sql, verifiedIsolation = null) {
   const operation = String(sqlAnalysis?.statementType || 'UNKNOWN').toUpperCase();
   const allowedOperations = Array.isArray(policy?.allowedOperations)
     ? policy.allowedOperations.map((item) => String(item).toUpperCase())
@@ -25,8 +25,10 @@ function evaluateSqlSecurity(sqlAnalysis, policy, user, sql) {
       : `${operation} is not an allowed operation.`
   };
   const tableColumnResult = checkTableColumns(sqlAnalysis, policy, sql);
-  const tenantResult = checkTenant(sqlAnalysis, policy, user);
-  const rowFilterResult = checkRowFilters(sqlAnalysis, policy, user);
+  // This optional result is produced only by the server's independent AST
+  // verification stage; never populate it from request JSON.
+  const tenantResult = verifiedIsolation?.tenantResult || checkTenant(sqlAnalysis, policy, user);
+  const rowFilterResult = verifiedIsolation?.rowFilterResult || checkRowFilters(sqlAnalysis, policy, user);
   const checks = [
     toCheck('Statement type', operationResult),
     toCheck('Table & column access', tableColumnResult),

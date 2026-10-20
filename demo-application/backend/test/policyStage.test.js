@@ -40,7 +40,14 @@ test('table and column access is enforced after SQLGlot under Policy check', asy
   t.after(() => new Promise((resolve) => server.close(resolve)));
 
   let inspection;
-  t.mock.method(global, 'fetch', async (url) => {
+  t.mock.method(global, 'fetch', async (url, options) => {
+    if (String(url).endsWith('/tenant-isolation')) {
+      const { sql } = JSON.parse(options.body);
+      return { ok: true, json: async () => ({ success: true, tenantRewrite: {
+        status: 'UNCHANGED_VERIFIED', applied: false, finalVerification: 'PASS', rowFiltersVerified: true,
+        finalSql: sql, parameterizedSql: sql.replace('= 101', '= ?'), parameters: ['101'], changes: [], findings: [], message: 'Verified.'
+      } }) };
+    }
     assert.match(String(url), /\/inspect$/);
     inspected += 1;
     return { ok: true, json: async () => ({ success: true, analysis: inspection }) };

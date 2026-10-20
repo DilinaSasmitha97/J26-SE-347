@@ -1,0 +1,16 @@
+{
+  "tenants": "id",
+  "departments": "tenant_id",
+  "designations": "tenant_id",
+  "employees": "tenant_id",
+  "employee_phone_numbers": "tenant_id",
+  "employee_children": "tenant_id",
+  "employee_bank_accounts": "tenant_id",
+  "employee_salary": "tenant_id",
+  "attendance": "tenant_id",
+  "overtime_records": "tenant_id",
+  "payroll_periods": "tenant_id",
+  "payroll": "tenant_id",
+  "payroll_allowances": "tenant_id",
+  "payroll_deductions": "tenant_id"
+}

@@ -15,6 +15,7 @@ const {
 const presentationService = require('./services/presentationService');
 const intentClassificationService = require('./services/intentClassificationService');
 const { createResultStore } = require('./services/resultStore');
+const { enforceTenantIsolation, stopped, VERIFIED } = require('./services/tenantIsolationService');
 
 function createEffectivePolicy(context, policy) {
   if (!context || typeof context !== 'object' || Array.isArray(context)) {
@@ -76,7 +77,7 @@ function validateVerificationRequest(body) {
   };
 }
 
-async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
+async function verifySql({ policy, user, sql, dialect = 'mysql', repairTenant = false }) {
   const validation = validateWithSecurityLayer(sql);
   const validationCheck = {
     label: 'SQL safety (AST) check',
@@ -95,6 +96,7 @@ async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
       message: 'Query was stopped by the security validation layer.',
       checks: [validationCheck],
       securityValidation: validation,
+      tenantRewrite: stopped('BLOCKED', 'SECURITY_LAYER_REJECTED', 'SQL safety validation failed before tenant repair.', sql),
       context: {
         policyId: policy.policyId || 'Unnamed policy',
         userId: user.userId || user.sub || 'Unknown user',
@@ -108,11 +110,52 @@ async function verifySql({ policy, user, sql, dialect = 'mysql' }) {
 
   const analysis = await inspectSql(sql, dialect);
   const policyResult = evaluateSqlSecurity(analysis, policy, user, sql);
+  // Tenant repair must never rescue an unauthorized source, column or operation.
+  if (policyResult.checks.slice(0, 2).some((check) => !check.passed)) {
+    return { ...policyResult, checks: [validationCheck, ...policyResult.checks],
+      securityValidation: validation, inspection: analysis,
+      tenantRewrite: stopped('BLOCKED', 'POLICY_ACCESS_DENIED', 'Table, column or operation access failed before tenant repair.', sql) };
+  }
+  let tenantRewrite = await enforceTenantIsolation({ sql, policy, user, dialect, repair: repairTenant });
+  const failure = (stage) => ({
+    ...policyResult, passed: false, decision: 'FAIL', message: stage.message,
+    checks: [validationCheck, ...policyResult.checks.filter((check) => !['Tenant isolation', 'Required filters'].includes(check.label)),
+      { label: 'Tenant isolation', passed: false, status: 'FAIL', reason: stage.reasonCode, message: stage.message }],
+    securityValidation: validation, inspection: analysis, tenantRewrite: stage
+  });
+  if (!VERIFIED.has(tenantRewrite.status)) return failure(tenantRewrite);
+  // Re-run the service in verification-only mode on serialized SQL. No repair
+  // is allowed here, and execution uses this exact final artifact.
+  const finalSql = tenantRewrite.finalSql;
+  const verification = await enforceTenantIsolation({ sql: finalSql, policy, user, dialect, repair: false });
+  if (!VERIFIED.has(verification.status) || verification.finalSql !== finalSql
+      || verification.parameterizedSql !== tenantRewrite.parameterizedSql
+      || JSON.stringify(verification.parameters) !== JSON.stringify(tenantRewrite.parameters)) {
+    return failure({ ...tenantRewrite, status: verification.status === 'UNAVAILABLE' ? 'UNAVAILABLE' : 'CANNOT_REPAIR',
+      applied: false, finalSql: null, finalVerification: 'FAIL',
+      reasonCode: 'FINAL_TENANT_VERIFICATION_FAILED', message: 'The final query failed independent tenant verification; no query was executed.' });
+  }
+  const finalSafety = validateWithSecurityLayer(finalSql);
+  const parameterSafety = validateWithSecurityLayer(verification.parameterizedSql);
+  if (!finalSafety.safe || !parameterSafety.safe) {
+    return failure({ ...tenantRewrite, status: 'BLOCKED', applied: false, finalSql: null, finalVerification: 'FAIL',
+      reasonCode: 'REPAIRED_SQL_UNSAFE', message: 'The repaired query failed SQL safety validation.' });
+  }
+  const finalAnalysis = await inspectSql(finalSql, dialect);
+  const finalPolicy = evaluateSqlSecurity(finalAnalysis, policy, user, finalSql, {
+    tenantResult: { status: 'PASS', reason: null, message: verification.message },
+    rowFilterResult: { status: 'PASS', reason: null, message: 'All additional row restrictions verified as mandatory conditions for every applicable alias.' }
+  });
+  if (!finalPolicy.passed) {
+    tenantRewrite = { ...tenantRewrite, status: 'BLOCKED', applied: false, finalSql: null,
+      finalVerification: 'FAIL', reasonCode: 'FINAL_POLICY_CHECK_FAILED', message: 'The repaired query failed final policy validation.' };
+  }
   return {
-    ...policyResult,
-    checks: [validationCheck, ...policyResult.checks],
-    securityValidation: validation,
-    inspection: analysis
+    ...finalPolicy,
+    checks: [validationCheck, ...finalPolicy.checks],
+    securityValidation: finalSafety, inspection: finalAnalysis, tenantRewrite,
+    finalSql: finalPolicy.passed ? finalSql : null,
+    execution: finalPolicy.passed ? { sql: verification.parameterizedSql, parameters: verification.parameters } : null
   };
 }
 
@@ -340,7 +383,14 @@ function createApp(dependencies = {}) {
       }
       const generation = suppliedSql ? null : await translateQuestion(question, rules);
       const sql = suppliedSql || generation.sql;
-      const decision = await verifyQuery({ policy: effectivePolicy, user, sql, dialect: 'mysql' });
+      let decision = await verifyQuery({ policy: effectivePolicy, user, sql, dialect: 'mysql', repairTenant: true });
+      if (decision.passed && (!VERIFIED.has(decision.tenantRewrite?.status)
+          || decision.tenantRewrite.finalVerification !== 'PASS' || !decision.finalSql
+          || !decision.execution?.sql || !Array.isArray(decision.execution.parameters)
+          || !decision.execution.parameters.length)) {
+        const stage = stopped('BLOCKED', 'ISOLATION_NOT_VERIFIED', 'A complete tenant verification artifact is required before execution.', sql);
+        decision = { ...decision, passed: false, decision: 'FAIL', message: stage.message, tenantRewrite: stage };
+      }
       const baseResponse = {
         status: decision.passed ? 'APPROVED' : 'BLOCKED',
         source: suppliedSql ? 'provided_sql' : 'nl_to_sql',
@@ -349,11 +399,12 @@ function createApp(dependencies = {}) {
         effectivePolicy,
         generation,
         ...understanding,
-        sql,
+        sql: decision.finalSql || sql,
+        originalSql: sql,
         securityValidation: decision.securityValidation,
         inspection: decision.inspection || null,
         decision,
-        tenantRewrite: { applied: false, reason: 'Skipped in this integration phase.' },
+        tenantRewrite: decision.tenantRewrite || stopped('BLOCKED', 'ISOLATION_NOT_VERIFIED', 'No tenant verification result was returned.', sql),
         elapsedMs: Date.now() - started
       };
 
@@ -362,7 +413,8 @@ function createApp(dependencies = {}) {
       }
 
       try {
-        const result = await runMaskedQuery(sql, effectivePolicy, user);
+        const result = await runMaskedQuery(decision.execution.sql, effectivePolicy, user,
+          { parameters: decision.execution.parameters });
         // Prediction is off by default; results are shown through /api/present-result.
         const predicting = presenter.predictionEnabled ? presenter.predictionEnabled() : true;
         const presentation = predicting

@@ -201,29 +201,22 @@ def translate_query(req: TranslateRequest):
                 pass
         end_trace(trace_token)
 
-@app.post("/api/v1/ask", response_model=AskResponse, summary="Ask Question Directly Against Live Database")
+@app.post("/api/v1/ask", response_model=AskResponse, summary="Legacy translation-only endpoint; execution requires the security gateway")
 def ask_database(req: AskRequest):
     """
-    End-to-end question answering:
-    1. Loads live/cached schema (defaults to multi-tenant HR & Payroll)
-    2. Prunes schema using Task 1 schema extractor
-    3. Translates Natural Language question into SQL conforming to Member 3 rules
-    4. Validates & self-corrects using compiler dry-run (Task 3)
-    5. Executes SQL against database (MySQL or portable SQLite)
-    6. Returns both SQL query and actual data rows!
+    Legacy translation-only compatibility route. All row execution and masking
+    belong to the backend gateway, including tenant repair and verification.
     """
+    if req.execute_query:
+        raise HTTPException(status_code=403, detail={
+            "error_code": "GATEWAY_EXECUTION_REQUIRED",
+            "detail": "Execute SQL through the backend /api/secure-query endpoint so tenant isolation and masking cannot be bypassed."
+        })
     start_time = time.time()
     conn = None
     try:
         # 1. Fetch schema from cache or database
         schema_meta = database.get_cached_or_live_schema(db_id=req.db_id)
-
-        # Connect to DB for live dry-run validation and row fetch
-        if req.execute_query:
-            try:
-                conn = database.get_db_connection(db_id=req.db_id)
-            except Exception as e:
-                conn = None
 
         # 2. Translate question to SQL with self-correction
         sql, token_stats = main.translate(
@@ -239,24 +232,6 @@ def ask_database(req: AskRequest):
 
         columns = []
         rows = []
-        if req.execute_query and conn:
-            try:
-                cursor = conn.cursor()
-                cursor.execute(sql)
-                columns = [col[0] for col in cursor.description] if cursor.description else []
-                if columns:
-                    for row in cursor.fetchmany(req.max_rows):
-                        row_dict = {}
-                        for col_name, val in zip(columns, row):
-                            if val is not None and not isinstance(val, (int, float, bool, str)):
-                                row_dict[col_name] = str(val)
-                            else:
-                                row_dict[col_name] = val
-                        rows.append(row_dict)
-            except Exception as db_err:
-                if isinstance(token_stats, dict):
-                    token_stats["db_execution_error"] = str(db_err)
-
         execution_time_ms = round((time.time() - start_time) * 1000, 2)
         if isinstance(token_stats, dict):
             token_stats["execution_time_ms"] = execution_time_ms

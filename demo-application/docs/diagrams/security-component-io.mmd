@@ -1,0 +1,31 @@
+flowchart TB
+    request["Gateway request: SQL, user, policy, execute flag"]
+    context["Context resolver"]
+    safety["SQL safety validator"]
+    inspector["SQLGlot inspector and access evaluator"]
+    repair["Tenant isolation assessor and AST rewriter"]
+    registry[("Trusted tenant ownership registry")]
+    tenantverify["Tenant verification-only pass"]
+    final["Final safety, access and artifact checks"]
+    executor["Read-only executor"]
+    blocked["Return error or blocked decision; do not execute SQL"]
+    preview["Return approved preview; do not execute SQL"]
+
+    request --> context
+    context -->|"SQL, resolved rules and expected tenant"| safety
+    safety -->|"Safe SQL and statement type"| inspector
+    inspector -->|"Tables, aliases, columns and access decision"| repair
+    context -.->|"Expected tenant and resolved row rules"| repair
+    registry -.->|"Physical table to tenant-column mapping"| repair
+    repair -->|"finalSql, changes, findings and trusted bindings"| tenantverify
+    tenantverify -->|"Serialized SQL, binding agreement and row-guard proof"| final
+    context -.->|"Effective policy and tenant context"| final
+    final -->|"All checks pass and execute=true: SQL plus parameters"| executor
+    final -->|"All checks pass and execute=false"| preview
+
+    context -.->|"Invalid user or policy"| blocked
+    safety -.->|"Unsafe operation or SQL"| blocked
+    inspector -.->|"Unauthorized source or column"| blocked
+    repair -.->|"CANNOT_REPAIR, BLOCKED or service unavailable"| blocked
+    tenantverify -.->|"Missing guard or verification disagreement"| blocked
+    final -.->|"Final policy, safety or artifact failure"| blocked

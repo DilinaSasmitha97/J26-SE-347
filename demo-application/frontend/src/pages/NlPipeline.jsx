@@ -5,6 +5,7 @@ import PresentationResult from '../components/PresentationResult.jsx';
 import DataPresentation from '../components/DataPresentation.jsx';
 import PredictionCard from '../components/PredictionCard.jsx';
 import IntentClassificationCard, { INTENT_LABELS, PRESENTATION_TYPE_LABELS } from '../components/IntentClassificationCard.jsx';
+import TenantIsolationCard from '../components/TenantIsolationCard.jsx';
 
 // The browser supplies the operator's pasted context to the Node demo gateway.
 // The gateway validates it before generation, verification and masked execution.
@@ -503,6 +504,7 @@ export default function NlPipeline() {
   const [inspect, setInspect] = useState(null);
   const [verify, setVerify] = useState(null);
   const [sqlSafety, setSqlSafety] = useState(null);
+  const [tenantRewrite, setTenantRewrite] = useState(null);
   const [execution, setExecution] = useState(null);
   const [presentation, setPresentation] = useState(null); // prediction envelope, when enabled
   const [display, setDisplay] = useState(NO_DISPLAY);     // data presentation layer
@@ -513,6 +515,7 @@ export default function NlPipeline() {
   const busy = genState === 'loading' || verifyState === 'loading';
 
   const clearVerification = () => {
+    setTenantRewrite(null);
     setVerifyState('idle'); setInspect(null); setVerify(null); setSqlSafety(null); setExecution(null); setVerifiedPolicy(null); setPresentation(null);
     displaySeq.current += 1; setDisplay(NO_DISPLAY);
     predictionSeq.current += 1; setPrediction(NO_DISPLAY);
@@ -762,6 +765,8 @@ export default function NlPipeline() {
 
     if (!response.ok || !response.data?.decision) {
       const message = describeError(response, PIPELINE_TIMEOUT_MS);
+      setTenantRewrite(response.data?.tenantRewrite || { status: response.network || response.data?.code?.includes('UNAVAILABLE') ? 'UNAVAILABLE' : 'BLOCKED',
+        message, reasonCode: response.data?.code || 'VERIFICATION_UNAVAILABLE', finalVerification: 'FAIL' });
       log('PIPELINE', 'error', `Secure execution request failed after ${response.ms} ms: ${message}`, response.data || undefined);
       setVerify({ error: message, hint: 'Check the backend, SQLGlot and database configuration.' });
       setVerifyState('fail');
@@ -769,6 +774,10 @@ export default function NlPipeline() {
     }
 
     const pipeline = response.data;
+    setTenantRewrite(pipeline.tenantRewrite || { status: 'UNAVAILABLE', finalVerification: 'FAIL',
+      message: 'The backend returned no tenant verification result. Restart the backend and SQLGlot service.' });
+    if (pipeline.tenantRewrite) log('TENANT', pipeline.tenantRewrite.finalVerification === 'PASS' ? 'success' : 'error',
+      `${pipeline.tenantRewrite.status}: ${pipeline.tenantRewrite.message}`, pipeline.tenantRewrite.changes);
     setVerifiedPolicy(pipeline.effectivePolicy);
     setSqlSafety(pipeline.securityValidation);
     setInspect(pipeline.inspection ? { analysis: pipeline.inspection, ms: pipeline.elapsedMs } : null);
@@ -806,6 +815,7 @@ export default function NlPipeline() {
     { label: 'NL → SQL', state: genState === 'loading' ? 'active' : genState === 'pass' ? 'pass' : genState === 'fail' ? 'fail' : 'idle' },
     { label: 'SQL safety', state: sqlSafety ? (sqlSafety.safe ? 'pass' : 'fail') : verifyState === 'loading' ? 'active' : 'idle' },
     { label: 'SQLGlot', state: inspectState === 'loading' ? 'active' : inspectState },
+    { label: 'Tenant isolation', state: verifyState === 'loading' ? 'active' : tenantRewrite ? (tenantRewrite.finalVerification === 'PASS' ? 'pass' : 'fail') : 'idle' },
     { label: 'Policy', state: verifyState === 'loading' && inspect ? 'active' : verifyState === 'pass' ? 'pass' : verifyState === 'fail' ? 'fail' : 'idle' },
     { label: 'Mask', state: execution?.result ? 'pass' : execution?.error ? 'fail' : 'idle' },
     { label: 'Predict', state: { loading: 'active', ready: 'pass', error: 'fail' }[prediction.status] || 'idle' },
@@ -915,13 +925,14 @@ export default function NlPipeline() {
                 </>
               )}
               <div className="pl-actions">
-                <span className="pl-muted">Validate the SQL in the editor, execute it read-only and return masked results.</span>
+                <span className="pl-muted">Validate SQL, repair supported tenant restrictions, verify the final query and return masked results.</span>
                 <button className="verify-button" type="button" onClick={verifySql} disabled={busy || !generated || !sql.trim()}>
                   <Icon name="shield" size={17} /> {verifyState === 'loading' ? 'Validating & executing…' : 'Validate & execute'}
                 </button>
               </div>
               {generated && (
                 <>
+                  {!inspect && !verify && verifyState !== 'loading' && <TenantIsolationCard result={tenantRewrite} />}
                   {(inspect || verify || verifyState === 'loading') && (
                     <div className="pl-results">
                       {verifyState === 'loading' && !verify && (
@@ -929,6 +940,7 @@ export default function NlPipeline() {
                       )}
                       <SqlSafetyCard validation={sqlSafety} />
                       <InspectionCard inspect={inspect} policy={verifiedPolicy} />
+                      <TenantIsolationCard result={tenantRewrite} loading={verifyState === 'loading'} />
                       <DecisionCard verify={verify} />
                       <DataPresentation status={display.status} data={display.data} error={display.error}
                         onRetry={display.request ? () => presentResult(display.request) : undefined} />
