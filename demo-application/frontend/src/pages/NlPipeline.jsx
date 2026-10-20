@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '../App.jsx';
 import PresentationResult from '../components/PresentationResult.jsx';
 import DataPresentation from '../components/DataPresentation.jsx';
@@ -129,10 +130,82 @@ function StatusPill({ state }) {
   return <span className={`pl-pill pl-pill-${state === 'invalid' ? 'fail' : state}`}>{state === 'loading' && <i className="pl-dot-spin" />}{labels[state]}</span>;
 }
 
-function JsonUpload({ number, icon, title, description, text, onText, fileName, onFileName, log, disabled = false, optional = false }) {
+// Pretty-prints a JSON object with 2-space indentation; null when the text is not one.
+function formatJson(text) {
+  if (!text.trim()) return null;
+  try {
+    const value = JSON.parse(text);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return null;
+  }
+}
+
+function JsonStatus({ empty, optional, parsed }) {
+  if (empty) return <p className="pl-muted">{optional ? 'Optional. The SQL service receives your question with no additional rules when left empty.' : 'Paste JSON or upload a .json file to continue.'}</p>;
+  if (parsed.error) return <p className="field-error"><Icon name="close" size={15} /> {parsed.error}</p>;
+  return <p className="pl-field-ok"><Icon name="check" size={15} /> Valid JSON · {Object.keys(parsed.value).length} keys</p>;
+}
+
+/** Full-screen editor for one JSON card; edits the same text as the card. */
+function JsonDialog({ number, title, description, text, onEdit, onPaste, onFormat, canFormat, status, onClose, disabled }) {
+  const area = useRef(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    area.current?.focus();
+    const onKey = (event) => { if (event.key === 'Escape') close.current(); };
+    document.addEventListener('keydown', onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = overflow; };
+  }, []);
+  const titleId = `pl-json-dialog-${number}`;
+  return createPortal(
+    <div className="pl-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div className="pl-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+        <div className="pl-modal-head">
+          <span className="step-number">{number}</span>
+          <div><h2 id={titleId}>{title}</h2><p>{description}</p></div>
+          <div className="pl-modal-actions">
+            <button type="button" className="pl-ghost" onClick={onFormat} disabled={disabled || !canFormat}><Icon name="format" size={15} /> Format JSON</button>
+            <button type="button" className="pl-ghost" onClick={onClose} aria-label="Close full screen"><Icon name="close" size={15} /></button>
+          </div>
+        </div>
+        <textarea ref={area} className="code-input pl-modal-input" value={text} spellCheck="false" wrap="off" aria-label={`${title} editor`} disabled={disabled}
+          onChange={(event) => onEdit(event.target.value)} onPaste={onPaste} onBlur={onFormat} />
+        <div className="pl-modal-foot">
+          {status}
+          <button type="button" className="verify-button" onClick={onClose}>Done</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function JsonUpload({ number, icon, title, description, text, onText, onFormat, fileName, onFileName, log, disabled = false, optional = false }) {
   const input = useRef(null);
+  const expandButton = useRef(null);
+  const pasted = useRef(false);
+  const [expanded, setExpanded] = useState(false);
   const empty = !text.trim();
   const parsed = optional && empty ? { value: {} } : parseObject(title, text);
+  const formatted = formatJson(text);
+  const canFormat = Boolean(formatted) && formatted !== text;
+
+  // Reformatting keeps the same JSON, so it never clears the draft or results.
+  const format = () => { if (canFormat) (onFormat || onText)(formatted); };
+  const edit = (value) => {
+    const pretty = pasted.current ? formatJson(value) : null;
+    pasted.current = false;
+    onText(pretty || value);
+    onFileName(fileName ? `${fileName.replace(/ \(edited\)$/, '')} (edited)` : '');
+  };
+  const markPaste = () => { pasted.current = true; };
+  const closeDialog = () => { setExpanded(false); requestAnimationFrame(() => expandButton.current?.focus()); };
+  const status = <JsonStatus empty={empty} optional={optional} parsed={parsed} />;
 
   const readFile = (file) => {
     if (!file) return;
@@ -147,7 +220,7 @@ function JsonUpload({ number, icon, title, description, text, onText, fileName, 
     const reader = new FileReader();
     reader.onload = () => {
       const content = String(reader.result);
-      onText(content);
+      onText(formatJson(content) || content);
       onFileName(file.name);
       const check = parseObject(title, content);
       log('INPUT', check.error ? 'error' : 'success',
@@ -169,14 +242,22 @@ function JsonUpload({ number, icon, title, description, text, onText, fileName, 
           <Icon name="file" size={15} /> Upload .json
         </button>
         <span className="pl-file-name">{fileName || 'Paste JSON or upload a file'}</span>
+        <span className="pl-json-tools">
+          <button type="button" className="pl-icon-button" onClick={format} disabled={disabled || !canFormat}
+            aria-label={`Format ${title} JSON`} title="Format JSON"><Icon name="format" size={15} /></button>
+          <button type="button" ref={expandButton} className="pl-icon-button" onClick={() => setExpanded(true)}
+            aria-label={`Expand ${title} to full screen`} title="Expand to full screen"><Icon name="expand" size={15} /></button>
+        </span>
         <input ref={input} type="file" accept=".json,application/json" hidden disabled={disabled}
           onChange={(event) => { readFile(event.target.files[0]); event.target.value = ''; }} />
       </div>
-      <textarea className="code-input pl-json-input" value={text} spellCheck="false" aria-label={title} disabled={disabled} placeholder={optional ? 'Optional: paste additional rules as JSON' : `Paste ${title.toLowerCase()} JSON`}
-        onChange={(event) => { onText(event.target.value); onFileName(fileName ? `${fileName} (edited)` : ''); }} />
-      {empty ? <p className="pl-muted">{optional ? 'Optional. The SQL service receives your question with no additional rules when left empty.' : 'Paste JSON or upload a .json file to continue.'}</p> : parsed.error
-        ? <p className="field-error"><Icon name="close" size={15} /> {parsed.error}</p>
-        : <p className="pl-field-ok"><Icon name="check" size={15} /> Valid JSON · {Object.keys(parsed.value).length} keys</p>}
+      <textarea className="code-input pl-json-input" value={text} spellCheck="false" wrap="off" aria-label={title} disabled={disabled} placeholder={optional ? 'Optional: paste additional rules as JSON' : `Paste ${title.toLowerCase()} JSON`}
+        onChange={(event) => edit(event.target.value)} onPaste={markPaste} onBlur={format} />
+      {status}
+      {expanded && (
+        <JsonDialog number={number} title={title} description={description} text={text} onEdit={edit} onPaste={markPaste}
+          onFormat={format} canFormat={canFormat} status={status} onClose={closeDialog} disabled={disabled} />
+      )}
     </section>
   );
 }
@@ -187,7 +268,9 @@ function Stepper({ steps }) {
       {steps.map((step, i) => (
         <React.Fragment key={step.label}>
           {i > 0 && <i />}
-          <span className={`pl-step-${step.state}`}><b>{step.state === 'pass' ? '✓' : step.state === 'fail' ? '✕' : i + 1}</b> {step.label}</span>
+          <span className={`pl-step-${step.state}`} title={step.label}>
+            <b>{step.state === 'pass' ? '✓' : step.state === 'fail' ? '✕' : i + 1}</b> <span className="pl-step-label">{step.label}</span>
+          </span>
         </React.Fragment>
       ))}
     </div>
@@ -442,6 +525,16 @@ export default function NlPipeline() {
   const [logs, setLogs] = useState([]);
   const nextId = useRef(0);
   const step2Ref = useRef(null);
+  const sqlBox = useRef(null);
+  // The SQL editor grows with the query, so the whole statement is visible.
+  useLayoutEffect(() => {
+    const box = sqlBox.current;
+    if (!box) return undefined;
+    const fit = () => { box.style.height = 'auto'; box.style.height = `${box.scrollHeight + 2}px`; };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [sql, generated]);
   const log = (stage, level, message, detail) =>
     setLogs((current) => [...current, { id: nextId.current++, time: timeStamp(), stage, level, message, detail }]);
 
@@ -686,11 +779,15 @@ export default function NlPipeline() {
       setExecution({ result: pipeline.result });
       setPresentation({ envelope: pipeline.presentation, status: pipeline.presentationStatus, error: pipeline.presentationError, resultId: pipeline.resultId, context, question: pipeline.question });
       if (pipeline.presentationStatus === 'READY') log('PREDICTION', 'success', 'Prediction analysis completed using masked results.');
-      if (pipeline.resultId) presentResult({ resultId: pipeline.resultId, context: generated.context, classification: generated.classification });
-      if (pipeline.resultId && wantsPrediction(generated.classification)) {
-        predictResult({ resultId: pipeline.resultId, context: generated.context, classification: generated.classification });
+      // The stored result belongs to the identity and policy it was executed
+      // with, so presentation and prediction must ask with that same context.
+      const stored = { resultId: pipeline.resultId, context, classification: generated.classification };
+      if (pipeline.resultId) {
+        presentResult(stored);
+        if (wantsPrediction(generated.classification)) predictResult(stored);
+      } else {
+        log('PRESENTATION', 'warn', 'The gateway kept no result to present; the masked rows are shown below.');
       }
-      else log('PRESENTATION', 'warn', 'The gateway kept no result to present; the masked rows are shown below.');
       log('EXECUTION', 'success', `Read-only query returned ${pipeline.result.rowCount} row(s); ${pipeline.result.masking.maskedCells} cell(s) were masked before the response left the backend.`, pipeline.result.masking);
       if (pipeline.result.ner?.warnings?.length) pipeline.result.ner.warnings.forEach((warning) => log('NER', 'warn', warning));
     } else if (pipeline.executionError) {
@@ -711,17 +808,18 @@ export default function NlPipeline() {
     { label: 'SQLGlot', state: inspectState === 'loading' ? 'active' : inspectState },
     { label: 'Policy', state: verifyState === 'loading' && inspect ? 'active' : verifyState === 'pass' ? 'pass' : verifyState === 'fail' ? 'fail' : 'idle' },
     { label: 'Mask', state: execution?.result ? 'pass' : execution?.error ? 'fail' : 'idle' },
-    { label: 'Present', state: { loading: 'active', ready: 'pass', error: 'fail' }[display.status] || 'idle' },
-    { label: 'Predict', state: { loading: 'active', ready: 'pass', error: 'fail' }[prediction.status] || 'idle' }
+    { label: 'Predict', state: { loading: 'active', ready: 'pass', error: 'fail' }[prediction.status] || 'idle' },
+    { label: 'Present', state: { loading: 'active', ready: 'pass', error: 'fail' }[display.status] || 'idle' }
   ];
 
   return (
     <div className="app-shell">
-      <header className="topbar">
+      <header className="topbar pl-topbar">
         <div className="brand">
           <span className="brand-mark"><Icon name="shield" size={22} /></span>
           <div><strong>PolicyGate</strong><span>NL → SQL → validation → masked results</span></div>
         </div>
+        <Stepper steps={steps} />
         <div className="topbar-actions">
           <a className="reset-button pl-link" href="#/">SQL verification console</a>
           <button className="reset-button" type="button" onClick={resetAll} disabled={busy}><Icon name="refresh" size={16} /> Reset</button>
@@ -729,14 +827,6 @@ export default function NlPipeline() {
       </header>
 
       <main>
-        <div className="page-heading">
-          <div>
-            <p className="kicker">End-to-end pipeline</p>
-            <h1>Classify, generate SQL, review it, then execute</h1>
-            <p>Click Generate SQL to classify your question, review the classification, then continue to a SQL draft you can edit, validate and execute to see masked results.</p>
-          </div>
-          <Stepper steps={steps} />
-        </div>
 
         <div className="workspace pl-workspace">
           <div className="input-stack">
@@ -759,11 +849,11 @@ export default function NlPipeline() {
 
               <div className="pl-json-grid">
                 <JsonUpload number="A" icon="file" title="User policy" description="Paste the policy to apply to this query"
-                  text={policyText} onText={(value) => { setPolicyText(value); clearVerification(); }} fileName={files.policy} onFileName={setFile('policy')} log={log} disabled={busy} />
+                  text={policyText} onText={(value) => { setPolicyText(value); clearVerification(); }} onFormat={setPolicyText} fileName={files.policy} onFileName={setFile('policy')} log={log} disabled={busy} />
                 <JsonUpload number="B" icon="user" title="Authenticated user" description="Paste the identity claims used to resolve policy filters"
-                  text={userText} onText={(value) => { setUserText(value); clearVerification(); }} fileName={files.user} onFileName={setFile('user')} log={log} disabled={busy} />
+                  text={userText} onText={(value) => { setUserText(value); clearVerification(); }} onFormat={setUserText} fileName={files.user} onFileName={setFile('user')} log={log} disabled={busy} />
                 <JsonUpload number="C" icon="code" title="NL-to-SQL rules" description="Optional additional instructions for SQL generation"
-                  text={rulesText} onText={(value) => { setRulesText(value); invalidateDraft(); }} fileName={files.rules} onFileName={setFile('rules')} log={log} disabled={busy} optional />
+                  text={rulesText} onText={(value) => { setRulesText(value); invalidateDraft(); }} onFormat={setRulesText} fileName={files.rules} onFileName={setFile('rules')} log={log} disabled={busy} optional />
               </div>
 
               <IntentClassificationCard status={currentClassification.status} result={currentClassification.result}
@@ -817,7 +907,7 @@ export default function NlPipeline() {
                   {generated.injectedRules && <details><summary>NL-to-SQL rules sent</summary><pre>{typeof generated.injectedRules === 'string' ? generated.injectedRules : pretty(generated.injectedRules)}</pre></details>}
                   <p className="pl-muted">For testing, change User policy or Authenticated user above, then click Validate &amp; execute again. The SQL stays in the editor; each run uses the current JSON and replaces the previous results.</p>
                   <label className="pl-label" htmlFor="pl-sql">SQL to validate and execute</label>
-                  <textarea id="pl-sql" className="code-input sql-input" value={sql} spellCheck="false" aria-label="Generated SQL" disabled={busy}
+                  <textarea id="pl-sql" ref={sqlBox} rows={1} className="code-input sql-input pl-sql-autosize" value={sql} spellCheck="false" aria-label="Generated SQL" disabled={busy}
                     onChange={(event) => { setSql(event.target.value); clearVerification(); }} />
                   {sql.trim() !== generated.sql.trim() && (
                     <p className="pl-muted">SQL edited. Your changes will be validated before execution.</p>
@@ -863,10 +953,6 @@ export default function NlPipeline() {
         </div>
       </main>
 
-      <footer>
-        <span><Icon name="shield" size={14} /> Raw database rows stay in the backend; the browser receives masked values only.</span>
-        <span>Inputs → Intent → NL-to-SQL → SQL safety → SQLGlot → Policy → Read-only DB → PII mask → Present → Predict</span>
-      </footer>
     </div>
   );
 }

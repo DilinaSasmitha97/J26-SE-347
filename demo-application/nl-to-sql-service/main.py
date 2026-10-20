@@ -59,16 +59,7 @@ def translate(
     trace("FULL SCHEMA", full_schema_context)
 
     # Resolve target dialect
-    import sqlite3
-    if not dialect:
-        if isinstance(db_conn, sqlite3.Connection):
-            active_dialect = "sqlite"
-        elif db_conn is not None:
-            active_dialect = "mssql"
-        else:
-            active_dialect = "sqlite"
-    else:
-        active_dialect = dialect
+    active_dialect = dialect or refinement_loop.connection_dialect(db_conn)
     trace("SQL DIALECT", active_dialect)
 
     # 0A. Contextual Entity & Value Grounding (Task 4A)
