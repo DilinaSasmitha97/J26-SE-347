@@ -182,6 +182,45 @@ it('sends the original question with edited SQL and invalidates old presentation
   expect(screen.queryByLabelText('Direct answer')).toBeNull();
 });
 
+it('shows verified tenant repairs and clears their result when the SQL is edited', async () => {
+  const fetch = fakeFetch();
+  const base = fetch.getMockImplementation();
+  fetch.mockImplementation(async (url, options) => {
+    const response = await base(url, options);
+    if (url !== '/api/secure-query') return response;
+    return reply({ ...JSON.parse(await response.text()), tenantRewrite: {
+      status: 'REPAIRED', applied: true, finalVerification: 'PASS', message: 'Missing tenant restriction added.',
+      originalSql: 'SELECT COUNT(*) FROM employees', finalSql: sql,
+      changes: [{ alias: 'employees', action: 'ADD_MISSING_TENANT_FILTER' }], findings: []
+    } });
+  });
+  vi.stubGlobal('fetch', fetch);
+  render(<NlPipeline />); await generate();
+  fireEvent.click(screen.getByRole('button', { name: 'Validate & execute' }));
+  await waitFor(() => expect(screen.getByText('Repaired and verified')).toBeTruthy());
+  expect(within(screen.getByLabelText('Tenant isolation repair')).getByLabelText('Final verified SQL').textContent).toBe(sql);
+  fireEvent.change(screen.getByLabelText('Generated SQL'), { target: { value: sql + ' ' } });
+  expect(screen.queryByLabelText('Final verified SQL')).toBeNull();
+  expect(within(screen.getByLabelText('Tenant isolation repair')).getByText('Waiting')).toBeTruthy();
+});
+
+it('shows an isolation refusal with no final SQL or execution result', async () => {
+  const fetch = fakeFetch();
+  const base = fetch.getMockImplementation();
+  fetch.mockImplementation((url, options) => url === '/api/secure-query' ? Promise.resolve(reply({
+    status: 'BLOCKED', decision: { passed: false, decision: 'FAIL', checks: [], context: { tables: [], columns: [] } },
+    tenantRewrite: { status: 'CANNOT_REPAIR', applied: false, finalVerification: 'FAIL',
+      reasonCode: 'UNSUPPORTED_QUERY_SHAPE', message: 'Nested queries cannot currently be verified.' }
+  })) : base(url, options));
+  vi.stubGlobal('fetch', fetch);
+  render(<NlPipeline />); await generate();
+  fireEvent.click(screen.getByRole('button', { name: 'Validate & execute' }));
+  await waitFor(() => expect(screen.getByText('Cannot safely repair')).toBeTruthy());
+  expect(within(screen.getByLabelText('Tenant isolation repair')).getByRole('alert').textContent).toMatch(/Nested queries cannot currently/);
+  expect(screen.queryByLabelText('Final verified SQL')).toBeNull();
+  expect(bodiesFor(fetch, PRESENT)).toEqual([]);
+});
+
 it('starts and resets with empty context fields and uses pasted rules without overwriting inputs', async () => {
   const fetch = fakeFetch(); vi.stubGlobal('fetch', fetch);
   render(<NlPipeline />);

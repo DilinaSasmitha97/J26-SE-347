@@ -4,9 +4,14 @@ This application combines the policy backend, NL-to-SQL service, SQLGlot
 inspection service, Navodya's JavaScript security-validation package, PII NER,
 Vonara's presentation/prediction service, and the React demonstration UI.
 
+See [the architecture diagrams](ARCHITECTURE.md) for the current service topology,
+tenant-isolation execution flow, and implementation map.
+See [the component process flows](PROCESS_FLOW.md) for inputs, outputs, data
+relationships, API payloads, and the internal SQL-generation steps.
+
 ## Request flow
 
-`frontend -> [user clicks Generate SQL] -> backend -> intent classification (question only) -> [user clicks Continue to SQL] -> NL-to-SQL -> SQL safety validation -> SQLGlot policy checks -> read-only database -> PII masking -> data presentation (classified formats) -> frontend`
+`frontend -> [user clicks Generate SQL] -> backend -> intent classification (question only) -> [user clicks Continue to SQL] -> NL-to-SQL -> SQL safety / access checks -> tenant isolation repair -> independent tenant / policy revalidation -> read-only database -> PII masking -> data presentation (classified formats) -> frontend`
 
 After **Validate & execute** the gateway keeps the masked result under a
 `resultId`, and the page asks `POST /api/present-result` to show it in the
@@ -61,8 +66,49 @@ optional. User JSON must include `userId` and `role`. Policy JSON must include
 `allowedTables`; its `valueFrom` filters resolve against the supplied user claims.
 The gateway uses this manual context for generation, checks, masking and scenarios.
 This console treats the operator's inputs as demo context, without authenticating
-those claims. Tenant AST rewriting is intentionally not part of this version.
-Queries missing the supplied policy's required tenant/user filters are rejected.
+those claims. Tenant enforcement requires a positive integer `user.tenantId`;
+use a decimal string for IDs above JavaScript's safe integer range. A deployed
+system must supply identity and policy from authenticated server context.
+
+Tenant isolation is a separate mandatory stage in **Validate & execute**.
+It corrects missing or incorrect simple tenant equalities and completes coverage
+for every table alias, including repeated tables and self joins. Its trusted
+ownership registry is `sqlglot-service/tenant_registry.json`: HR tables use
+`tenant_id`, while `tenants` uses `id`. Missing policy tenant rules never make
+a registered table global. Conflicting tenant policy values block the request.
+Additional employee/department row restrictions must already be present as
+verifiable mandatory conditions; the tenant repair stage does not invent them.
+
+The current repair rules support one SELECT over registered physical tables,
+inner/cross joins, left joins, aggregation, ordering, limits and window functions.
+Left-joined sources receive guards in their own ON conditions so unmatched rows
+are preserved. CTEs, nested queries, set operations, right/full joins, NATURAL/
+USING joins, qualified databases, custom/unrecognized functions, unbound parameters, unknown ownership and
+ambiguous/conflicting Boolean tenant expressions are refused rather than
+executed. This is deterministic AST repair; there is no LLM repair fallback.
+
+The **Tenant isolation repair** frontend card reports `REPAIRED`,
+`UNCHANGED_VERIFIED`, `CANNOT_REPAIR`, `BLOCKED`, or `UNAVAILABLE`, with initial
+alias findings, changes, original SQL and final verified SQL. Final verification
+reparses the serialized SQL, checks mandatory tenant and additional row guards,
+then reruns SQL safety and access checks. Only that verified candidate reaches
+execution, with trusted tenant values bound separately in MySQL and SQLite.
+Service failures block execution. `/api/secure-query` with `execute: false`
+previews the verified repair; `/api/verify-sql` remains validation-only and
+does not repair SQL. The NL service's legacy `/api/v1/ask` rejects
+`execute_query: true` with `GATEWAY_EXECUTION_REQUIRED`, preventing direct
+execution outside the security gateway.
+
+Restart SQLGlot, the backend and frontend after installing this feature.
+SQLGlot's tested version is pinned in its requirements file. Run isolation tests:
+
+```powershell
+Push-Location .\sqlglot-service
+.\.venv\Scripts\python.exe -m unittest -v test_tenant_isolation
+Pop-Location
+npm test --prefix .\backend
+npm test --prefix .\frontend
+```
 
 The gateway sends exactly two fields to the NL-to-SQL service: `user_query`
 (the question) and `injected_rules` (your pasted rules JSON object, or `null`).

@@ -1,0 +1,35 @@
+flowchart TB
+    input["Question, full schema and optional pasted rules"]
+    db[("NL-service database connection")]
+    entities["Entity resolver"]
+    relationships["Relationship and bridge mapper"]
+    pruning["Minimal-context schema extractor"]
+    subgraphhints["Selected-subgraph relationship mapper"]
+    examples["Optional exemplar selector"]
+    prompt["Code representation prompt builder"]
+    model["Configured LLM provider"]
+    cleanup["SQL output cleanup"]
+    compiler["Compiler validation and bounded refinement"]
+    output["SQL draft and generation metadata"]
+
+    input -->|"Question and full schema"| entities
+    db -.->|"Distinct values and schema metadata when connected"| entities
+    entities -->|"Grounded values and candidate tables"| relationships
+    input -->|"Question and full schema"| relationships
+    relationships -->|"Protected entity and bridge tables"| pruning
+    input -->|"Question and schema"| pruning
+    pruning -->|"Pruned schema and selected tables"| subgraphhints
+    input -->|"Question and full schema"| subgraphhints
+    relationships -.->|"Initial join hints when no subgraph hints"| prompt
+    input -->|"Question"| examples
+    entities -->|"Value-grounding hints"| prompt
+    pruning -->|"Pruned schema"| prompt
+    subgraphhints -->|"Join-path hints"| prompt
+    examples -.->|"Examples when available and enabled"| prompt
+    input -->|"Question, dialect and pasted rules"| prompt
+    prompt -->|"SQL generation prompt"| model
+    model -->|"Completion and token usage"| cleanup
+    cleanup -->|"Candidate SQL"| compiler
+    db -.->|"Compiler result or error; structural fallback if disconnected"| compiler
+    compiler -.->|"Failure: correction prompt within attempt limit"| model
+    compiler -->|"Final draft, validity and refinement metadata"| output

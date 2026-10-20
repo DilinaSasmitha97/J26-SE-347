@@ -19,7 +19,9 @@ const masked = {
 };
 const classification = { intent: 'PROPORTION', presentation_types: ['table', 'pie_chart', 'bar_chart'] };
 const rendered = { status: 'SUCCESS', source: 'classification', intent: 'PROPORTION', row_count: 2, views: [{ type: 'table', available: true }] };
-const decision = { passed: true, checks: [], securityValidation: { safe: true } };
+const decision = { passed: true, checks: [], securityValidation: { safe: true }, finalSql: sql,
+  tenantRewrite: { status: 'UNCHANGED_VERIFIED', finalVerification: 'PASS' },
+  execution: { sql: sql.replace('= 101', '= ?'), parameters: ['101'] } };
 
 function post(server, path, body) {
   return new Promise((resolve, reject) => {

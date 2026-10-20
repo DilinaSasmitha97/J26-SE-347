@@ -1,0 +1,37 @@
+flowchart TB
+    input["User inputs: question, user JSON, policy JSON, optional rules"]
+    ui["React frontend"]
+    intent["Intent classifier"]
+    generation["NL-to-SQL generator"]
+    review["Review or edit SQL in the frontend"]
+    policy["Context and policy resolver"]
+    gate["SQL safety, access checks and tenant repair"]
+    verified["Independent final verification"]
+    execute["Read-only query executor"]
+    database[("MySQL or execution SQLite")]
+    pii["PII detection and masking"]
+    store[("Masked result store")]
+    render["Data presentation"]
+    predict["Prediction and anomaly analysis"]
+    output["Frontend results"]
+
+    input --> ui
+    ui -->|"Question only"| intent
+    intent -->|"Intent, formats, prediction_needed"| ui
+    ui -->|"Continue to SQL: question and optional rules"| generation
+    generation -->|"SQL draft and generation metadata"| review
+    review -->|"Current SQL"| policy
+    ui -->|"Current user and policy"| policy
+    policy -->|"SQL, effective policy, tenantId"| gate
+    gate -->|"Candidate SQL and repair findings"| verified
+    verified -->|"Verified SQL and trusted parameter values"| execute
+    execute -->|"Bound SELECT"| database
+    database -->|"Raw rows and column metadata: server only"| pii
+    pii -->|"Masked rows and masking metadata"| store
+    store -->|"Authorized stored result and question"| render
+    store -->|"Authorized stored result and question"| predict
+    intent -.->|"Formats reused through browser and gateway"| render
+    intent -.->|"Forecast or anomaly intent reused through gateway"| predict
+    render -->|"Tables, cards, charts and verified summary"| output
+    predict -->|"Readiness, forecast, anomalies and summary"| output
+    pii -->|"Masked rows and stage decisions through gateway"| output

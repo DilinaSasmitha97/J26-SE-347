@@ -1,4 +1,4 @@
 fastapi
 uvicorn
-sqlglot
+sqlglot==30.21.0
 pydantic

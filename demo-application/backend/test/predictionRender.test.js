@@ -18,7 +18,9 @@ const masked = {
 };
 const forecast = { intent: 'TREND_ANALYSIS', presentation_types: ['table', 'line_chart'], prediction_needed: true };
 const predicted = { status: 'SUCCESS', mode: 'FORECAST', readiness: { verdict: 'READY' }, forecast: { generated: true, points: [] }, anomalies: { evaluated: true } };
-const decision = { passed: true, checks: [], securityValidation: { safe: true } };
+const decision = { passed: true, checks: [], securityValidation: { safe: true }, finalSql: sql,
+  tenantRewrite: { status: 'UNCHANGED_VERIFIED', finalVerification: 'PASS' },
+  execution: { sql: sql.replace('= 101', '= ?'), parameters: ['101'] } };
 
 function post(server, path, body) {
   return new Promise((resolve, reject) => {

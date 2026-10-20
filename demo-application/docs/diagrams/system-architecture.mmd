@@ -1,0 +1,53 @@
+flowchart LR
+    user["Research user"]
+    ui["React and Vite UI :3000
+Question, editable context and SQL
+Repair details, masked results and charts"]
+
+    subgraph backend["Node backend process :5000"]
+        gateway["Express API gateway
+Context resolution and orchestration"]
+        security["In-process security package
+SQL safety, query executor and PII masking"]
+        results[("In-memory masked result store
+resultId, user and policy binding
+10-minute default lifetime")]
+    end
+
+    nl["NL-to-SQL FastAPI :8000
+Schema pruning, entity grounding
+Join hints, prompt and compiler refinement"]
+    glot["SQLGlot FastAPI :8001
+SQL inspection
+Tenant AST repair and verification"]
+    registry[("Trusted tenant registry
+tenant_registry.json")]
+    analytics["Presentation FastAPI :8004
+Question-only intent classification
+Masked-result rendering and prediction"]
+    ner["PII NER sidecar :5002
+Text entity detection"]
+    models["Configured external LLM providers"]
+    mysql[("Configured MySQL database")]
+    execsqlite[("Execution SQLite fallback
+shared-database/multitenant_hr.db")]
+    gensqlite[("Generator SQLite fallback
+Resolved by NL service database.py")]
+
+    user --> ui
+    ui -->|"HTTP JSON: application API"| gateway
+    gateway -->|"Question and pasted rules: translate"| nl
+    nl -->|"Prompt and SQL correction"| models
+    gateway -->|"Inspect, repair, then verify-only"| glot
+    registry -.->|"Ownership configuration"| glot
+    gateway -->|"Safety, verified execution and masking"| security
+    security -->|"Bound SELECT in read-only transaction"| mysql
+    security -.->|"Configured SQLite mode or connection fallback"| execsqlite
+    security -->|"Text samples for NER"| ner
+    security -->|"Masked rows only"| results
+    gateway -->|"Question-only classify; stored-result render or predict"| analytics
+    results -->|"Retrieved by gateway for authorized requests"| gateway
+    analytics -.->|"Optional classification and summary assistance"| models
+    gateway -->|"Draft, stage decisions, masked result and views"| ui
+    nl -.->|"Schema, value grounding and compiler checks"| mysql
+    nl -.->|"Generator-specific connection fallback"| gensqlite

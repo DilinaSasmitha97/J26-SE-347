@@ -49,7 +49,9 @@ const masked = {
 };
 const envelope = { status: 'SUCCESS', response: { blocks_emitted: ['TABLE'] }, prediction: {} };
 const sql = 'SELECT work_email FROM employees WHERE tenant_id = 101 AND department_id = 1';
-const decision = { passed: true, checks: [], securityValidation: { safe: true } };
+const decision = { passed: true, checks: [], securityValidation: { safe: true }, finalSql: sql,
+  tenantRewrite: { status: 'UNCHANGED_VERIFIED', finalVerification: 'PASS' },
+  execution: { sql: sql.replace('= 101', '= ?'), parameters: ['101'] } };
 
 test('schema metadata removes denied columns and unauthorized tables', () => {
   const schema = service.permittedSchema(createEffectivePolicy(users[0], policyTemplate));

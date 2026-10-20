@@ -11,6 +11,8 @@ from inspector import (
 from extractor import (
     extract_sql_info
 )
+from rewriter import isolate_sql
+from typing import Any
 
 
 # ---------------------------------------------------------
@@ -46,6 +48,19 @@ class SQLInspectRequest(BaseModel):
         default="mysql",
         description="SQL dialect used by SQLGlot"
     )
+
+
+class TenantIsolationRequest(SQLInspectRequest):
+    tenant_id: Any = None
+    rules: list[dict[str, Any]] = Field(default_factory=list)
+    repair: bool = True
+
+
+@app.post("/tenant-isolation")
+def tenant_isolation(request: TenantIsolationRequest):
+    return {"success": True, "tenantRewrite": isolate_sql(
+        request.sql, request.tenant_id, request.rules, request.dialect, request.repair
+    )}
 
 
 # ---------------------------------------------------------

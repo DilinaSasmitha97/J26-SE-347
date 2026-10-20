@@ -1,0 +1,67 @@
+flowchart TB
+    draft["Generated or manually edited SQL
+POST /api/secure-query"]
+    context["Resolve supplied user and policy
+Resolve valueFrom rules and tenantId"]
+    safety["Initial SQL safety check
+node-sql-parser, one read-only statement"]
+    access["SQLGlot inspection
+Operation, table and column access"]
+    assess["Tenant assessment per table alias
+Registered physical sources and supported shape"]
+    ownership[("Trusted ownership registry
+Tenant column per physical table")]
+
+    unchanged["UNCHANGED_VERIFIED
+Keep compliant tenant conditions"]
+    repair["Deterministic AST repair
+Replace wrong simple tenant equality
+Add missing guards for every alias"]
+    leftjoin["Place nullable left-join guards in ON
+Keep other guards in WHERE"]
+    verify["Reparse serialized final SQL
+Prove tenant and additional row guards
+Verification-only request: no repair"]
+    finalchecks["Recheck SQL safety and access policy
+Match verified SQL and tenant bindings"]
+    artifact{"Complete verified execution artifact?"}
+    preview{"execute is true?"}
+    approved["APPROVED preview
+Final SQL and repair details; no database execution"]
+    execute["Execute the verified bound SELECT
+Read-only MySQL or SQLite execution"]
+    pii["Column classification and PII NER
+Role-based masking and optional FPE"]
+    stored[("Store masked result
+Bind resultId to user, tenant and policy")]
+    display["Return stage details and masked rows
+Retrieve stored result for render or prediction"]
+    stop["Stop without execution
+BLOCKED, CANNOT_REPAIR or UNAVAILABLE"]
+
+    draft --> context
+    context --> safety
+    safety -->|"Safe"| access
+    access -->|"Access permitted"| assess
+    ownership -.-> assess
+    assess -->|"Already complete"| unchanged
+    assess -->|"Supported missing, wrong or partial guard"| repair
+    repair --> leftjoin
+    unchanged --> verify
+    leftjoin --> verify
+    verify -->|"Verified"| finalchecks
+    finalchecks --> artifact
+    artifact -->|"Yes"| preview
+    preview -->|"No"| approved
+    preview -->|"Yes"| execute
+    execute --> pii
+    pii --> stored
+    stored --> display
+
+    context -.->|"Invalid context"| stop
+    safety -.->|"Unsafe SQL"| stop
+    access -.->|"Unauthorized access"| stop
+    assess -.->|"Unknown ownership or unsupported query"| stop
+    verify -.->|"Unverified tenant or required row filter"| stop
+    finalchecks -.->|"Safety or policy failure"| stop
+    artifact -.->|"No"| stop

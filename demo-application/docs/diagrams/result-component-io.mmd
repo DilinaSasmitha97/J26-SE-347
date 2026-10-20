@@ -1,0 +1,29 @@
+flowchart TB
+    raw["Raw rows and database column metadata: server only"]
+    classify["PII column classifier"]
+    schemas[("PII schema and masking policy")]
+    ner["PII NER sidecar"]
+    masking["Role-based masker and optional FPE"]
+    role["User role and FPE configuration"]
+    store[("Gateway masked result store")]
+    retrieve["Authorized result lookup"]
+    lookup["Result request: resultId, current user, policy and classification"]
+    rendering["Presentation renderer"]
+    prediction["Forecast and anomaly engine"]
+    browser["Frontend display"]
+
+    raw -->|"Rows, column origins and executed SQL"| classify
+    schemas -.->|"Known PII columns"| classify
+    classify -->|"Text samples and initial classification"| ner
+    ner -->|"Entity spans or unverified-text status"| masking
+    classify -->|"Rows and PII classifications"| masking
+    role -.-> masking
+    schemas -.->|"Masking actions"| masking
+    masking -->|"Masked result, classification and NER metadata"| store
+    store -->|"resultId bound to user, tenant and policy"| retrieve
+    lookup -->|"Lookup and policy-match inputs"| retrieve
+    retrieve -->|"Stored masked rows, question, intent and display formats"| rendering
+    retrieve -->|"Stored masked rows and forecast or anomaly request"| prediction
+    rendering -->|"Available views and reasons for unsupported formats"| browser
+    prediction -->|"Readiness, selected model, intervals, anomalies and summary"| browser
+    masking -->|"Masked result and masking details through gateway"| browser

@@ -38,7 +38,7 @@ class QueryError extends Error {
 function createQueryExecutor(pool, options = {}) {
   const { allowlist = null, maxRows = 1000, timeoutMs = 5000 } = options;
 
-  async function run(sql) {
+  async function run(sql, parameters = []) {
     const result = validate(sql, false, { allowlist });
     if (!result.safe) {
       const err = new QueryError('validation_failed', 'Query failed security validation', 403);
@@ -53,7 +53,9 @@ function createQueryExecutor(pool, options = {}) {
       await conn.query('START TRANSACTION READ ONLY');
       const started = process.hrtime.bigint();
       // rowsAsArray keeps duplicate column names (a.id, b.id) instead of collapsing them.
-      const [rows, fields] = await conn.query({ sql, rowsAsArray: true });
+      const [rows, fields] = parameters.length
+        ? await conn.execute({ sql, rowsAsArray: true }, parameters)
+        : await conn.query({ sql, rowsAsArray: true });
       const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
       await conn.rollback();
 

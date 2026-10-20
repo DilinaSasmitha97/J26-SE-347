@@ -42,7 +42,7 @@ def run_tests():
     assert res.status_code == 200
 
     print("\n========================================")
-    print("4. Testing POST /api/v1/ask (End-to-End Live Execution)")
+    print("4. Testing POST /api/v1/ask (Direct Execution Must Be Blocked)")
     print("========================================")
     payload_ask = {
         "question": "List employee number, first name, and last name for active employees",
@@ -60,7 +60,8 @@ def run_tests():
             print("  -", r)
     else:
         print("Error detail:", res.text)
-    assert res.status_code == 200
+    assert res.status_code == 403
+    assert res.json()["detail"]["error_code"] == "GATEWAY_EXECUTION_REQUIRED"
 
     print("\n========================================")
     print("ALL TESTS PASSED SUCCESSFULLY!")
