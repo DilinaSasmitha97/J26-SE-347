@@ -7,7 +7,11 @@ function normalized(value) {
 
 function checkTableColumns(sqlAnalysis, policy, sql = sqlAnalysis?.normalizedSql) {
   const tables = Array.isArray(sqlAnalysis?.tables) ? sqlAnalysis.tables : [];
-  const columns = Array.isArray(sqlAnalysis?.columns) ? sqlAnalysis.columns : [];
+  const references = Array.isArray(sqlAnalysis?.columns) ? sqlAnalysis.columns : [];
+  // SQLGlot marks only bare ORDER BY aliases in their own SELECT. Their
+  // underlying expressions remain physical references and must pass access
+  // checks. Do not exempt a qualified or same-named WHERE column.
+  const columns = references.filter((column) => column.referenceType !== 'OUTPUT_ALIAS' || column.table);
   const allowedTables = new Set(
     (Array.isArray(policy?.allowedTables) ? policy.allowedTables : []).map(normalized)
   );
