@@ -105,6 +105,26 @@ def extract_tables(
     return tables
 
 
+def is_order_output_alias(column: exp.Column) -> bool:
+    """Recognize a bare ORDER BY alias in its own SELECT only.
+
+    Do not exempt same-named columns in WHERE, the projection, another scope,
+    or qualified references. Underlying projection columns are still extracted.
+    """
+    if column.table or not isinstance(column.parent, exp.Ordered):
+        return False
+    ordered = column.parent
+    order = ordered.parent
+    if ordered.this is not column or not isinstance(order, exp.Order):
+        return False
+    select = order.parent
+    if not isinstance(select, exp.Select) or select.args.get("order") is not order:
+        return False
+    matches = [projection for projection in select.expressions
+               if isinstance(projection, exp.Alias) and projection.alias.lower() == column.name.lower()]
+    return len(matches) == 1
+
+
 def extract_columns(
     expression: exp.Expression
 ) -> List[Dict[str, Any]]:
@@ -144,10 +164,12 @@ def extract_columns(
         )
 
         column_name = column.name
+        output_alias = is_order_output_alias(column)
 
         key = (
             resolved_table,
-            column_name
+            column_name,
+            output_alias
         )
 
         if key in seen:
@@ -155,10 +177,13 @@ def extract_columns(
 
         seen.add(key)
 
-        columns.append({
+        reference = {
             "table": resolved_table,
             "column": column_name
-        })
+        }
+        if output_alias:
+            reference["referenceType"] = "OUTPUT_ALIAS"
+        columns.append(reference)
 
     return columns
 
