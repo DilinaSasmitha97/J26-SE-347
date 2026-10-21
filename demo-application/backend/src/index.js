@@ -5,6 +5,7 @@ const { createGenerationContract } = require('./services/generationContract');
 const { generateSql } = require('./services/fakeSqlGenerator');
 const { inspectSql, SqlInspectionError } = require('./security/sql/sqlInspector');
 const { evaluateSqlSecurity } = require('./security/sql/securityEvaluator');
+const { traceSqlSafety } = require('./security/sql/astTrace');
 const {
   SecureQueryError,
   validateWithSecurityLayer,
@@ -86,7 +87,8 @@ async function verifySql({ policy, user, sql, dialect = 'mysql', repairTenant = 
     reason: validation.safe ? null : 'SECURITY_LAYER_REJECTED',
     message: validation.safe
       ? `${validation.statementType} passed SQL safety validation.`
-      : validation.violations.map((item) => `${item.type}: ${item.detail}`).join('; ')
+      : validation.violations.map((item) => `${item.type}: ${item.detail}`).join('; '),
+    astTrace: traceSqlSafety(sql, validation)
   };
 
   if (!validation.safe) {
