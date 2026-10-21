@@ -1,5 +1,7 @@
 import sqlite3
 import unittest
+import json
+from pathlib import Path
 
 from rewriter import isolate_sql, verify_isolation, IsolationError, REGISTRY
 
@@ -12,7 +14,7 @@ class TenantIsolationTests(unittest.TestCase):
             CREATE TABLE employees(id INTEGER, tenant_id INTEGER, first_name TEXT,
                                    department_id INTEGER, supervisor_id INTEGER, city TEXT);
             CREATE TABLE departments(id INTEGER, tenant_id INTEGER, name TEXT);
-            CREATE TABLE tenants(id INTEGER, name TEXT);
+            CREATE TABLE tenants(tenant_id INTEGER, company_name TEXT);
             INSERT INTO employees VALUES
                 (1,101,'Alice',10,2,'Colombo'), (2,101,'Bob',20,3,'Kandy'),
                 (3,102,'Foreign',20,1,'Colombo');
@@ -56,7 +58,7 @@ class TenantIsolationTests(unittest.TestCase):
         self.db.execute("ALTER TABLE employees ADD COLUMN gender TEXT")
         self.db.execute("UPDATE employees SET gender = CASE WHEN id=1 THEN 'FEMALE' ELSE 'MALE' END")
         rules = [{"table": table, "field": "tenant_id", "operator": "=", "value": 101}
-                 for table in ("employees", "departments", "workforce_capacity")]
+                 for table in ("employees", "departments", "unregistered_capacity")]
         sql = "SELECT gender, COUNT(*) AS count FROM employees WHERE tenant_id = 101 GROUP BY gender;"
         result, rows = self.repaired(sql, rules)
         self.assertEqual(result["status"], "UNCHANGED_VERIFIED")
@@ -66,9 +68,9 @@ class TenantIsolationTests(unittest.TestCase):
         verify_isolation(result["finalSql"], "sqlite", "101", rules)
 
     def test_referenced_unregistered_policy_table_remains_blocked(self):
-        rules = [{"table": "workforce_capacity", "column": "tenant_id", "value": 101}]
-        for sql in ["SELECT COUNT(*) FROM workforce_capacity WHERE tenant_id=101",
-                    "SELECT e.id FROM employees e JOIN workforce_capacity w ON w.department_id=e.department_id"]:
+        rules = [{"table": "unregistered_capacity", "column": "tenant_id", "value": 101}]
+        for sql in ["SELECT COUNT(*) FROM unregistered_capacity WHERE tenant_id=101",
+                    "SELECT e.id FROM employees e JOIN unregistered_capacity w ON w.department_id=e.department_id"]:
             with self.subTest(sql=sql):
                 result = isolate_sql(sql, 101, rules)
                 self.assertEqual(result["reasonCode"], "UNKNOWN_TENANT_OWNERSHIP")
@@ -76,7 +78,7 @@ class TenantIsolationTests(unittest.TestCase):
                 self.assertNotIn("parameterizedSql", result)
 
     def test_unused_policy_table_does_not_skip_referenced_row_restrictions(self):
-        rules = [{"table": "workforce_capacity", "column": "tenant_id", "value": 101},
+        rules = [{"table": "unregistered_capacity", "column": "tenant_id", "value": 101},
                  {"table": "employees", "column": "department_id", "value": 10}]
         result = isolate_sql("SELECT first_name FROM employees WHERE tenant_id=101", 101, rules)
         self.assertEqual(result["reasonCode"], "ROW_FILTER_MISMATCH")
@@ -103,9 +105,55 @@ class TenantIsolationTests(unittest.TestCase):
         _, rows = self.repaired("SELECT first_name,COUNT(*) OVER () FROM employees ORDER BY id DESC LIMIT 1")
         self.assertEqual(rows, [("Bob", 2)])
 
-    def test_tenant_directory_uses_id(self):
-        _, rows = self.repaired("SELECT name FROM tenants WHERE id=102")
+    def test_tenant_directory_uses_enterprise_tenant_id(self):
+        _, rows = self.repaired("SELECT company_name FROM tenants WHERE tenant_id=102")
         self.assertEqual(rows, [("Our tenant",)])
+
+    def test_workforce_capacity_aggregate_is_registered_and_tenant_restricted(self):
+        self.db.executescript("""
+            CREATE TABLE workforce_capacity(tenant_id INTEGER,capacity_month TEXT,
+                actual_headcount INTEGER,budgeted_headcount INTEGER,open_requisitions INTEGER);
+            INSERT INTO workforce_capacity VALUES (101,'2026-01',8,10,2),(102,'2026-01',999,999,999);
+        """)
+        for suffix in ["", " WHERE workforce_capacity.tenant_id=101", " WHERE workforce_capacity.tenant_id=102"]:
+            with self.subTest(suffix=suffix):
+                sql = ("SELECT capacity_month AS ds,SUM(actual_headcount) AS y,"
+                       "SUM(budgeted_headcount) AS budget,SUM(open_requisitions) AS open_reqs "
+                       "FROM workforce_capacity" + suffix + " GROUP BY capacity_month ORDER BY ds")
+                result, rows = self.repaired(sql)
+                self.assertEqual(rows, [("2026-01", 8, 10, 2)])
+                self.assertEqual(result["status"], "UNCHANGED_VERIFIED" if suffix.endswith("=101") else "REPAIRED")
+
+    def test_recruitment_tables_are_registered_and_joined_aliases_are_protected(self):
+        self.db.executescript("""
+            CREATE TABLE job_openings(tenant_id INTEGER,department_id INTEGER,position_id INTEGER,
+                headcount_requested INTEGER,opened_date TEXT,opening_status TEXT);
+            CREATE TABLE job_positions(tenant_id INTEGER,position_id INTEGER,position_title TEXT);
+            INSERT INTO job_openings VALUES (101,10,1,2,'2026-01-01','OPEN'),(102,20,2,9,'2026-01-02','OPEN');
+            INSERT INTO job_positions VALUES (101,1,'Local role'),(102,2,'Other role');
+        """)
+        _, rows = self.repaired("""SELECT d.name,jp.position_title,jo.headcount_requested,jo.opened_date
+            FROM job_openings jo JOIN departments d
+              ON jo.department_id=d.id AND jo.tenant_id=d.tenant_id
+            JOIN job_positions jp ON jo.position_id=jp.position_id AND jo.tenant_id=jp.tenant_id
+            WHERE jo.tenant_id=101 AND jo.opening_status='OPEN' ORDER BY jo.opened_date DESC""")
+        self.assertEqual(rows, [("Local", "Local role", 2, "2026-01-01")])
+
+    def test_registry_matches_enterprise_schema_direct_tenant_columns(self):
+        path = Path(__file__).resolve().parents[1] / "packages/security-validation-layer/config/schema_allowlist.json"
+        schema = json.loads(path.read_text(encoding="utf-8"))["enterprise_hrms_alpha"]
+        expected = {table: "tenant_id" for table, columns in schema.items() if "tenant_id" in columns}
+        self.assertEqual(REGISTRY, expected)
+        for table, column in REGISTRY.items():
+            self.assertIn(column, schema[table])
+
+    def test_shared_and_parent_owned_tables_are_not_given_invented_tenant_columns(self):
+        for table in ["countries", "currencies", "employee_dependents", "employee_emergency_contacts",
+                      "payroll_components", "performance_scores"]:
+            with self.subTest(table=table):
+                result = isolate_sql(f"SELECT COUNT(*) FROM {table}", 101)
+                self.assertEqual(result["reasonCode"], "UNKNOWN_TENANT_OWNERSHIP")
+                self.assertIsNone(result["finalSql"])
 
     def test_unsupported_inputs_are_non_executable(self):
         cases = [

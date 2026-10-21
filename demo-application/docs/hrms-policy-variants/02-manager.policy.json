@@ -1,0 +1,259 @@
+{
+  "policyId": "hrms-2-manager-v1",
+  "version": "1.0",
+  "role": "MANAGER",
+  "allowedOperations": [
+    "SELECT"
+  ],
+  "allowedTables": [
+    "company_locations",
+    "competency_catalog",
+    "cost_centers",
+    "countries",
+    "currencies",
+    "department_managers",
+    "departments",
+    "employees",
+    "employment_history",
+    "employment_types",
+    "exchange_rates",
+    "industry_types",
+    "job_levels",
+    "job_openings",
+    "job_positions",
+    "leave_policies",
+    "leave_type_catalog",
+    "payroll_component_catalog",
+    "payroll_records",
+    "performance_reviews",
+    "position_skill_requirements",
+    "project_resource_allocations",
+    "projects",
+    "public_holidays",
+    "qualification_levels",
+    "skill_catalog",
+    "standardized_job_categories",
+    "teams",
+    "tenants",
+    "training_programs",
+    "work_shifts",
+    "workforce_capacity"
+  ],
+  "deniedColumns": [
+    "cost_centers.annual_budget",
+    "employees.date_of_birth",
+    "employees.gender",
+    "employees.is_rehire_eligible",
+    "employees.marital_status",
+    "employees.national_id_number",
+    "employees.nationality_country_code",
+    "employees.termination_reason",
+    "employees.work_email",
+    "job_openings.salary_budget_max",
+    "job_positions.salary_band_max",
+    "job_positions.salary_band_mid",
+    "job_positions.salary_band_min",
+    "payroll_records.allowance_pay",
+    "payroll_records.bank_account_id",
+    "payroll_records.base_pay",
+    "payroll_records.bonus_pay",
+    "payroll_records.gross_pay",
+    "payroll_records.income_tax",
+    "payroll_records.net_pay",
+    "payroll_records.other_deductions",
+    "payroll_records.other_earnings",
+    "payroll_records.overtime_pay",
+    "payroll_records.social_security_employee",
+    "payroll_records.social_security_employer",
+    "performance_reviews.manager_comments",
+    "projects.budget_amount"
+  ],
+  "rowRules": [
+    {
+      "table": "company_locations",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "cost_centers",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "department_managers",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "departments",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employees",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employment_history",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "job_openings",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "job_positions",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "leave_policies",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "payroll_records",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "performance_reviews",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "position_skill_requirements",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "project_resource_allocations",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "projects",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "teams",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "tenants",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "training_programs",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "work_shifts",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "workforce_capacity",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "department_managers",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "departments",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "employees",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "employment_history",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "job_openings",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "payroll_records",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "performance_reviews",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "project_resource_allocations",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "projects",
+      "field": "owning_department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "teams",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "workforce_capacity",
+      "field": "department_id",
+      "operator": "=",
+      "valueFrom": "departmentId"
+    },
+    {
+      "table": "performance_reviews",
+      "field": "review_status",
+      "operator": "=",
+      "value": "FINALIZED"
+    }
+  ]
+}

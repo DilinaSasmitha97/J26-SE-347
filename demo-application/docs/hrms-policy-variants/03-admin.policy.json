@@ -1,0 +1,399 @@
+{
+  "policyId": "hrms-3-admin-v1",
+  "version": "1.0",
+  "role": "ADMIN",
+  "allowedOperations": [
+    "SELECT"
+  ],
+  "allowedTables": [
+    "applications",
+    "attendance_adjustments",
+    "attendance_records",
+    "bonuses",
+    "candidates",
+    "certifications",
+    "company_locations",
+    "compensation_adjustments",
+    "competency_catalog",
+    "cost_centers",
+    "countries",
+    "currencies",
+    "deductions",
+    "department_hierarchy",
+    "department_managers",
+    "departments",
+    "employee_addresses",
+    "employee_bank_accounts",
+    "employee_contacts",
+    "employee_contracts",
+    "employee_documents_metadata",
+    "employee_kpis",
+    "employee_reporting_structure",
+    "employee_skills",
+    "employee_training",
+    "employees",
+    "employment_history",
+    "employment_types",
+    "exchange_rates",
+    "hiring_decisions",
+    "industry_types",
+    "interview_records",
+    "job_levels",
+    "job_openings",
+    "job_positions",
+    "leave_approvals",
+    "leave_balances",
+    "leave_entitlements",
+    "leave_policies",
+    "leave_requests",
+    "leave_type_catalog",
+    "overtime_records",
+    "payroll_component_catalog",
+    "payroll_periods",
+    "payroll_records",
+    "performance_goals",
+    "performance_reviews",
+    "position_skill_requirements",
+    "project_assignments",
+    "project_resource_allocations",
+    "projects",
+    "promotion_history",
+    "public_holidays",
+    "qualification_levels",
+    "salary_history",
+    "shift_assignments",
+    "skill_catalog",
+    "standardized_job_categories",
+    "teams",
+    "tenants",
+    "timesheets",
+    "training_programs",
+    "work_shifts",
+    "workforce_capacity"
+  ],
+  "deniedColumns": [
+    "attendance_adjustments.reason",
+    "compensation_adjustments.reason",
+    "employee_addresses.address_line1",
+    "employee_addresses.address_line2",
+    "employee_addresses.postal_code",
+    "employee_bank_accounts.account_holder_name",
+    "employee_bank_accounts.account_number",
+    "employee_bank_accounts.branch_code",
+    "employee_documents_metadata.content_sha256",
+    "employee_documents_metadata.file_name",
+    "employee_documents_metadata.storage_uri",
+    "employees.national_id_number",
+    "leave_approvals.comments",
+    "leave_requests.reason_text",
+    "performance_reviews.manager_comments"
+  ],
+  "rowRules": [
+    {
+      "table": "applications",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "attendance_adjustments",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "attendance_records",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "bonuses",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "candidates",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "certifications",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "company_locations",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "compensation_adjustments",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "cost_centers",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "deductions",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "department_hierarchy",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "department_managers",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "departments",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employee_addresses",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employee_bank_accounts",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employee_contacts",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employee_contracts",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employee_documents_metadata",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employee_kpis",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employee_reporting_structure",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employee_skills",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employee_training",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employees",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "employment_history",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "hiring_decisions",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "interview_records",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "job_openings",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "job_positions",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "leave_approvals",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "leave_balances",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "leave_entitlements",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "leave_policies",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "leave_requests",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "overtime_records",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "payroll_periods",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "payroll_records",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "performance_goals",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "performance_reviews",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "position_skill_requirements",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "project_assignments",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "project_resource_allocations",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "projects",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "promotion_history",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "salary_history",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "shift_assignments",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "teams",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "tenants",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "timesheets",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "training_programs",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "work_shifts",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    },
+    {
+      "table": "workforce_capacity",
+      "field": "tenant_id",
+      "operator": "=",
+      "valueFrom": "tenantId"
+    }
+  ]
+}

@@ -1,0 +1,313 @@
+{
+  "notice": "Design manifest only. This object is NOT compatible with the current flat tenant_registry.json and must not be copied into it.",
+  "tables": {
+    "applications": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "attendance_adjustments": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "attendance_records": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "bonuses": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "candidates": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "certifications": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "company_locations": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "compensation_adjustments": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "competency_catalog": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "cost_centers": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "countries": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "currencies": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "deductions": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "department_hierarchy": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "department_managers": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "departments": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employee_addresses": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employee_bank_accounts": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employee_contacts": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employee_contracts": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employee_dependents": {
+      "class": "TENANT_DERIVED",
+      "tenant_column": null,
+      "inherit": {
+        "parent": "employees",
+        "child_columns": [
+          "employee_id"
+        ],
+        "parent_columns": [
+          "employee_id"
+        ]
+      }
+    },
+    "employee_documents_metadata": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employee_emergency_contacts": {
+      "class": "TENANT_DERIVED",
+      "tenant_column": null,
+      "inherit": {
+        "parent": "employees",
+        "child_columns": [
+          "employee_id"
+        ],
+        "parent_columns": [
+          "employee_id"
+        ]
+      }
+    },
+    "employee_kpis": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employee_reporting_structure": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employee_skills": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employee_training": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employees": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employment_history": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "employment_types": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "exchange_rates": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "hiring_decisions": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "industry_types": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "interview_records": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "job_levels": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "job_openings": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "job_positions": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "leave_approvals": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "leave_balances": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "leave_entitlements": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "leave_policies": {
+      "class": "TENANT_CONFIG",
+      "tenant_column": "tenant_id"
+    },
+    "leave_requests": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "leave_type_catalog": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "overtime_records": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "payroll_component_catalog": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "payroll_components": {
+      "class": "TENANT_DERIVED",
+      "tenant_column": null,
+      "inherit": {
+        "parent": "payroll_records",
+        "child_columns": [
+          "payroll_record_id"
+        ],
+        "parent_columns": [
+          "payroll_record_id"
+        ]
+      }
+    },
+    "payroll_periods": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "payroll_records": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "performance_goals": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "performance_reviews": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "performance_scores": {
+      "class": "TENANT_DERIVED",
+      "tenant_column": null,
+      "inherit": {
+        "parent": "performance_reviews",
+        "child_columns": [
+          "performance_review_id"
+        ],
+        "parent_columns": [
+          "performance_review_id"
+        ]
+      }
+    },
+    "position_skill_requirements": {
+      "class": "TENANT_CONFIG",
+      "tenant_column": "tenant_id"
+    },
+    "project_assignments": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "project_resource_allocations": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "projects": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "promotion_history": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "public_holidays": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "qualification_levels": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "salary_history": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "shift_assignments": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "skill_catalog": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "standardized_job_categories": {
+      "class": "SHARED_REFERENCE",
+      "tenant_column": null
+    },
+    "teams": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "tenants": {
+      "class": "TENANT_ROOT",
+      "tenant_column": "tenant_id"
+    },
+    "timesheets": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "training_programs": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    },
+    "work_shifts": {
+      "class": "TENANT_CONFIG",
+      "tenant_column": "tenant_id"
+    },
+    "workforce_capacity": {
+      "class": "TENANT_OWNED",
+      "tenant_column": "tenant_id"
+    }
+  }
+}

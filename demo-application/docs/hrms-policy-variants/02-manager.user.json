@@ -1,0 +1,6 @@
+{
+  "userId": "example-manager",
+  "role": "MANAGER",
+  "tenantId": 101,
+  "departmentId": 10
+}

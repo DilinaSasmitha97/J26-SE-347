@@ -73,8 +73,12 @@ system must supply identity and policy from authenticated server context.
 Tenant isolation is a separate mandatory stage in **Validate & execute**.
 It corrects missing or incorrect simple tenant equalities and completes coverage
 for every table alias, including repeated tables and self joins. Its trusted
-ownership registry is `sqlglot-service/tenant_registry.json`: HR tables use
-`tenant_id`, while `tenants` uses `id`. Missing policy tenant rules never make
+ownership registry is `sqlglot-service/tenant_registry.json`, synchronized with
+the `enterprise_hrms_alpha` schema from `Dump20261021.sql`. All 51 directly
+tenant-scoped tables, including `tenants`, use `tenant_id`. See the
+[registry coverage notes](sqlglot-service/tenant_registry.md) for excluded shared
+and parent-owned tables and compatibility with the older demo schema.
+Missing policy tenant rules never make
 a registered table global. Conflicting tenant policy values block the request.
 Additional employee/department row restrictions must already be present as
 verifiable mandatory conditions; the tenant repair stage does not invent them.
