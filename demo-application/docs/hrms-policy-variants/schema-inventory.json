@@ -1,0 +1,5003 @@
+{
+  "source": "c:\\Users\\Bosilu\\Documents\\dumps\\Dump20261021.sql",
+  "sha256": "d3079c66c2bf33f17869f5d00a799ec743751bce4c1b2b5215485750ad0fb2ed",
+  "bytes": 105580,
+  "table_count": 68,
+  "column_count": 601,
+  "foreign_key_count": 138,
+  "insert_statement_count": 0,
+  "tables": {
+    "applications": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=RECRUITMENT",
+      "columns": [
+        {
+          "name": "application_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "job_opening_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "candidate_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "applied_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "current_stage",
+          "definition": "enum('APPLIED','SCREENING','INTERVIEW','OFFER','HIRED','REJECTED','WITHDRAWN') NOT NULL"
+        },
+        {
+          "name": "last_stage_reached",
+          "definition": "enum('APPLIED','SCREENING','INTERVIEW','OFFER','HIRED') NOT NULL"
+        },
+        {
+          "name": "stage_updated_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "expected_salary",
+          "definition": "decimal(14,2) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "rejection_reason",
+          "definition": "enum('SKILLS_MISMATCH','EXPERIENCE','SALARY','CULTURE_FIT','POSITION_FILLED','OTHER') DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`application_id`)",
+        "UNIQUE KEY `uq_applications_tenant` (`tenant_id`,`application_id`)",
+        "UNIQUE KEY `uq_applications_cand_open` (`tenant_id`,`job_opening_id`,`candidate_id`)",
+        "KEY `ix_applications_date` (`tenant_id`,`applied_date`)",
+        "KEY `fk_applications_candidate` (`tenant_id`,`candidate_id`)",
+        "CONSTRAINT `fk_applications_candidate` FOREIGN KEY (`tenant_id`, `candidate_id`) REFERENCES `candidates` (`tenant_id`, `candidate_id`)",
+        "CONSTRAINT `fk_applications_opening` FOREIGN KEY (`tenant_id`, `job_opening_id`) REFERENCES `job_openings` (`tenant_id`, `job_opening_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_applications_candidate",
+          "columns": [
+            "tenant_id",
+            "candidate_id"
+          ],
+          "target": "candidates",
+          "target_columns": [
+            "tenant_id",
+            "candidate_id"
+          ]
+        },
+        {
+          "name": "fk_applications_opening",
+          "columns": [
+            "tenant_id",
+            "job_opening_id"
+          ],
+          "target": "job_openings",
+          "target_columns": [
+            "tenant_id",
+            "job_opening_id"
+          ]
+        }
+      ]
+    },
+    "attendance_adjustments": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=ATTENDANCE",
+      "columns": [
+        {
+          "name": "adjustment_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "attendance_id",
+          "definition": "bigint unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "adjustment_type",
+          "definition": "enum('MISSED_PUNCH','TIME_CORRECTION','STATUS_CORRECTION') NOT NULL"
+        },
+        {
+          "name": "old_check_in_at",
+          "definition": "datetime DEFAULT NULL"
+        },
+        {
+          "name": "old_check_out_at",
+          "definition": "datetime DEFAULT NULL"
+        },
+        {
+          "name": "new_check_in_at",
+          "definition": "datetime DEFAULT NULL"
+        },
+        {
+          "name": "new_check_out_at",
+          "definition": "datetime DEFAULT NULL"
+        },
+        {
+          "name": "reason",
+          "definition": "varchar(200) NOT NULL"
+        },
+        {
+          "name": "requested_at",
+          "definition": "datetime NOT NULL"
+        },
+        {
+          "name": "approved_by_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`adjustment_id`)",
+        "KEY `ix_att_adj_attendance` (`tenant_id`,`attendance_id`)",
+        "KEY `fk_att_adj_attendance` (`tenant_id`,`employee_id`,`attendance_id`)",
+        "KEY `fk_att_adj_approver` (`tenant_id`,`approved_by_employee_id`)",
+        "CONSTRAINT `fk_att_adj_approver` FOREIGN KEY (`tenant_id`, `approved_by_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_att_adj_attendance` FOREIGN KEY (`tenant_id`, `employee_id`, `attendance_id`) REFERENCES `attendance_records` (`tenant_id`, `employee_id`, `attendance_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_att_adj_approver",
+          "columns": [
+            "tenant_id",
+            "approved_by_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_att_adj_attendance",
+          "columns": [
+            "tenant_id",
+            "employee_id",
+            "attendance_id"
+          ],
+          "target": "attendance_records",
+          "target_columns": [
+            "tenant_id",
+            "employee_id",
+            "attendance_id"
+          ]
+        }
+      ]
+    },
+    "attendance_records": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=ATTENDANCE; daily records for the configured attendance window",
+      "columns": [
+        {
+          "name": "attendance_id",
+          "definition": "bigint unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "attendance_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "shift_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "attendance_status",
+          "definition": "enum('PRESENT','LATE','REMOTE','HALF_DAY','ABSENT','ON_LEAVE') NOT NULL"
+        },
+        {
+          "name": "check_in_at",
+          "definition": "datetime DEFAULT NULL"
+        },
+        {
+          "name": "check_out_at",
+          "definition": "datetime DEFAULT NULL"
+        },
+        {
+          "name": "worked_minutes",
+          "definition": "smallint unsigned NOT NULL DEFAULT '0'"
+        },
+        {
+          "name": "late_minutes",
+          "definition": "smallint unsigned NOT NULL DEFAULT '0'"
+        },
+        {
+          "name": "overtime_minutes",
+          "definition": "smallint unsigned NOT NULL DEFAULT '0'"
+        },
+        {
+          "name": "capture_source",
+          "definition": "enum('BIOMETRIC','MOBILE','WEB','MANUAL') DEFAULT NULL"
+        },
+        {
+          "name": "leave_request_id",
+          "definition": "int unsigned DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`attendance_id`)",
+        "UNIQUE KEY `uq_attendance_emp_date` (`tenant_id`,`employee_id`,`attendance_date`)",
+        "UNIQUE KEY `uq_attendance_tenant_emp_id` (`tenant_id`,`employee_id`,`attendance_id`) COMMENT 'composite target for attendance_adjustments'",
+        "KEY `ix_attendance_date` (`tenant_id`,`attendance_date`)",
+        "KEY `ix_attendance_status` (`tenant_id`,`attendance_status`,`attendance_date`)",
+        "KEY `ix_attendance_checkin` (`tenant_id`,`check_in_at`) COMMENT 'supports duplicate-timestamp (buddy punching) detection'",
+        "KEY `fk_attendance_shift` (`tenant_id`,`shift_id`)",
+        "KEY `fk_attendance_leave` (`tenant_id`,`leave_request_id`)",
+        "CONSTRAINT `fk_attendance_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_attendance_leave` FOREIGN KEY (`tenant_id`, `leave_request_id`) REFERENCES `leave_requests` (`tenant_id`, `leave_request_id`)",
+        "CONSTRAINT `fk_attendance_shift` FOREIGN KEY (`tenant_id`, `shift_id`) REFERENCES `work_shifts` (`tenant_id`, `shift_id`)",
+        "CONSTRAINT `ck_attendance_times` CHECK (((`check_out_at` is null) or (`check_in_at` is null) or (`check_out_at` >= `check_in_at`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_attendance_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_attendance_leave",
+          "columns": [
+            "tenant_id",
+            "leave_request_id"
+          ],
+          "target": "leave_requests",
+          "target_columns": [
+            "tenant_id",
+            "leave_request_id"
+          ]
+        },
+        {
+          "name": "fk_attendance_shift",
+          "columns": [
+            "tenant_id",
+            "shift_id"
+          ],
+          "target": "work_shifts",
+          "target_columns": [
+            "tenant_id",
+            "shift_id"
+          ]
+        }
+      ]
+    },
+    "bonuses": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=RESTRICTED; module=PAYROLL",
+      "columns": [
+        {
+          "name": "bonus_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "bonus_type",
+          "definition": "enum('ANNUAL_PERFORMANCE','SPOT_AWARD','RETENTION','SIGN_ON','SALES_INCENTIVE') NOT NULL"
+        },
+        {
+          "name": "award_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "payroll_period_id",
+          "definition": "int unsigned NOT NULL COMMENT 'period in which it is paid'"
+        },
+        {
+          "name": "amount",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "performance_review_id",
+          "definition": "int unsigned DEFAULT NULL"
+        },
+        {
+          "name": "approved_by_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`bonus_id`)",
+        "KEY `ix_bonuses_employee` (`tenant_id`,`employee_id`)",
+        "KEY `ix_bonuses_period` (`tenant_id`,`payroll_period_id`)",
+        "KEY `fk_bonuses_approver` (`tenant_id`,`approved_by_employee_id`)",
+        "KEY `fk_bonuses_review` (`tenant_id`,`performance_review_id`)",
+        "CONSTRAINT `fk_bonuses_approver` FOREIGN KEY (`tenant_id`, `approved_by_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_bonuses_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_bonuses_period` FOREIGN KEY (`tenant_id`, `payroll_period_id`) REFERENCES `payroll_periods` (`tenant_id`, `payroll_period_id`)",
+        "CONSTRAINT `fk_bonuses_review` FOREIGN KEY (`tenant_id`, `performance_review_id`) REFERENCES `performance_reviews` (`tenant_id`, `performance_review_id`)",
+        "CONSTRAINT `ck_bonuses_amount` CHECK ((`amount` > 0))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_bonuses_approver",
+          "columns": [
+            "tenant_id",
+            "approved_by_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_bonuses_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_bonuses_period",
+          "columns": [
+            "tenant_id",
+            "payroll_period_id"
+          ],
+          "target": "payroll_periods",
+          "target_columns": [
+            "tenant_id",
+            "payroll_period_id"
+          ]
+        },
+        {
+          "name": "fk_bonuses_review",
+          "columns": [
+            "tenant_id",
+            "performance_review_id"
+          ],
+          "target": "performance_reviews",
+          "target_columns": [
+            "tenant_id",
+            "performance_review_id"
+          ]
+        }
+      ]
+    },
+    "candidates": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=RECRUITMENT; each tenant owns its own talent pool",
+      "columns": [
+        {
+          "name": "candidate_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "first_name",
+          "definition": "varchar(60) NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "last_name",
+          "definition": "varchar(60) NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "email",
+          "definition": "varchar(160) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=PARTIAL_EMAIL'"
+        },
+        {
+          "name": "phone_number",
+          "definition": "varchar(30) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=PARTIAL_PHONE'"
+        },
+        {
+          "name": "gender",
+          "definition": "enum('MALE','FEMALE','NON_BINARY','UNDISCLOSED') DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "country_code",
+          "definition": "char(2) NOT NULL"
+        },
+        {
+          "name": "highest_qualification_code",
+          "definition": "varchar(20) DEFAULT NULL"
+        },
+        {
+          "name": "years_experience",
+          "definition": "decimal(4,1) DEFAULT NULL"
+        },
+        {
+          "name": "candidate_source",
+          "definition": "enum('CAREERS_SITE','REFERRAL','JOB_BOARD','PROFESSIONAL_NETWORK','AGENCY','CAMPUS','INTERNAL') NOT NULL"
+        },
+        {
+          "name": "created_at",
+          "definition": "datetime NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`candidate_id`)",
+        "UNIQUE KEY `uq_candidates_tenant` (`tenant_id`,`candidate_id`)",
+        "UNIQUE KEY `uq_candidates_email` (`tenant_id`,`email`)",
+        "KEY `fk_candidates_country` (`country_code`)",
+        "KEY `fk_candidates_qual` (`highest_qualification_code`)",
+        "CONSTRAINT `fk_candidates_country` FOREIGN KEY (`country_code`) REFERENCES `countries` (`country_code`)",
+        "CONSTRAINT `fk_candidates_qual` FOREIGN KEY (`highest_qualification_code`) REFERENCES `qualification_levels` (`qualification_code`)",
+        "CONSTRAINT `fk_candidates_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_candidates_country",
+          "columns": [
+            "country_code"
+          ],
+          "target": "countries",
+          "target_columns": [
+            "country_code"
+          ]
+        },
+        {
+          "name": "fk_candidates_qual",
+          "columns": [
+            "highest_qualification_code"
+          ],
+          "target": "qualification_levels",
+          "target_columns": [
+            "qualification_code"
+          ]
+        },
+        {
+          "name": "fk_candidates_tenant",
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants",
+          "target_columns": [
+            "tenant_id"
+          ]
+        }
+      ]
+    },
+    "certifications": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=TRAINING",
+      "columns": [
+        {
+          "name": "certification_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "skill_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "certification_name",
+          "definition": "varchar(150) NOT NULL"
+        },
+        {
+          "name": "issuing_body",
+          "definition": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "issued_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "expiry_date",
+          "definition": "date DEFAULT NULL"
+        },
+        {
+          "name": "credential_ref",
+          "definition": "varchar(40) NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "employee_training_id",
+          "definition": "int unsigned DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`certification_id`)",
+        "KEY `ix_certifications_employee` (`tenant_id`,`employee_id`)",
+        "KEY `ix_certifications_expiry` (`tenant_id`,`expiry_date`)",
+        "KEY `fk_certs_skill` (`skill_id`)",
+        "CONSTRAINT `fk_certs_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_certs_skill` FOREIGN KEY (`skill_id`) REFERENCES `skill_catalog` (`skill_id`)",
+        "CONSTRAINT `ck_certs_dates` CHECK (((`expiry_date` is null) or (`expiry_date` > `issued_date`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_certs_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_certs_skill",
+          "columns": [
+            "skill_id"
+          ],
+          "target": "skill_catalog",
+          "target_columns": [
+            "skill_id"
+          ]
+        }
+      ]
+    },
+    "company_locations": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=ORGANIZATION",
+      "columns": [
+        {
+          "name": "location_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "location_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "location_name",
+          "definition": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "city",
+          "definition": "varchar(60) NOT NULL"
+        },
+        {
+          "name": "country_code",
+          "definition": "char(2) NOT NULL"
+        },
+        {
+          "name": "is_headquarters",
+          "definition": "tinyint(1) NOT NULL DEFAULT '0'"
+        },
+        {
+          "name": "opened_date",
+          "definition": "date NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`location_id`)",
+        "UNIQUE KEY `uq_company_locations_tenant` (`tenant_id`,`location_id`)",
+        "UNIQUE KEY `uq_company_locations_code` (`tenant_id`,`location_code`)",
+        "KEY `fk_locations_country` (`country_code`)",
+        "CONSTRAINT `fk_locations_country` FOREIGN KEY (`country_code`) REFERENCES `countries` (`country_code`)",
+        "CONSTRAINT `fk_locations_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_locations_country",
+          "columns": [
+            "country_code"
+          ],
+          "target": "countries",
+          "target_columns": [
+            "country_code"
+          ]
+        },
+        {
+          "name": "fk_locations_tenant",
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants",
+          "target_columns": [
+            "tenant_id"
+          ]
+        }
+      ]
+    },
+    "compensation_adjustments": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=RESTRICTED; module=PAYROLL",
+      "columns": [
+        {
+          "name": "adjustment_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "adjustment_type",
+          "definition": "enum('ONE_OFF_ALLOWANCE','RETRO_PAY','SHIFT_ALLOWANCE','RELOCATION','CORRECTION') NOT NULL"
+        },
+        {
+          "name": "amount",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "effective_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "payroll_period_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "reason",
+          "definition": "varchar(200) DEFAULT NULL"
+        },
+        {
+          "name": "requested_by_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        },
+        {
+          "name": "approved_by_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        },
+        {
+          "name": "created_at",
+          "definition": "datetime NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`adjustment_id`)",
+        "KEY `ix_comp_adj_employee` (`tenant_id`,`employee_id`,`effective_date`)",
+        "KEY `ix_comp_adj_period` (`tenant_id`,`payroll_period_id`)",
+        "KEY `fk_comp_adj_requester` (`tenant_id`,`requested_by_employee_id`)",
+        "KEY `fk_comp_adj_approver` (`tenant_id`,`approved_by_employee_id`)",
+        "CONSTRAINT `fk_comp_adj_approver` FOREIGN KEY (`tenant_id`, `approved_by_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_comp_adj_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_comp_adj_period` FOREIGN KEY (`tenant_id`, `payroll_period_id`) REFERENCES `payroll_periods` (`tenant_id`, `payroll_period_id`)",
+        "CONSTRAINT `fk_comp_adj_requester` FOREIGN KEY (`tenant_id`, `requested_by_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_comp_adj_approver",
+          "columns": [
+            "tenant_id",
+            "approved_by_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_comp_adj_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_comp_adj_period",
+          "columns": [
+            "tenant_id",
+            "payroll_period_id"
+          ],
+          "target": "payroll_periods",
+          "target_columns": [
+            "tenant_id",
+            "payroll_period_id"
+          ]
+        },
+        {
+          "name": "fk_comp_adj_requester",
+          "columns": [
+            "tenant_id",
+            "requested_by_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "competency_catalog": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=PERFORMANCE",
+      "columns": [
+        {
+          "name": "competency_code",
+          "definition": "varchar(30) NOT NULL"
+        },
+        {
+          "name": "competency_name",
+          "definition": "varchar(80) NOT NULL"
+        },
+        {
+          "name": "description",
+          "definition": "varchar(255) DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`competency_code`)"
+      ],
+      "foreign_keys": []
+    },
+    "cost_centers": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=ORGANIZATION",
+      "columns": [
+        {
+          "name": "cost_center_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "cost_center_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "cost_center_name",
+          "definition": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "annual_budget",
+          "definition": "decimal(16,2) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "is_active",
+          "definition": "tinyint(1) NOT NULL DEFAULT '1'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`cost_center_id`)",
+        "UNIQUE KEY `uq_cost_centers_tenant` (`tenant_id`,`cost_center_id`)",
+        "UNIQUE KEY `uq_cost_centers_code` (`tenant_id`,`cost_center_code`)",
+        "CONSTRAINT `fk_cost_centers_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_cost_centers_tenant",
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants",
+          "target_columns": [
+            "tenant_id"
+          ]
+        }
+      ]
+    },
+    "countries": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=REFERENCE",
+      "columns": [
+        {
+          "name": "country_code",
+          "definition": "char(2) NOT NULL COMMENT 'ISO-3166 alpha-2'"
+        },
+        {
+          "name": "country_code3",
+          "definition": "char(3) NOT NULL"
+        },
+        {
+          "name": "country_name",
+          "definition": "varchar(80) NOT NULL"
+        },
+        {
+          "name": "region",
+          "definition": "varchar(40) NOT NULL"
+        },
+        {
+          "name": "currency_code",
+          "definition": "char(3) NOT NULL"
+        },
+        {
+          "name": "phone_prefix",
+          "definition": "varchar(6) NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`country_code`)",
+        "UNIQUE KEY `uq_countries_code3` (`country_code3`)",
+        "KEY `fk_countries_currency` (`currency_code`)",
+        "CONSTRAINT `fk_countries_currency` FOREIGN KEY (`currency_code`) REFERENCES `currencies` (`currency_code`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_countries_currency",
+          "columns": [
+            "currency_code"
+          ],
+          "target": "currencies",
+          "target_columns": [
+            "currency_code"
+          ]
+        }
+      ]
+    },
+    "currencies": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=REFERENCE; ISO-4217 currencies",
+      "columns": [
+        {
+          "name": "currency_code",
+          "definition": "char(3) NOT NULL"
+        },
+        {
+          "name": "currency_name",
+          "definition": "varchar(60) NOT NULL"
+        },
+        {
+          "name": "symbol",
+          "definition": "varchar(8) DEFAULT NULL"
+        },
+        {
+          "name": "minor_units",
+          "definition": "tinyint unsigned NOT NULL DEFAULT '2'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`currency_code`)"
+      ],
+      "foreign_keys": []
+    },
+    "deductions": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=RESTRICTED; module=PAYROLL; recurring non-statutory deductions",
+      "columns": [
+        {
+          "name": "deduction_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "deduction_type",
+          "definition": "enum('STAFF_LOAN','SALARY_ADVANCE','UNION_DUES','HEALTH_INSURANCE','COURT_ORDER') NOT NULL"
+        },
+        {
+          "name": "start_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "end_date",
+          "definition": "date DEFAULT NULL"
+        },
+        {
+          "name": "monthly_amount",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "total_amount",
+          "definition": "decimal(14,2) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "deduction_status",
+          "definition": "enum('ACTIVE','COMPLETED','CANCELLED') NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`deduction_id`)",
+        "KEY `ix_deductions_employee` (`tenant_id`,`employee_id`)",
+        "CONSTRAINT `fk_deductions_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `ck_deductions_dates` CHECK (((`end_date` is null) or (`end_date` >= `start_date`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_deductions_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "department_hierarchy": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=ORGANIZATION; closure table used for scope expansion (manager of a division sees descendants)",
+      "columns": [
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "ancestor_department_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "descendant_department_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "depth",
+          "definition": "tinyint unsigned NOT NULL COMMENT '0 = self'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`tenant_id`,`ancestor_department_id`,`descendant_department_id`)",
+        "KEY `ix_dept_hier_desc` (`tenant_id`,`descendant_department_id`)",
+        "CONSTRAINT `fk_dept_hier_ancestor` FOREIGN KEY (`tenant_id`, `ancestor_department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)",
+        "CONSTRAINT `fk_dept_hier_descendant` FOREIGN KEY (`tenant_id`, `descendant_department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_dept_hier_ancestor",
+          "columns": [
+            "tenant_id",
+            "ancestor_department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_dept_hier_descendant",
+          "columns": [
+            "tenant_id",
+            "descendant_department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        }
+      ]
+    },
+    "department_managers": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=ORGANIZATION; business record of management responsibility (one source for platform department scopes)",
+      "columns": [
+        {
+          "name": "department_manager_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "department_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "manager_role",
+          "definition": "enum('HEAD','HR_BUSINESS_PARTNER') NOT NULL"
+        },
+        {
+          "name": "effective_from",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "effective_to",
+          "definition": "date DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`department_manager_id`)",
+        "KEY `ix_dept_mgr_dept` (`tenant_id`,`department_id`,`effective_from`)",
+        "KEY `ix_dept_mgr_emp` (`tenant_id`,`employee_id`)",
+        "CONSTRAINT `fk_dept_mgr_department` FOREIGN KEY (`tenant_id`, `department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)",
+        "CONSTRAINT `fk_dept_mgr_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `ck_dept_mgr_dates` CHECK (((`effective_to` is null) or (`effective_to` >= `effective_from`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_dept_mgr_department",
+          "columns": [
+            "tenant_id",
+            "department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_dept_mgr_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "departments": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=ORGANIZATION",
+      "columns": [
+        {
+          "name": "department_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "department_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "department_name",
+          "definition": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "department_type",
+          "definition": "enum('EXECUTIVE','DIVISION','DEPARTMENT') NOT NULL"
+        },
+        {
+          "name": "parent_department_id",
+          "definition": "int unsigned DEFAULT NULL COMMENT 'adjacency list; full closure in department_hierarchy'"
+        },
+        {
+          "name": "cost_center_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "location_id",
+          "definition": "int unsigned NOT NULL COMMENT 'primary location'"
+        },
+        {
+          "name": "established_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "closed_date",
+          "definition": "date DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`department_id`)",
+        "UNIQUE KEY `uq_departments_tenant` (`tenant_id`,`department_id`)",
+        "UNIQUE KEY `uq_departments_code` (`tenant_id`,`department_code`)",
+        "KEY `ix_departments_parent` (`tenant_id`,`parent_department_id`)",
+        "KEY `fk_departments_cost_center` (`tenant_id`,`cost_center_id`)",
+        "KEY `fk_departments_location` (`tenant_id`,`location_id`)",
+        "CONSTRAINT `fk_departments_cost_center` FOREIGN KEY (`tenant_id`, `cost_center_id`) REFERENCES `cost_centers` (`tenant_id`, `cost_center_id`)",
+        "CONSTRAINT `fk_departments_location` FOREIGN KEY (`tenant_id`, `location_id`) REFERENCES `company_locations` (`tenant_id`, `location_id`)",
+        "CONSTRAINT `fk_departments_parent` FOREIGN KEY (`tenant_id`, `parent_department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)",
+        "CONSTRAINT `fk_departments_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_departments_cost_center",
+          "columns": [
+            "tenant_id",
+            "cost_center_id"
+          ],
+          "target": "cost_centers",
+          "target_columns": [
+            "tenant_id",
+            "cost_center_id"
+          ]
+        },
+        {
+          "name": "fk_departments_location",
+          "columns": [
+            "tenant_id",
+            "location_id"
+          ],
+          "target": "company_locations",
+          "target_columns": [
+            "tenant_id",
+            "location_id"
+          ]
+        },
+        {
+          "name": "fk_departments_parent",
+          "columns": [
+            "tenant_id",
+            "parent_department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_departments_tenant",
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants",
+          "target_columns": [
+            "tenant_id"
+          ]
+        }
+      ]
+    },
+    "employee_addresses": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=RESTRICTED; module=EMPLOYEE",
+      "columns": [
+        {
+          "name": "address_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "address_type",
+          "definition": "enum('HOME','MAILING','TEMPORARY') NOT NULL"
+        },
+        {
+          "name": "address_line1",
+          "definition": "varchar(150) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "address_line2",
+          "definition": "varchar(150) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "city",
+          "definition": "varchar(60) NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "postal_code",
+          "definition": "varchar(15) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "country_code",
+          "definition": "char(2) NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "valid_from",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "valid_to",
+          "definition": "date DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`address_id`)",
+        "KEY `ix_addresses_employee` (`tenant_id`,`employee_id`)",
+        "KEY `fk_addresses_country` (`country_code`)",
+        "CONSTRAINT `fk_addresses_country` FOREIGN KEY (`country_code`) REFERENCES `countries` (`country_code`)",
+        "CONSTRAINT `fk_addresses_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `ck_addresses_dates` CHECK (((`valid_to` is null) or (`valid_to` >= `valid_from`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_addresses_country",
+          "columns": [
+            "country_code"
+          ],
+          "target": "countries",
+          "target_columns": [
+            "country_code"
+          ]
+        },
+        {
+          "name": "fk_addresses_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "employee_bank_accounts": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=RESTRICTED; module=PAYROLL; banking data - highest sensitivity",
+      "columns": [
+        {
+          "name": "bank_account_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "bank_name",
+          "definition": "varchar(80) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=NONE'"
+        },
+        {
+          "name": "branch_code",
+          "definition": "varchar(20) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "account_number",
+          "definition": "varchar(34) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=LAST4; synthetic'"
+        },
+        {
+          "name": "account_holder_name",
+          "definition": "varchar(120) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "is_primary",
+          "definition": "tinyint(1) NOT NULL DEFAULT '1'"
+        },
+        {
+          "name": "valid_from",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "valid_to",
+          "definition": "date DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`bank_account_id`)",
+        "UNIQUE KEY `uq_bank_accounts_tenant` (`tenant_id`,`bank_account_id`)",
+        "KEY `ix_bank_accounts_employee` (`tenant_id`,`employee_id`)",
+        "CONSTRAINT `fk_bank_accounts_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_bank_accounts_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "employee_contacts": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=RESTRICTED; module=EMPLOYEE; personal contact data",
+      "columns": [
+        {
+          "name": "contact_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "contact_type",
+          "definition": "enum('PERSONAL_EMAIL','PERSONAL_MOBILE','HOME_PHONE','WORK_PHONE') NOT NULL"
+        },
+        {
+          "name": "contact_value",
+          "definition": "varchar(160) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=PARTIAL_PHONE|PARTIAL_EMAIL by contact_type'"
+        },
+        {
+          "name": "is_primary",
+          "definition": "tinyint(1) NOT NULL DEFAULT '0'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`contact_id`)",
+        "UNIQUE KEY `uq_employee_contacts` (`tenant_id`,`employee_id`,`contact_type`)",
+        "CONSTRAINT `fk_contacts_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_contacts_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "employee_contracts": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=EMPLOYEE",
+      "columns": [
+        {
+          "name": "contract_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "contract_type",
+          "definition": "enum('PERMANENT','FIXED_TERM','PROBATIONARY','SEASONAL','CONSULTANCY') NOT NULL"
+        },
+        {
+          "name": "employment_type_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "start_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "end_date",
+          "definition": "date DEFAULT NULL"
+        },
+        {
+          "name": "weekly_hours",
+          "definition": "decimal(4,1) NOT NULL"
+        },
+        {
+          "name": "notice_period_days",
+          "definition": "smallint unsigned NOT NULL"
+        },
+        {
+          "name": "signed_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "contract_status",
+          "definition": "enum('ACTIVE','EXPIRED','TERMINATED','SUPERSEDED') NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`contract_id`)",
+        "KEY `ix_contracts_employee` (`tenant_id`,`employee_id`)",
+        "KEY `fk_contracts_emp_type` (`employment_type_code`)",
+        "CONSTRAINT `fk_contracts_emp_type` FOREIGN KEY (`employment_type_code`) REFERENCES `employment_types` (`employment_type_code`)",
+        "CONSTRAINT `fk_contracts_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `ck_contracts_dates` CHECK (((`end_date` is null) or (`end_date` >= `start_date`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_contracts_emp_type",
+          "columns": [
+            "employment_type_code"
+          ],
+          "target": "employment_types",
+          "target_columns": [
+            "employment_type_code"
+          ]
+        },
+        {
+          "name": "fk_contracts_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "employee_dependents": {
+      "comment": "class=TENANT_DERIVED; tenant_path=employee_id->employees.employee_id; default_sensitivity=RESTRICTED; module=EMPLOYEE; NO tenant column",
+      "columns": [
+        {
+          "name": "dependent_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "dependent_name",
+          "definition": "varchar(120) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "relationship",
+          "definition": "enum('SPOUSE','CHILD','PARENT','OTHER') NOT NULL COMMENT 'sensitivity=RESTRICTED'"
+        },
+        {
+          "name": "date_of_birth",
+          "definition": "date DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=YEAR_ONLY'"
+        },
+        {
+          "name": "is_insurance_beneficiary",
+          "definition": "tinyint(1) NOT NULL DEFAULT '0'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`dependent_id`)",
+        "KEY `ix_dependents_employee` (`employee_id`)",
+        "CONSTRAINT `fk_dependents_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_dependents_employee",
+          "columns": [
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "employee_documents_metadata": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=EMPLOYEE; metadata only",
+      "columns": [
+        {
+          "name": "document_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "document_type",
+          "definition": "enum('OFFER_LETTER','EMPLOYMENT_CONTRACT','ID_COPY','PASSPORT','DEGREE_CERTIFICATE','MEDICAL_CERTIFICATE','PERFORMANCE_LETTER','RESIGNATION_LETTER') NOT NULL"
+        },
+        {
+          "name": "file_name",
+          "definition": "varchar(160) NOT NULL"
+        },
+        {
+          "name": "storage_uri",
+          "definition": "varchar(255) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL; synthetic object-store path, no file exists'"
+        },
+        {
+          "name": "content_sha256",
+          "definition": "char(64) NOT NULL"
+        },
+        {
+          "name": "uploaded_at",
+          "definition": "datetime NOT NULL"
+        },
+        {
+          "name": "expires_on",
+          "definition": "date DEFAULT NULL"
+        },
+        {
+          "name": "is_confidential",
+          "definition": "tinyint(1) NOT NULL DEFAULT '0'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`document_id`)",
+        "KEY `ix_documents_employee` (`tenant_id`,`employee_id`)",
+        "CONSTRAINT `fk_documents_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_documents_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "employee_emergency_contacts": {
+      "comment": "class=TENANT_DERIVED; tenant_path=employee_id->employees.employee_id; default_sensitivity=RESTRICTED; module=EMPLOYEE; NO tenant column - must be scoped through employees",
+      "columns": [
+        {
+          "name": "emergency_contact_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "contact_name",
+          "definition": "varchar(120) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "relationship",
+          "definition": "enum('SPOUSE','PARENT','SIBLING','CHILD','FRIEND','OTHER') NOT NULL"
+        },
+        {
+          "name": "phone_number",
+          "definition": "varchar(30) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=PARTIAL_PHONE'"
+        },
+        {
+          "name": "priority",
+          "definition": "tinyint unsigned NOT NULL DEFAULT '1'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`emergency_contact_id`)",
+        "KEY `ix_emergency_employee` (`employee_id`)",
+        "CONSTRAINT `fk_emergency_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_emergency_employee",
+          "columns": [
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "employee_kpis": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=PERFORMANCE; quarterly KPI actuals for KPI-driven roles",
+      "columns": [
+        {
+          "name": "employee_kpi_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "kpi_code",
+          "definition": "varchar(30) NOT NULL"
+        },
+        {
+          "name": "kpi_name",
+          "definition": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "period_start",
+          "definition": "date NOT NULL COMMENT 'quarter start'"
+        },
+        {
+          "name": "period_end",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "target_value",
+          "definition": "decimal(14,2) NOT NULL"
+        },
+        {
+          "name": "actual_value",
+          "definition": "decimal(14,2) NOT NULL"
+        },
+        {
+          "name": "unit",
+          "definition": "varchar(20) NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`employee_kpi_id`)",
+        "UNIQUE KEY `uq_employee_kpis` (`tenant_id`,`employee_id`,`kpi_code`,`period_start`)",
+        "CONSTRAINT `fk_kpis_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_kpis_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "employee_reporting_structure": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=ORGANIZATION; historical reporting lines",
+      "columns": [
+        {
+          "name": "reporting_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "manager_employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "relationship_type",
+          "definition": "enum('SOLID_LINE','DOTTED_LINE') NOT NULL"
+        },
+        {
+          "name": "effective_from",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "effective_to",
+          "definition": "date DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`reporting_id`)",
+        "KEY `ix_reporting_employee` (`tenant_id`,`employee_id`,`effective_from`)",
+        "KEY `ix_reporting_manager` (`tenant_id`,`manager_employee_id`,`effective_from`)",
+        "CONSTRAINT `fk_reporting_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_reporting_manager` FOREIGN KEY (`tenant_id`, `manager_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `ck_reporting_dates` CHECK (((`effective_to` is null) or (`effective_to` >= `effective_from`)))",
+        "CONSTRAINT `ck_reporting_self` CHECK ((`employee_id` <> `manager_employee_id`))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_reporting_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_reporting_manager",
+          "columns": [
+            "tenant_id",
+            "manager_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "employee_skills": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=TRAINING; tenant-specific mapping of employees onto shared skill_catalog",
+      "columns": [
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "skill_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "proficiency_level",
+          "definition": "tinyint unsigned NOT NULL COMMENT '1-5'"
+        },
+        {
+          "name": "assessment_source",
+          "definition": "enum('SELF','MANAGER','CERTIFICATION','TRAINING') NOT NULL"
+        },
+        {
+          "name": "last_assessed_date",
+          "definition": "date NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`tenant_id`,`employee_id`,`skill_id`)",
+        "KEY `ix_emp_skills_skill` (`tenant_id`,`skill_id`)",
+        "KEY `fk_emp_skills_skill` (`skill_id`)",
+        "CONSTRAINT `fk_emp_skills_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_emp_skills_skill` FOREIGN KEY (`skill_id`) REFERENCES `skill_catalog` (`skill_id`)",
+        "CONSTRAINT `ck_emp_skills_level` CHECK ((`proficiency_level` between 1 and 5))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_emp_skills_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_emp_skills_skill",
+          "columns": [
+            "skill_id"
+          ],
+          "target": "skill_catalog",
+          "target_columns": [
+            "skill_id"
+          ]
+        }
+      ]
+    },
+    "employee_training": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=TRAINING",
+      "columns": [
+        {
+          "name": "employee_training_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "training_program_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "enrolled_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "start_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "completion_date",
+          "definition": "date DEFAULT NULL"
+        },
+        {
+          "name": "training_status",
+          "definition": "enum('ENROLLED','IN_PROGRESS','COMPLETED','DROPPED','NO_SHOW') NOT NULL"
+        },
+        {
+          "name": "assessment_score",
+          "definition": "decimal(5,2) DEFAULT NULL COMMENT '0-100'"
+        },
+        {
+          "name": "feedback_rating",
+          "definition": "tinyint unsigned DEFAULT NULL COMMENT '1-5'"
+        },
+        {
+          "name": "actual_cost",
+          "definition": "decimal(12,2) NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`employee_training_id`)",
+        "KEY `ix_emp_training_employee` (`tenant_id`,`employee_id`,`start_date`)",
+        "KEY `ix_emp_training_program` (`tenant_id`,`training_program_id`)",
+        "CONSTRAINT `fk_emp_training_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_emp_training_program` FOREIGN KEY (`tenant_id`, `training_program_id`) REFERENCES `training_programs` (`tenant_id`, `training_program_id`)",
+        "CONSTRAINT `ck_emp_training_dates` CHECK (((`completion_date` is null) or (`completion_date` >= `start_date`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_emp_training_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_emp_training_program",
+          "columns": [
+            "tenant_id",
+            "training_program_id"
+          ],
+          "target": "training_programs",
+          "target_columns": [
+            "tenant_id",
+            "training_program_id"
+          ]
+        }
+      ]
+    },
+    "employees": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=EMPLOYEE; current-state employee master",
+      "columns": [
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_number",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "first_name",
+          "definition": "varchar(60) NOT NULL COMMENT 'sensitivity=PUBLIC'"
+        },
+        {
+          "name": "last_name",
+          "definition": "varchar(60) NOT NULL COMMENT 'sensitivity=PUBLIC'"
+        },
+        {
+          "name": "full_name",
+          "definition": "varchar(121) GENERATED ALWAYS AS (concat(`first_name`,_utf8mb4' ',`last_name`)) STORED COMMENT 'sensitivity=PUBLIC'"
+        },
+        {
+          "name": "gender",
+          "definition": "enum('MALE','FEMALE','NON_BINARY','UNDISCLOSED') DEFAULT NULL COMMENT 'sensitivity=INTERNAL; NULL = unknown/not recorded, UNDISCLOSED = employee declined'"
+        },
+        {
+          "name": "date_of_birth",
+          "definition": "date DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=YEAR_ONLY'"
+        },
+        {
+          "name": "national_id_number",
+          "definition": "varchar(30) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=LAST4; synthetic, test-range formats'"
+        },
+        {
+          "name": "nationality_country_code",
+          "definition": "char(2) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "marital_status",
+          "definition": "enum('SINGLE','MARRIED','DIVORCED','WIDOWED','UNDISCLOSED') DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "highest_qualification_code",
+          "definition": "varchar(20) DEFAULT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "work_email",
+          "definition": "varchar(160) NOT NULL COMMENT 'sensitivity=INTERNAL; mask=PARTIAL_EMAIL'"
+        },
+        {
+          "name": "department_id",
+          "definition": "int unsigned NOT NULL COMMENT 'sensitivity=PUBLIC; CURRENT department (history in employment_history)'"
+        },
+        {
+          "name": "team_id",
+          "definition": "int unsigned DEFAULT NULL COMMENT 'sensitivity=PUBLIC'"
+        },
+        {
+          "name": "position_id",
+          "definition": "int unsigned NOT NULL COMMENT 'sensitivity=PUBLIC'"
+        },
+        {
+          "name": "manager_employee_id",
+          "definition": "int unsigned DEFAULT NULL COMMENT 'sensitivity=INTERNAL; current solid-line manager'"
+        },
+        {
+          "name": "location_id",
+          "definition": "int unsigned NOT NULL COMMENT 'sensitivity=PUBLIC'"
+        },
+        {
+          "name": "cost_center_id",
+          "definition": "int unsigned NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "employment_type_code",
+          "definition": "varchar(20) NOT NULL COMMENT 'sensitivity=PUBLIC'"
+        },
+        {
+          "name": "employment_status",
+          "definition": "enum('ACTIVE','PROBATION','ON_LEAVE','RESIGNED','TERMINATED','RETIRED') NOT NULL COMMENT 'sensitivity=PUBLIC'"
+        },
+        {
+          "name": "hire_date",
+          "definition": "date NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "probation_end_date",
+          "definition": "date DEFAULT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "termination_date",
+          "definition": "date DEFAULT NULL COMMENT 'sensitivity=INTERNAL; last working day'"
+        },
+        {
+          "name": "termination_reason",
+          "definition": "enum('VOLUNTARY_RESIGNATION','PERFORMANCE','MISCONDUCT','REDUNDANCY','CONTRACT_END','RETIREMENT') DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "is_rehire_eligible",
+          "definition": "tinyint(1) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "created_at",
+          "definition": "datetime NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "definition": "datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`employee_id`)",
+        "UNIQUE KEY `uq_employees_tenant` (`tenant_id`,`employee_id`)",
+        "UNIQUE KEY `uq_employees_number` (`tenant_id`,`employee_number`)",
+        "UNIQUE KEY `uq_employees_email` (`tenant_id`,`work_email`)",
+        "KEY `ix_employees_dept_status` (`tenant_id`,`department_id`,`employment_status`)",
+        "KEY `ix_employees_status` (`tenant_id`,`employment_status`)",
+        "KEY `ix_employees_hire` (`tenant_id`,`hire_date`)",
+        "KEY `ix_employees_term` (`tenant_id`,`termination_date`)",
+        "KEY `ix_employees_manager` (`tenant_id`,`manager_employee_id`)",
+        "KEY `fk_employees_team` (`tenant_id`,`department_id`,`team_id`)",
+        "KEY `fk_employees_position` (`tenant_id`,`position_id`)",
+        "KEY `fk_employees_location` (`tenant_id`,`location_id`)",
+        "KEY `fk_employees_cost_center` (`tenant_id`,`cost_center_id`)",
+        "KEY `fk_employees_emp_type` (`employment_type_code`)",
+        "KEY `fk_employees_nationality` (`nationality_country_code`)",
+        "KEY `fk_employees_qualification` (`highest_qualification_code`)",
+        "CONSTRAINT `fk_employees_cost_center` FOREIGN KEY (`tenant_id`, `cost_center_id`) REFERENCES `cost_centers` (`tenant_id`, `cost_center_id`)",
+        "CONSTRAINT `fk_employees_department` FOREIGN KEY (`tenant_id`, `department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)",
+        "CONSTRAINT `fk_employees_emp_type` FOREIGN KEY (`employment_type_code`) REFERENCES `employment_types` (`employment_type_code`)",
+        "CONSTRAINT `fk_employees_location` FOREIGN KEY (`tenant_id`, `location_id`) REFERENCES `company_locations` (`tenant_id`, `location_id`)",
+        "CONSTRAINT `fk_employees_manager` FOREIGN KEY (`tenant_id`, `manager_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_employees_nationality` FOREIGN KEY (`nationality_country_code`) REFERENCES `countries` (`country_code`)",
+        "CONSTRAINT `fk_employees_position` FOREIGN KEY (`tenant_id`, `position_id`) REFERENCES `job_positions` (`tenant_id`, `position_id`)",
+        "CONSTRAINT `fk_employees_qualification` FOREIGN KEY (`highest_qualification_code`) REFERENCES `qualification_levels` (`qualification_code`)",
+        "CONSTRAINT `fk_employees_team` FOREIGN KEY (`tenant_id`, `department_id`, `team_id`) REFERENCES `teams` (`tenant_id`, `department_id`, `team_id`)",
+        "CONSTRAINT `fk_employees_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`)",
+        "CONSTRAINT `ck_employees_status_term` CHECK ((((`employment_status` in (_utf8mb4'RESIGNED',_utf8mb4'TERMINATED',_utf8mb4'RETIRED')) and (`termination_date` is not null)) or ((`employment_status` in (_utf8mb4'ACTIVE',_utf8mb4'PROBATION',_utf8mb4'ON_LEAVE')) and (`termination_date` is null))))",
+        "CONSTRAINT `ck_employees_term` CHECK (((`termination_date` is null) or (`termination_date` >= `hire_date`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_employees_cost_center",
+          "columns": [
+            "tenant_id",
+            "cost_center_id"
+          ],
+          "target": "cost_centers",
+          "target_columns": [
+            "tenant_id",
+            "cost_center_id"
+          ]
+        },
+        {
+          "name": "fk_employees_department",
+          "columns": [
+            "tenant_id",
+            "department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_employees_emp_type",
+          "columns": [
+            "employment_type_code"
+          ],
+          "target": "employment_types",
+          "target_columns": [
+            "employment_type_code"
+          ]
+        },
+        {
+          "name": "fk_employees_location",
+          "columns": [
+            "tenant_id",
+            "location_id"
+          ],
+          "target": "company_locations",
+          "target_columns": [
+            "tenant_id",
+            "location_id"
+          ]
+        },
+        {
+          "name": "fk_employees_manager",
+          "columns": [
+            "tenant_id",
+            "manager_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_employees_nationality",
+          "columns": [
+            "nationality_country_code"
+          ],
+          "target": "countries",
+          "target_columns": [
+            "country_code"
+          ]
+        },
+        {
+          "name": "fk_employees_position",
+          "columns": [
+            "tenant_id",
+            "position_id"
+          ],
+          "target": "job_positions",
+          "target_columns": [
+            "tenant_id",
+            "position_id"
+          ]
+        },
+        {
+          "name": "fk_employees_qualification",
+          "columns": [
+            "highest_qualification_code"
+          ],
+          "target": "qualification_levels",
+          "target_columns": [
+            "qualification_code"
+          ]
+        },
+        {
+          "name": "fk_employees_team",
+          "columns": [
+            "tenant_id",
+            "department_id",
+            "team_id"
+          ],
+          "target": "teams",
+          "target_columns": [
+            "tenant_id",
+            "department_id",
+            "team_id"
+          ]
+        },
+        {
+          "name": "fk_employees_tenant",
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants",
+          "target_columns": [
+            "tenant_id"
+          ]
+        }
+      ]
+    },
+    "employment_history": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=EMPLOYEE; SCD-2 periods: department/position/status over time",
+      "columns": [
+        {
+          "name": "history_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "effective_from",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "effective_to",
+          "definition": "date DEFAULT NULL COMMENT 'NULL = current period'"
+        },
+        {
+          "name": "department_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "team_id",
+          "definition": "int unsigned DEFAULT NULL"
+        },
+        {
+          "name": "position_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "job_level_code",
+          "definition": "char(2) NOT NULL"
+        },
+        {
+          "name": "employment_type_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "employment_status",
+          "definition": "enum('ACTIVE','PROBATION','ON_LEAVE','RESIGNED','TERMINATED','RETIRED') NOT NULL"
+        },
+        {
+          "name": "change_reason",
+          "definition": "enum('HIRE','DATA_MIGRATION','PROBATION_CONFIRMED','PROMOTION','TRANSFER','LEAVE_OF_ABSENCE','RETURN_FROM_LEAVE','REORGANIZATION','RESIGNATION','TERMINATION','RETIREMENT','CONTRACT_END') NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`history_id`)",
+        "KEY `ix_emp_hist_employee` (`tenant_id`,`employee_id`,`effective_from`)",
+        "KEY `ix_emp_hist_dept` (`tenant_id`,`department_id`,`effective_from`)",
+        "KEY `fk_emp_hist_team` (`tenant_id`,`department_id`,`team_id`)",
+        "KEY `fk_emp_hist_position` (`tenant_id`,`position_id`)",
+        "KEY `fk_emp_hist_level` (`job_level_code`)",
+        "KEY `fk_emp_hist_emp_type` (`employment_type_code`)",
+        "CONSTRAINT `fk_emp_hist_department` FOREIGN KEY (`tenant_id`, `department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)",
+        "CONSTRAINT `fk_emp_hist_emp_type` FOREIGN KEY (`employment_type_code`) REFERENCES `employment_types` (`employment_type_code`)",
+        "CONSTRAINT `fk_emp_hist_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_emp_hist_level` FOREIGN KEY (`job_level_code`) REFERENCES `job_levels` (`job_level_code`)",
+        "CONSTRAINT `fk_emp_hist_position` FOREIGN KEY (`tenant_id`, `position_id`) REFERENCES `job_positions` (`tenant_id`, `position_id`)",
+        "CONSTRAINT `fk_emp_hist_team` FOREIGN KEY (`tenant_id`, `department_id`, `team_id`) REFERENCES `teams` (`tenant_id`, `department_id`, `team_id`)",
+        "CONSTRAINT `ck_emp_hist_dates` CHECK (((`effective_to` is null) or (`effective_to` >= `effective_from`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_emp_hist_department",
+          "columns": [
+            "tenant_id",
+            "department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_emp_hist_emp_type",
+          "columns": [
+            "employment_type_code"
+          ],
+          "target": "employment_types",
+          "target_columns": [
+            "employment_type_code"
+          ]
+        },
+        {
+          "name": "fk_emp_hist_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_emp_hist_level",
+          "columns": [
+            "job_level_code"
+          ],
+          "target": "job_levels",
+          "target_columns": [
+            "job_level_code"
+          ]
+        },
+        {
+          "name": "fk_emp_hist_position",
+          "columns": [
+            "tenant_id",
+            "position_id"
+          ],
+          "target": "job_positions",
+          "target_columns": [
+            "tenant_id",
+            "position_id"
+          ]
+        },
+        {
+          "name": "fk_emp_hist_team",
+          "columns": [
+            "tenant_id",
+            "department_id",
+            "team_id"
+          ],
+          "target": "teams",
+          "target_columns": [
+            "tenant_id",
+            "department_id",
+            "team_id"
+          ]
+        }
+      ]
+    },
+    "employment_types": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=REFERENCE",
+      "columns": [
+        {
+          "name": "employment_type_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "employment_type_name",
+          "definition": "varchar(60) NOT NULL"
+        },
+        {
+          "name": "is_permanent",
+          "definition": "tinyint(1) NOT NULL"
+        },
+        {
+          "name": "standard_weekly_hours",
+          "definition": "decimal(4,1) NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`employment_type_code`)"
+      ],
+      "foreign_keys": []
+    },
+    "exchange_rates": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=REFERENCE; synthetic FX series for normalisation",
+      "columns": [
+        {
+          "name": "currency_code",
+          "definition": "char(3) NOT NULL"
+        },
+        {
+          "name": "rate_month",
+          "definition": "date NOT NULL COMMENT 'first day of month'"
+        },
+        {
+          "name": "units_per_usd",
+          "definition": "decimal(14,6) NOT NULL COMMENT 'synthetic monthly average'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`currency_code`,`rate_month`)",
+        "CONSTRAINT `fk_exrates_currency` FOREIGN KEY (`currency_code`) REFERENCES `currencies` (`currency_code`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_exrates_currency",
+          "columns": [
+            "currency_code"
+          ],
+          "target": "currencies",
+          "target_columns": [
+            "currency_code"
+          ]
+        }
+      ]
+    },
+    "hiring_decisions": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=RECRUITMENT",
+      "columns": [
+        {
+          "name": "hiring_decision_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "application_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "decision",
+          "definition": "enum('OFFER_ACCEPTED','OFFER_DECLINED','REJECTED_AFTER_INTERVIEW') NOT NULL"
+        },
+        {
+          "name": "decision_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "offered_salary",
+          "definition": "decimal(14,2) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "proposed_start_date",
+          "definition": "date DEFAULT NULL"
+        },
+        {
+          "name": "hired_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        },
+        {
+          "name": "decided_by_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`hiring_decision_id`)",
+        "UNIQUE KEY `uq_hiring_decisions_app` (`tenant_id`,`application_id`)",
+        "KEY `fk_hiring_employee` (`tenant_id`,`hired_employee_id`)",
+        "KEY `fk_hiring_decider` (`tenant_id`,`decided_by_employee_id`)",
+        "CONSTRAINT `fk_hiring_application` FOREIGN KEY (`tenant_id`, `application_id`) REFERENCES `applications` (`tenant_id`, `application_id`)",
+        "CONSTRAINT `fk_hiring_decider` FOREIGN KEY (`tenant_id`, `decided_by_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_hiring_employee` FOREIGN KEY (`tenant_id`, `hired_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_hiring_application",
+          "columns": [
+            "tenant_id",
+            "application_id"
+          ],
+          "target": "applications",
+          "target_columns": [
+            "tenant_id",
+            "application_id"
+          ]
+        },
+        {
+          "name": "fk_hiring_decider",
+          "columns": [
+            "tenant_id",
+            "decided_by_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_hiring_employee",
+          "columns": [
+            "tenant_id",
+            "hired_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "industry_types": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=REFERENCE",
+      "columns": [
+        {
+          "name": "industry_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "industry_name",
+          "definition": "varchar(80) NOT NULL"
+        },
+        {
+          "name": "sector",
+          "definition": "varchar(40) NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`industry_code`)"
+      ],
+      "foreign_keys": []
+    },
+    "interview_records": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=RECRUITMENT",
+      "columns": [
+        {
+          "name": "interview_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "application_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "interview_round",
+          "definition": "tinyint unsigned NOT NULL"
+        },
+        {
+          "name": "interview_type",
+          "definition": "enum('PHONE_SCREEN','TECHNICAL','PANEL','HR','CASE_STUDY') NOT NULL"
+        },
+        {
+          "name": "interviewer_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        },
+        {
+          "name": "scheduled_at",
+          "definition": "datetime NOT NULL"
+        },
+        {
+          "name": "score",
+          "definition": "decimal(3,1) DEFAULT NULL COMMENT '1.0 - 5.0'"
+        },
+        {
+          "name": "recommendation",
+          "definition": "enum('STRONG_HIRE','HIRE','NO_HIRE','STRONG_NO_HIRE') DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`interview_id`)",
+        "UNIQUE KEY `uq_interviews_round` (`tenant_id`,`application_id`,`interview_round`)",
+        "KEY `fk_interviews_interviewer` (`tenant_id`,`interviewer_employee_id`)",
+        "CONSTRAINT `fk_interviews_application` FOREIGN KEY (`tenant_id`, `application_id`) REFERENCES `applications` (`tenant_id`, `application_id`)",
+        "CONSTRAINT `fk_interviews_interviewer` FOREIGN KEY (`tenant_id`, `interviewer_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_interviews_application",
+          "columns": [
+            "tenant_id",
+            "application_id"
+          ],
+          "target": "applications",
+          "target_columns": [
+            "tenant_id",
+            "application_id"
+          ]
+        },
+        {
+          "name": "fk_interviews_interviewer",
+          "columns": [
+            "tenant_id",
+            "interviewer_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "job_levels": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=REFERENCE",
+      "columns": [
+        {
+          "name": "job_level_code",
+          "definition": "char(2) NOT NULL"
+        },
+        {
+          "name": "level_rank",
+          "definition": "tinyint unsigned NOT NULL"
+        },
+        {
+          "name": "level_name",
+          "definition": "varchar(40) NOT NULL"
+        },
+        {
+          "name": "is_management",
+          "definition": "tinyint(1) NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`job_level_code`)",
+        "UNIQUE KEY `uq_job_levels_rank` (`level_rank`)"
+      ],
+      "foreign_keys": []
+    },
+    "job_openings": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=RECRUITMENT",
+      "columns": [
+        {
+          "name": "job_opening_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "opening_code",
+          "definition": "varchar(30) NOT NULL"
+        },
+        {
+          "name": "department_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "position_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "hiring_manager_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        },
+        {
+          "name": "employment_type_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "opening_reason",
+          "definition": "enum('GROWTH','REPLACEMENT','SEASONAL','NEW_ROLE') NOT NULL"
+        },
+        {
+          "name": "headcount_requested",
+          "definition": "tinyint unsigned NOT NULL DEFAULT '1'"
+        },
+        {
+          "name": "opened_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "target_fill_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "closed_date",
+          "definition": "date DEFAULT NULL"
+        },
+        {
+          "name": "opening_status",
+          "definition": "enum('OPEN','ON_HOLD','FILLED','CANCELLED') NOT NULL"
+        },
+        {
+          "name": "salary_budget_max",
+          "definition": "decimal(14,2) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`job_opening_id`)",
+        "UNIQUE KEY `uq_job_openings_tenant` (`tenant_id`,`job_opening_id`)",
+        "UNIQUE KEY `uq_job_openings_code` (`tenant_id`,`opening_code`)",
+        "KEY `ix_job_openings_dept` (`tenant_id`,`department_id`,`opened_date`)",
+        "KEY `fk_openings_position` (`tenant_id`,`position_id`)",
+        "KEY `fk_openings_manager` (`tenant_id`,`hiring_manager_employee_id`)",
+        "KEY `fk_openings_emp_type` (`employment_type_code`)",
+        "CONSTRAINT `fk_openings_department` FOREIGN KEY (`tenant_id`, `department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)",
+        "CONSTRAINT `fk_openings_emp_type` FOREIGN KEY (`employment_type_code`) REFERENCES `employment_types` (`employment_type_code`)",
+        "CONSTRAINT `fk_openings_manager` FOREIGN KEY (`tenant_id`, `hiring_manager_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_openings_position` FOREIGN KEY (`tenant_id`, `position_id`) REFERENCES `job_positions` (`tenant_id`, `position_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_openings_department",
+          "columns": [
+            "tenant_id",
+            "department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_openings_emp_type",
+          "columns": [
+            "employment_type_code"
+          ],
+          "target": "employment_types",
+          "target_columns": [
+            "employment_type_code"
+          ]
+        },
+        {
+          "name": "fk_openings_manager",
+          "columns": [
+            "tenant_id",
+            "hiring_manager_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_openings_position",
+          "columns": [
+            "tenant_id",
+            "position_id"
+          ],
+          "target": "job_positions",
+          "target_columns": [
+            "tenant_id",
+            "position_id"
+          ]
+        }
+      ]
+    },
+    "job_positions": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=ORGANIZATION",
+      "columns": [
+        {
+          "name": "position_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "position_code",
+          "definition": "varchar(40) NOT NULL"
+        },
+        {
+          "name": "position_title",
+          "definition": "varchar(120) NOT NULL"
+        },
+        {
+          "name": "job_category_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "job_level_code",
+          "definition": "char(2) NOT NULL"
+        },
+        {
+          "name": "salary_band_min",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND; annual, tenant base currency'"
+        },
+        {
+          "name": "salary_band_mid",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "salary_band_max",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "is_active",
+          "definition": "tinyint(1) NOT NULL DEFAULT '1'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`position_id`)",
+        "UNIQUE KEY `uq_job_positions_tenant` (`tenant_id`,`position_id`)",
+        "UNIQUE KEY `uq_job_positions_code` (`tenant_id`,`position_code`)",
+        "KEY `fk_positions_category` (`job_category_code`)",
+        "KEY `fk_positions_level` (`job_level_code`)",
+        "CONSTRAINT `fk_positions_category` FOREIGN KEY (`job_category_code`) REFERENCES `standardized_job_categories` (`job_category_code`)",
+        "CONSTRAINT `fk_positions_level` FOREIGN KEY (`job_level_code`) REFERENCES `job_levels` (`job_level_code`)",
+        "CONSTRAINT `fk_positions_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`)",
+        "CONSTRAINT `ck_positions_band` CHECK (((`salary_band_min` <= `salary_band_mid`) and (`salary_band_mid` <= `salary_band_max`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_positions_category",
+          "columns": [
+            "job_category_code"
+          ],
+          "target": "standardized_job_categories",
+          "target_columns": [
+            "job_category_code"
+          ]
+        },
+        {
+          "name": "fk_positions_level",
+          "columns": [
+            "job_level_code"
+          ],
+          "target": "job_levels",
+          "target_columns": [
+            "job_level_code"
+          ]
+        },
+        {
+          "name": "fk_positions_tenant",
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants",
+          "target_columns": [
+            "tenant_id"
+          ]
+        }
+      ]
+    },
+    "leave_approvals": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=LEAVE",
+      "columns": [
+        {
+          "name": "leave_approval_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "leave_request_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "approval_level",
+          "definition": "tinyint unsigned NOT NULL"
+        },
+        {
+          "name": "approver_employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "decision",
+          "definition": "enum('APPROVED','REJECTED','PENDING') NOT NULL"
+        },
+        {
+          "name": "decided_at",
+          "definition": "datetime DEFAULT NULL"
+        },
+        {
+          "name": "comments",
+          "definition": "varchar(255) DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`leave_approval_id`)",
+        "UNIQUE KEY `uq_leave_approvals` (`tenant_id`,`leave_request_id`,`approval_level`)",
+        "KEY `ix_leave_appr_approver` (`tenant_id`,`approver_employee_id`)",
+        "CONSTRAINT `fk_leave_appr_approver` FOREIGN KEY (`tenant_id`, `approver_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_leave_appr_request` FOREIGN KEY (`tenant_id`, `leave_request_id`) REFERENCES `leave_requests` (`tenant_id`, `leave_request_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_leave_appr_approver",
+          "columns": [
+            "tenant_id",
+            "approver_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_leave_appr_request",
+          "columns": [
+            "tenant_id",
+            "leave_request_id"
+          ],
+          "target": "leave_requests",
+          "target_columns": [
+            "tenant_id",
+            "leave_request_id"
+          ]
+        }
+      ]
+    },
+    "leave_balances": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=LEAVE; operational balance snapshot (latest two years)",
+      "columns": [
+        {
+          "name": "leave_balance_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "leave_type_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "balance_year",
+          "definition": "smallint unsigned NOT NULL"
+        },
+        {
+          "name": "as_of_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "entitled_days",
+          "definition": "decimal(5,1) NOT NULL"
+        },
+        {
+          "name": "carried_forward_days",
+          "definition": "decimal(5,1) NOT NULL"
+        },
+        {
+          "name": "taken_days",
+          "definition": "decimal(5,1) NOT NULL"
+        },
+        {
+          "name": "pending_days",
+          "definition": "decimal(5,1) NOT NULL"
+        },
+        {
+          "name": "remaining_days",
+          "definition": "decimal(5,1) NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`leave_balance_id`)",
+        "UNIQUE KEY `uq_leave_balances` (`tenant_id`,`employee_id`,`leave_type_code`,`balance_year`)",
+        "KEY `fk_leave_bal_type` (`leave_type_code`)",
+        "CONSTRAINT `fk_leave_bal_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_leave_bal_type` FOREIGN KEY (`leave_type_code`) REFERENCES `leave_type_catalog` (`leave_type_code`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_leave_bal_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_leave_bal_type",
+          "columns": [
+            "leave_type_code"
+          ],
+          "target": "leave_type_catalog",
+          "target_columns": [
+            "leave_type_code"
+          ]
+        }
+      ]
+    },
+    "leave_entitlements": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=LEAVE; yearly grants (all years)",
+      "columns": [
+        {
+          "name": "entitlement_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "leave_policy_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "leave_type_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "entitlement_year",
+          "definition": "smallint unsigned NOT NULL"
+        },
+        {
+          "name": "entitled_days",
+          "definition": "decimal(5,1) NOT NULL COMMENT 'pro-rated for joiners/leavers'"
+        },
+        {
+          "name": "carried_forward_days",
+          "definition": "decimal(5,1) NOT NULL DEFAULT '0.0'"
+        },
+        {
+          "name": "granted_on",
+          "definition": "date NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`entitlement_id`)",
+        "UNIQUE KEY `uq_leave_entitlements` (`tenant_id`,`employee_id`,`leave_type_code`,`entitlement_year`)",
+        "KEY `fk_leave_ent_policy` (`tenant_id`,`leave_policy_id`)",
+        "KEY `fk_leave_ent_type` (`leave_type_code`)",
+        "CONSTRAINT `fk_leave_ent_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_leave_ent_policy` FOREIGN KEY (`tenant_id`, `leave_policy_id`) REFERENCES `leave_policies` (`tenant_id`, `leave_policy_id`)",
+        "CONSTRAINT `fk_leave_ent_type` FOREIGN KEY (`leave_type_code`) REFERENCES `leave_type_catalog` (`leave_type_code`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_leave_ent_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_leave_ent_policy",
+          "columns": [
+            "tenant_id",
+            "leave_policy_id"
+          ],
+          "target": "leave_policies",
+          "target_columns": [
+            "tenant_id",
+            "leave_policy_id"
+          ]
+        },
+        {
+          "name": "fk_leave_ent_type",
+          "columns": [
+            "leave_type_code"
+          ],
+          "target": "leave_type_catalog",
+          "target_columns": [
+            "leave_type_code"
+          ]
+        }
+      ]
+    },
+    "leave_policies": {
+      "comment": "class=TENANT_CONFIG; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=LEAVE; tenant configuration of shared leave_type_catalog",
+      "columns": [
+        {
+          "name": "leave_policy_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "leave_type_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "policy_name",
+          "definition": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "annual_entitlement_days",
+          "definition": "decimal(5,1) NOT NULL"
+        },
+        {
+          "name": "max_carry_forward_days",
+          "definition": "decimal(5,1) NOT NULL DEFAULT '0.0'"
+        },
+        {
+          "name": "min_service_months",
+          "definition": "tinyint unsigned NOT NULL DEFAULT '0'"
+        },
+        {
+          "name": "requires_document_after_days",
+          "definition": "tinyint unsigned DEFAULT NULL"
+        },
+        {
+          "name": "accrual_method",
+          "definition": "enum('ANNUAL_GRANT','MONTHLY_ACCRUAL','EVENT_BASED') NOT NULL"
+        },
+        {
+          "name": "effective_from",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "effective_to",
+          "definition": "date DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`leave_policy_id`)",
+        "UNIQUE KEY `uq_leave_policies_tenant` (`tenant_id`,`leave_policy_id`)",
+        "UNIQUE KEY `uq_leave_policies_type` (`tenant_id`,`leave_type_code`,`effective_from`)",
+        "KEY `fk_leave_policies_type` (`leave_type_code`)",
+        "CONSTRAINT `fk_leave_policies_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`)",
+        "CONSTRAINT `fk_leave_policies_type` FOREIGN KEY (`leave_type_code`) REFERENCES `leave_type_catalog` (`leave_type_code`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_leave_policies_tenant",
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants",
+          "target_columns": [
+            "tenant_id"
+          ]
+        },
+        {
+          "name": "fk_leave_policies_type",
+          "columns": [
+            "leave_type_code"
+          ],
+          "target": "leave_type_catalog",
+          "target_columns": [
+            "leave_type_code"
+          ]
+        }
+      ]
+    },
+    "leave_requests": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=LEAVE",
+      "columns": [
+        {
+          "name": "leave_request_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "leave_policy_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "leave_type_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "start_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "end_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "total_days",
+          "definition": "decimal(5,1) NOT NULL COMMENT 'working days'"
+        },
+        {
+          "name": "is_half_day",
+          "definition": "tinyint(1) NOT NULL DEFAULT '0'"
+        },
+        {
+          "name": "request_status",
+          "definition": "enum('PENDING','APPROVED','REJECTED','CANCELLED') NOT NULL"
+        },
+        {
+          "name": "requested_at",
+          "definition": "datetime NOT NULL"
+        },
+        {
+          "name": "decided_at",
+          "definition": "datetime DEFAULT NULL"
+        },
+        {
+          "name": "reason_text",
+          "definition": "varchar(255) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL; may contain medical detail'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`leave_request_id`)",
+        "UNIQUE KEY `uq_leave_requests_tenant` (`tenant_id`,`leave_request_id`)",
+        "KEY `ix_leave_req_employee` (`tenant_id`,`employee_id`,`start_date`)",
+        "KEY `ix_leave_req_dates` (`tenant_id`,`start_date`)",
+        "KEY `ix_leave_req_type` (`tenant_id`,`leave_type_code`,`start_date`)",
+        "KEY `fk_leave_req_policy` (`tenant_id`,`leave_policy_id`)",
+        "KEY `fk_leave_req_type` (`leave_type_code`)",
+        "CONSTRAINT `fk_leave_req_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_leave_req_policy` FOREIGN KEY (`tenant_id`, `leave_policy_id`) REFERENCES `leave_policies` (`tenant_id`, `leave_policy_id`)",
+        "CONSTRAINT `fk_leave_req_type` FOREIGN KEY (`leave_type_code`) REFERENCES `leave_type_catalog` (`leave_type_code`)",
+        "CONSTRAINT `ck_leave_req_dates` CHECK ((`end_date` >= `start_date`))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_leave_req_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_leave_req_policy",
+          "columns": [
+            "tenant_id",
+            "leave_policy_id"
+          ],
+          "target": "leave_policies",
+          "target_columns": [
+            "tenant_id",
+            "leave_policy_id"
+          ]
+        },
+        {
+          "name": "fk_leave_req_type",
+          "columns": [
+            "leave_type_code"
+          ],
+          "target": "leave_type_catalog",
+          "target_columns": [
+            "leave_type_code"
+          ]
+        }
+      ]
+    },
+    "leave_type_catalog": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=LEAVE",
+      "columns": [
+        {
+          "name": "leave_type_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "leave_type_name",
+          "definition": "varchar(60) NOT NULL"
+        },
+        {
+          "name": "is_paid",
+          "definition": "tinyint(1) NOT NULL"
+        },
+        {
+          "name": "is_statutory",
+          "definition": "tinyint(1) NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`leave_type_code`)"
+      ],
+      "foreign_keys": []
+    },
+    "overtime_records": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=ATTENDANCE; monthly overtime claims (full history)",
+      "columns": [
+        {
+          "name": "overtime_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "payroll_period_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "overtime_month",
+          "definition": "date NOT NULL COMMENT 'first day of month'"
+        },
+        {
+          "name": "claimed_hours",
+          "definition": "decimal(6,2) NOT NULL"
+        },
+        {
+          "name": "approved_hours",
+          "definition": "decimal(6,2) NOT NULL"
+        },
+        {
+          "name": "rate_multiplier",
+          "definition": "decimal(3,2) NOT NULL"
+        },
+        {
+          "name": "overtime_amount",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "claim_status",
+          "definition": "enum('APPROVED','PARTIALLY_APPROVED','REJECTED') NOT NULL"
+        },
+        {
+          "name": "approved_by_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`overtime_id`)",
+        "UNIQUE KEY `uq_overtime_emp_month` (`tenant_id`,`employee_id`,`overtime_month`)",
+        "KEY `ix_overtime_month` (`tenant_id`,`overtime_month`)",
+        "KEY `fk_overtime_period` (`tenant_id`,`payroll_period_id`)",
+        "KEY `fk_overtime_approver` (`tenant_id`,`approved_by_employee_id`)",
+        "CONSTRAINT `fk_overtime_approver` FOREIGN KEY (`tenant_id`, `approved_by_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_overtime_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_overtime_period` FOREIGN KEY (`tenant_id`, `payroll_period_id`) REFERENCES `payroll_periods` (`tenant_id`, `payroll_period_id`)",
+        "CONSTRAINT `ck_overtime_hours` CHECK ((`approved_hours` <= `claimed_hours`))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_overtime_approver",
+          "columns": [
+            "tenant_id",
+            "approved_by_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_overtime_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_overtime_period",
+          "columns": [
+            "tenant_id",
+            "payroll_period_id"
+          ],
+          "target": "payroll_periods",
+          "target_columns": [
+            "tenant_id",
+            "payroll_period_id"
+          ]
+        }
+      ]
+    },
+    "payroll_component_catalog": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=PAYROLL",
+      "columns": [
+        {
+          "name": "component_code",
+          "definition": "varchar(30) NOT NULL"
+        },
+        {
+          "name": "component_name",
+          "definition": "varchar(80) NOT NULL"
+        },
+        {
+          "name": "component_kind",
+          "definition": "enum('EARNING','DEDUCTION','EMPLOYER_CONTRIBUTION') NOT NULL"
+        },
+        {
+          "name": "is_taxable",
+          "definition": "tinyint(1) NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`component_code`)"
+      ],
+      "foreign_keys": []
+    },
+    "payroll_components": {
+      "comment": "class=TENANT_DERIVED; tenant_path=payroll_record_id->payroll_records.payroll_record_id; default_sensitivity=RESTRICTED; module=PAYROLL; payslip line items (retention window); NO tenant column",
+      "columns": [
+        {
+          "name": "payroll_component_id",
+          "definition": "bigint unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "payroll_record_id",
+          "definition": "bigint unsigned NOT NULL"
+        },
+        {
+          "name": "component_code",
+          "definition": "varchar(30) NOT NULL"
+        },
+        {
+          "name": "quantity",
+          "definition": "decimal(8,2) DEFAULT NULL COMMENT 'hours/days where applicable'"
+        },
+        {
+          "name": "rate",
+          "definition": "decimal(12,4) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "amount",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`payroll_component_id`)",
+        "KEY `ix_payroll_comp_record` (`payroll_record_id`)",
+        "KEY `ix_payroll_comp_code` (`component_code`)",
+        "CONSTRAINT `fk_payroll_comp_code` FOREIGN KEY (`component_code`) REFERENCES `payroll_component_catalog` (`component_code`)",
+        "CONSTRAINT `fk_payroll_comp_record` FOREIGN KEY (`payroll_record_id`) REFERENCES `payroll_records` (`payroll_record_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_payroll_comp_code",
+          "columns": [
+            "component_code"
+          ],
+          "target": "payroll_component_catalog",
+          "target_columns": [
+            "component_code"
+          ]
+        },
+        {
+          "name": "fk_payroll_comp_record",
+          "columns": [
+            "payroll_record_id"
+          ],
+          "target": "payroll_records",
+          "target_columns": [
+            "payroll_record_id"
+          ]
+        }
+      ]
+    },
+    "payroll_periods": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=PAYROLL",
+      "columns": [
+        {
+          "name": "payroll_period_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "period_code",
+          "definition": "char(7) NOT NULL COMMENT 'YYYY-MM'"
+        },
+        {
+          "name": "period_start",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "period_end",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "pay_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "working_days",
+          "definition": "tinyint unsigned NOT NULL"
+        },
+        {
+          "name": "period_status",
+          "definition": "enum('OPEN','PROCESSING','CLOSED') NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`payroll_period_id`)",
+        "UNIQUE KEY `uq_payroll_periods_tenant` (`tenant_id`,`payroll_period_id`)",
+        "UNIQUE KEY `uq_payroll_periods_code` (`tenant_id`,`period_code`)",
+        "CONSTRAINT `fk_payroll_periods_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`)",
+        "CONSTRAINT `ck_payroll_periods_dates` CHECK ((`period_end` >= `period_start`))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_payroll_periods_tenant",
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants",
+          "target_columns": [
+            "tenant_id"
+          ]
+        }
+      ]
+    },
+    "payroll_records": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=RESTRICTED; module=PAYROLL; one row per employee per period per run",
+      "columns": [
+        {
+          "name": "payroll_record_id",
+          "definition": "bigint unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "payroll_period_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "run_type",
+          "definition": "enum('REGULAR','SUPPLEMENTARY') NOT NULL DEFAULT 'REGULAR'"
+        },
+        {
+          "name": "department_id",
+          "definition": "int unsigned NOT NULL COMMENT 'sensitivity=PUBLIC; department SNAPSHOT at pay date (cost allocation)'"
+        },
+        {
+          "name": "cost_center_id",
+          "definition": "int unsigned NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "paid_days",
+          "definition": "decimal(4,1) NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "base_pay",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "allowance_pay",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "overtime_hours",
+          "definition": "decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "overtime_pay",
+          "definition": "decimal(14,2) NOT NULL DEFAULT '0.00' COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "bonus_pay",
+          "definition": "decimal(14,2) NOT NULL DEFAULT '0.00' COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "other_earnings",
+          "definition": "decimal(14,2) NOT NULL DEFAULT '0.00' COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "gross_pay",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "income_tax",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "social_security_employee",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "social_security_employer",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "other_deductions",
+          "definition": "decimal(14,2) NOT NULL DEFAULT '0.00' COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "net_pay",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "currency_code",
+          "definition": "char(3) NOT NULL COMMENT 'sensitivity=PUBLIC'"
+        },
+        {
+          "name": "bank_account_id",
+          "definition": "int unsigned DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "payment_status",
+          "definition": "enum('PAID','PENDING','FAILED','REVERSED') NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "paid_date",
+          "definition": "date DEFAULT NULL COMMENT 'sensitivity=INTERNAL'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`payroll_record_id`)",
+        "UNIQUE KEY `uq_payroll_records_tenant` (`tenant_id`,`payroll_record_id`)",
+        "UNIQUE KEY `uq_payroll_emp_period` (`tenant_id`,`payroll_period_id`,`employee_id`,`run_type`)",
+        "KEY `ix_payroll_employee` (`tenant_id`,`employee_id`)",
+        "KEY `ix_payroll_dept_period` (`tenant_id`,`department_id`,`payroll_period_id`)",
+        "KEY `fk_payroll_cost_center` (`tenant_id`,`cost_center_id`)",
+        "KEY `fk_payroll_bank` (`tenant_id`,`bank_account_id`)",
+        "KEY `fk_payroll_currency` (`currency_code`)",
+        "CONSTRAINT `fk_payroll_bank` FOREIGN KEY (`tenant_id`, `bank_account_id`) REFERENCES `employee_bank_accounts` (`tenant_id`, `bank_account_id`)",
+        "CONSTRAINT `fk_payroll_cost_center` FOREIGN KEY (`tenant_id`, `cost_center_id`) REFERENCES `cost_centers` (`tenant_id`, `cost_center_id`)",
+        "CONSTRAINT `fk_payroll_currency` FOREIGN KEY (`currency_code`) REFERENCES `currencies` (`currency_code`)",
+        "CONSTRAINT `fk_payroll_department` FOREIGN KEY (`tenant_id`, `department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)",
+        "CONSTRAINT `fk_payroll_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_payroll_period` FOREIGN KEY (`tenant_id`, `payroll_period_id`) REFERENCES `payroll_periods` (`tenant_id`, `payroll_period_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_payroll_bank",
+          "columns": [
+            "tenant_id",
+            "bank_account_id"
+          ],
+          "target": "employee_bank_accounts",
+          "target_columns": [
+            "tenant_id",
+            "bank_account_id"
+          ]
+        },
+        {
+          "name": "fk_payroll_cost_center",
+          "columns": [
+            "tenant_id",
+            "cost_center_id"
+          ],
+          "target": "cost_centers",
+          "target_columns": [
+            "tenant_id",
+            "cost_center_id"
+          ]
+        },
+        {
+          "name": "fk_payroll_currency",
+          "columns": [
+            "currency_code"
+          ],
+          "target": "currencies",
+          "target_columns": [
+            "currency_code"
+          ]
+        },
+        {
+          "name": "fk_payroll_department",
+          "columns": [
+            "tenant_id",
+            "department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_payroll_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_payroll_period",
+          "columns": [
+            "tenant_id",
+            "payroll_period_id"
+          ],
+          "target": "payroll_periods",
+          "target_columns": [
+            "tenant_id",
+            "payroll_period_id"
+          ]
+        }
+      ]
+    },
+    "performance_goals": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=PERFORMANCE",
+      "columns": [
+        {
+          "name": "goal_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "goal_year",
+          "definition": "smallint unsigned NOT NULL"
+        },
+        {
+          "name": "goal_title",
+          "definition": "varchar(150) NOT NULL"
+        },
+        {
+          "name": "goal_category",
+          "definition": "enum('DELIVERY','QUALITY','CUSTOMER','GROWTH','PEOPLE','COMPLIANCE') NOT NULL"
+        },
+        {
+          "name": "weight_pct",
+          "definition": "tinyint unsigned NOT NULL"
+        },
+        {
+          "name": "progress_pct",
+          "definition": "tinyint unsigned NOT NULL"
+        },
+        {
+          "name": "goal_status",
+          "definition": "enum('IN_PROGRESS','ACHIEVED','PARTIALLY_ACHIEVED','NOT_ACHIEVED','CANCELLED') NOT NULL"
+        },
+        {
+          "name": "due_date",
+          "definition": "date NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`goal_id`)",
+        "KEY `ix_goals_employee` (`tenant_id`,`employee_id`,`goal_year`)",
+        "CONSTRAINT `fk_goals_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `ck_goals_progress` CHECK ((`progress_pct` <= 100))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_goals_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "performance_reviews": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=PERFORMANCE; semi-annual",
+      "columns": [
+        {
+          "name": "performance_review_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "reviewer_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        },
+        {
+          "name": "review_cycle",
+          "definition": "char(7) NOT NULL COMMENT 'e.g. 2024-H1'"
+        },
+        {
+          "name": "review_period_start",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "review_period_end",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "review_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "department_id",
+          "definition": "int unsigned NOT NULL COMMENT 'department snapshot at review time'"
+        },
+        {
+          "name": "overall_rating",
+          "definition": "decimal(3,2) NOT NULL COMMENT 'sensitivity=INTERNAL; 1.00-5.00'"
+        },
+        {
+          "name": "rating_band",
+          "definition": "enum('UNSATISFACTORY','NEEDS_IMPROVEMENT','MEETS_EXPECTATIONS','EXCEEDS_EXPECTATIONS','OUTSTANDING') NOT NULL"
+        },
+        {
+          "name": "review_status",
+          "definition": "enum('DRAFT','SUBMITTED','CALIBRATED','FINALIZED') NOT NULL"
+        },
+        {
+          "name": "manager_comments",
+          "definition": "varchar(500) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`performance_review_id`)",
+        "UNIQUE KEY `uq_perf_reviews_tenant` (`tenant_id`,`performance_review_id`)",
+        "UNIQUE KEY `uq_perf_reviews_cycle` (`tenant_id`,`employee_id`,`review_cycle`)",
+        "KEY `ix_perf_reviews_dept` (`tenant_id`,`department_id`,`review_cycle`)",
+        "KEY `fk_perf_reviews_reviewer` (`tenant_id`,`reviewer_employee_id`)",
+        "CONSTRAINT `fk_perf_reviews_dept` FOREIGN KEY (`tenant_id`, `department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)",
+        "CONSTRAINT `fk_perf_reviews_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_perf_reviews_reviewer` FOREIGN KEY (`tenant_id`, `reviewer_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `ck_perf_reviews_rating` CHECK ((`overall_rating` between 1.00 and 5.00))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_perf_reviews_dept",
+          "columns": [
+            "tenant_id",
+            "department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_perf_reviews_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_perf_reviews_reviewer",
+          "columns": [
+            "tenant_id",
+            "reviewer_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "performance_scores": {
+      "comment": "class=TENANT_DERIVED; tenant_path=performance_review_id->performance_reviews.performance_review_id; default_sensitivity=INTERNAL; module=PERFORMANCE; NO tenant column",
+      "columns": [
+        {
+          "name": "performance_score_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "performance_review_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "competency_code",
+          "definition": "varchar(30) NOT NULL"
+        },
+        {
+          "name": "score",
+          "definition": "decimal(3,2) NOT NULL"
+        },
+        {
+          "name": "weight_pct",
+          "definition": "tinyint unsigned NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`performance_score_id`)",
+        "UNIQUE KEY `uq_perf_scores` (`performance_review_id`,`competency_code`)",
+        "KEY `fk_perf_scores_competency` (`competency_code`)",
+        "CONSTRAINT `fk_perf_scores_competency` FOREIGN KEY (`competency_code`) REFERENCES `competency_catalog` (`competency_code`)",
+        "CONSTRAINT `fk_perf_scores_review` FOREIGN KEY (`performance_review_id`) REFERENCES `performance_reviews` (`performance_review_id`)",
+        "CONSTRAINT `ck_perf_scores_score` CHECK ((`score` between 1.00 and 5.00))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_perf_scores_competency",
+          "columns": [
+            "competency_code"
+          ],
+          "target": "competency_catalog",
+          "target_columns": [
+            "competency_code"
+          ]
+        },
+        {
+          "name": "fk_perf_scores_review",
+          "columns": [
+            "performance_review_id"
+          ],
+          "target": "performance_reviews",
+          "target_columns": [
+            "performance_review_id"
+          ]
+        }
+      ]
+    },
+    "position_skill_requirements": {
+      "comment": "class=TENANT_CONFIG; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=TRAINING; tenant mapping onto shared skill_catalog",
+      "columns": [
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "position_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "skill_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "required_proficiency",
+          "definition": "tinyint unsigned NOT NULL"
+        },
+        {
+          "name": "is_mandatory",
+          "definition": "tinyint(1) NOT NULL DEFAULT '1'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`tenant_id`,`position_id`,`skill_id`)",
+        "KEY `fk_pos_skill_skill` (`skill_id`)",
+        "CONSTRAINT `fk_pos_skill_position` FOREIGN KEY (`tenant_id`, `position_id`) REFERENCES `job_positions` (`tenant_id`, `position_id`)",
+        "CONSTRAINT `fk_pos_skill_skill` FOREIGN KEY (`skill_id`) REFERENCES `skill_catalog` (`skill_id`)",
+        "CONSTRAINT `ck_pos_skill_level` CHECK ((`required_proficiency` between 1 and 5))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_pos_skill_position",
+          "columns": [
+            "tenant_id",
+            "position_id"
+          ],
+          "target": "job_positions",
+          "target_columns": [
+            "tenant_id",
+            "position_id"
+          ]
+        },
+        {
+          "name": "fk_pos_skill_skill",
+          "columns": [
+            "skill_id"
+          ],
+          "target": "skill_catalog",
+          "target_columns": [
+            "skill_id"
+          ]
+        }
+      ]
+    },
+    "project_assignments": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=PROJECTS",
+      "columns": [
+        {
+          "name": "assignment_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "project_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "project_role",
+          "definition": "enum('PROJECT_MANAGER','LEAD','CONTRIBUTOR','ANALYST','SPECIALIST','REVIEWER') NOT NULL"
+        },
+        {
+          "name": "allocation_pct",
+          "definition": "tinyint unsigned NOT NULL"
+        },
+        {
+          "name": "start_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "end_date",
+          "definition": "date DEFAULT NULL"
+        },
+        {
+          "name": "billing_rate_hourly",
+          "definition": "decimal(10,2) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`assignment_id`)",
+        "UNIQUE KEY `uq_assignments_tenant` (`tenant_id`,`assignment_id`)",
+        "UNIQUE KEY `uq_assignments_tenant_emp` (`tenant_id`,`assignment_id`,`employee_id`)",
+        "KEY `ix_assignments_project` (`tenant_id`,`project_id`)",
+        "KEY `ix_assignments_employee` (`tenant_id`,`employee_id`,`start_date`)",
+        "CONSTRAINT `fk_assignments_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_assignments_project` FOREIGN KEY (`tenant_id`, `project_id`) REFERENCES `projects` (`tenant_id`, `project_id`)",
+        "CONSTRAINT `ck_assignments_alloc` CHECK ((`allocation_pct` between 5 and 100))",
+        "CONSTRAINT `ck_assignments_dates` CHECK (((`end_date` is null) or (`end_date` >= `start_date`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_assignments_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_assignments_project",
+          "columns": [
+            "tenant_id",
+            "project_id"
+          ],
+          "target": "projects",
+          "target_columns": [
+            "tenant_id",
+            "project_id"
+          ]
+        }
+      ]
+    },
+    "project_resource_allocations": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=PROJECTS; monthly plan vs actual per project and department",
+      "columns": [
+        {
+          "name": "allocation_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "project_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "department_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "allocation_month",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "planned_fte",
+          "definition": "decimal(6,2) NOT NULL"
+        },
+        {
+          "name": "planned_hours",
+          "definition": "decimal(8,2) NOT NULL"
+        },
+        {
+          "name": "actual_hours",
+          "definition": "decimal(8,2) NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`allocation_id`)",
+        "UNIQUE KEY `uq_project_alloc` (`tenant_id`,`project_id`,`department_id`,`allocation_month`)",
+        "KEY `fk_proj_alloc_department` (`tenant_id`,`department_id`)",
+        "CONSTRAINT `fk_proj_alloc_department` FOREIGN KEY (`tenant_id`, `department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)",
+        "CONSTRAINT `fk_proj_alloc_project` FOREIGN KEY (`tenant_id`, `project_id`) REFERENCES `projects` (`tenant_id`, `project_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_proj_alloc_department",
+          "columns": [
+            "tenant_id",
+            "department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_proj_alloc_project",
+          "columns": [
+            "tenant_id",
+            "project_id"
+          ],
+          "target": "projects",
+          "target_columns": [
+            "tenant_id",
+            "project_id"
+          ]
+        }
+      ]
+    },
+    "projects": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=PROJECTS",
+      "columns": [
+        {
+          "name": "project_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "project_code",
+          "definition": "varchar(30) NOT NULL"
+        },
+        {
+          "name": "project_name",
+          "definition": "varchar(150) NOT NULL"
+        },
+        {
+          "name": "project_type",
+          "definition": "enum('CLIENT','INTERNAL','R_AND_D','COMPLIANCE','INFRASTRUCTURE') NOT NULL"
+        },
+        {
+          "name": "owning_department_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "project_manager_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        },
+        {
+          "name": "client_name",
+          "definition": "varchar(120) DEFAULT NULL COMMENT 'sensitivity=INTERNAL; synthetic'"
+        },
+        {
+          "name": "start_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "planned_end_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "actual_end_date",
+          "definition": "date DEFAULT NULL"
+        },
+        {
+          "name": "project_status",
+          "definition": "enum('PLANNED','ACTIVE','ON_HOLD','COMPLETED','CANCELLED') NOT NULL"
+        },
+        {
+          "name": "budget_amount",
+          "definition": "decimal(16,2) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "is_billable",
+          "definition": "tinyint(1) NOT NULL DEFAULT '0'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`project_id`)",
+        "UNIQUE KEY `uq_projects_tenant` (`tenant_id`,`project_id`)",
+        "UNIQUE KEY `uq_projects_code` (`tenant_id`,`project_code`)",
+        "KEY `fk_projects_department` (`tenant_id`,`owning_department_id`)",
+        "KEY `fk_projects_manager` (`tenant_id`,`project_manager_employee_id`)",
+        "CONSTRAINT `fk_projects_department` FOREIGN KEY (`tenant_id`, `owning_department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)",
+        "CONSTRAINT `fk_projects_manager` FOREIGN KEY (`tenant_id`, `project_manager_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `ck_projects_dates` CHECK (((`planned_end_date` >= `start_date`) and ((`actual_end_date` is null) or (`actual_end_date` >= `start_date`))))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_projects_department",
+          "columns": [
+            "tenant_id",
+            "owning_department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_projects_manager",
+          "columns": [
+            "tenant_id",
+            "project_manager_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "promotion_history": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=PERFORMANCE",
+      "columns": [
+        {
+          "name": "promotion_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "effective_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "from_position_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "to_position_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "from_level_code",
+          "definition": "char(2) NOT NULL"
+        },
+        {
+          "name": "to_level_code",
+          "definition": "char(2) NOT NULL"
+        },
+        {
+          "name": "promotion_type",
+          "definition": "enum('MERIT','VACANCY_FILL','RECLASSIFICATION') NOT NULL"
+        },
+        {
+          "name": "salary_before",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "salary_after",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "approved_by_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`promotion_id`)",
+        "KEY `ix_promotions_employee` (`tenant_id`,`employee_id`,`effective_date`)",
+        "KEY `fk_promo_from_pos` (`tenant_id`,`from_position_id`)",
+        "KEY `fk_promo_to_pos` (`tenant_id`,`to_position_id`)",
+        "KEY `fk_promo_approver` (`tenant_id`,`approved_by_employee_id`)",
+        "KEY `fk_promo_from_lvl` (`from_level_code`)",
+        "KEY `fk_promo_to_lvl` (`to_level_code`)",
+        "CONSTRAINT `fk_promo_approver` FOREIGN KEY (`tenant_id`, `approved_by_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_promo_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_promo_from_lvl` FOREIGN KEY (`from_level_code`) REFERENCES `job_levels` (`job_level_code`)",
+        "CONSTRAINT `fk_promo_from_pos` FOREIGN KEY (`tenant_id`, `from_position_id`) REFERENCES `job_positions` (`tenant_id`, `position_id`)",
+        "CONSTRAINT `fk_promo_to_lvl` FOREIGN KEY (`to_level_code`) REFERENCES `job_levels` (`job_level_code`)",
+        "CONSTRAINT `fk_promo_to_pos` FOREIGN KEY (`tenant_id`, `to_position_id`) REFERENCES `job_positions` (`tenant_id`, `position_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_promo_approver",
+          "columns": [
+            "tenant_id",
+            "approved_by_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_promo_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_promo_from_lvl",
+          "columns": [
+            "from_level_code"
+          ],
+          "target": "job_levels",
+          "target_columns": [
+            "job_level_code"
+          ]
+        },
+        {
+          "name": "fk_promo_from_pos",
+          "columns": [
+            "tenant_id",
+            "from_position_id"
+          ],
+          "target": "job_positions",
+          "target_columns": [
+            "tenant_id",
+            "position_id"
+          ]
+        },
+        {
+          "name": "fk_promo_to_lvl",
+          "columns": [
+            "to_level_code"
+          ],
+          "target": "job_levels",
+          "target_columns": [
+            "job_level_code"
+          ]
+        },
+        {
+          "name": "fk_promo_to_pos",
+          "columns": [
+            "tenant_id",
+            "to_position_id"
+          ],
+          "target": "job_positions",
+          "target_columns": [
+            "tenant_id",
+            "position_id"
+          ]
+        }
+      ]
+    },
+    "public_holidays": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=REFERENCE; synthetic approximation of national calendars",
+      "columns": [
+        {
+          "name": "holiday_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "country_code",
+          "definition": "char(2) NOT NULL"
+        },
+        {
+          "name": "holiday_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "holiday_name",
+          "definition": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "holiday_type",
+          "definition": "enum('NATIONAL','RELIGIOUS','BANK','OBSERVANCE') NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`holiday_id`)",
+        "UNIQUE KEY `uq_public_holidays` (`country_code`,`holiday_date`,`holiday_name`)",
+        "KEY `ix_public_holidays_date` (`holiday_date`)",
+        "CONSTRAINT `fk_holidays_country` FOREIGN KEY (`country_code`) REFERENCES `countries` (`country_code`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_holidays_country",
+          "columns": [
+            "country_code"
+          ],
+          "target": "countries",
+          "target_columns": [
+            "country_code"
+          ]
+        }
+      ]
+    },
+    "qualification_levels": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=REFERENCE",
+      "columns": [
+        {
+          "name": "qualification_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "qualification_name",
+          "definition": "varchar(80) NOT NULL"
+        },
+        {
+          "name": "isced_level",
+          "definition": "tinyint unsigned NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`qualification_code`)"
+      ],
+      "foreign_keys": []
+    },
+    "salary_history": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=RESTRICTED; module=PAYROLL",
+      "columns": [
+        {
+          "name": "salary_history_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "effective_from",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "effective_to",
+          "definition": "date DEFAULT NULL"
+        },
+        {
+          "name": "annual_base_salary",
+          "definition": "decimal(14,2) NOT NULL COMMENT 'sensitivity=RESTRICTED; mask=BAND'"
+        },
+        {
+          "name": "currency_code",
+          "definition": "char(3) NOT NULL"
+        },
+        {
+          "name": "change_reason",
+          "definition": "enum('HIRE','BASELINE','ANNUAL_MERIT','PROMOTION','MARKET_ADJUSTMENT','TRANSFER','CORRECTION') NOT NULL"
+        },
+        {
+          "name": "change_pct",
+          "definition": "decimal(6,2) DEFAULT NULL COMMENT 'sensitivity=RESTRICTED; mask=FULL'"
+        },
+        {
+          "name": "approved_by_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`salary_history_id`)",
+        "UNIQUE KEY `uq_salary_history` (`tenant_id`,`employee_id`,`effective_from`)",
+        "KEY `fk_salary_approver` (`tenant_id`,`approved_by_employee_id`)",
+        "KEY `fk_salary_currency` (`currency_code`)",
+        "CONSTRAINT `fk_salary_approver` FOREIGN KEY (`tenant_id`, `approved_by_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_salary_currency` FOREIGN KEY (`currency_code`) REFERENCES `currencies` (`currency_code`)",
+        "CONSTRAINT `fk_salary_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `ck_salary_dates` CHECK (((`effective_to` is null) or (`effective_to` >= `effective_from`)))",
+        "CONSTRAINT `ck_salary_positive` CHECK ((`annual_base_salary` > 0))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_salary_approver",
+          "columns": [
+            "tenant_id",
+            "approved_by_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_salary_currency",
+          "columns": [
+            "currency_code"
+          ],
+          "target": "currencies",
+          "target_columns": [
+            "currency_code"
+          ]
+        },
+        {
+          "name": "fk_salary_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "shift_assignments": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=ATTENDANCE",
+      "columns": [
+        {
+          "name": "shift_assignment_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "shift_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "effective_from",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "effective_to",
+          "definition": "date DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`shift_assignment_id`)",
+        "KEY `ix_shift_assign_employee` (`tenant_id`,`employee_id`,`effective_from`)",
+        "KEY `fk_shift_assign_shift` (`tenant_id`,`shift_id`)",
+        "CONSTRAINT `fk_shift_assign_employee` FOREIGN KEY (`tenant_id`, `employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_shift_assign_shift` FOREIGN KEY (`tenant_id`, `shift_id`) REFERENCES `work_shifts` (`tenant_id`, `shift_id`)",
+        "CONSTRAINT `ck_shift_assign_dates` CHECK (((`effective_to` is null) or (`effective_to` >= `effective_from`)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_shift_assign_employee",
+          "columns": [
+            "tenant_id",
+            "employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_shift_assign_shift",
+          "columns": [
+            "tenant_id",
+            "shift_id"
+          ],
+          "target": "work_shifts",
+          "target_columns": [
+            "tenant_id",
+            "shift_id"
+          ]
+        }
+      ]
+    },
+    "skill_catalog": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=TRAINING",
+      "columns": [
+        {
+          "name": "skill_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "skill_code",
+          "definition": "varchar(30) NOT NULL"
+        },
+        {
+          "name": "skill_name",
+          "definition": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "skill_category",
+          "definition": "enum('TECHNICAL','DOMAIN','LEADERSHIP','COMPLIANCE','INTERPERSONAL') NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`skill_id`)",
+        "UNIQUE KEY `uq_skill_catalog_code` (`skill_code`)"
+      ],
+      "foreign_keys": []
+    },
+    "standardized_job_categories": {
+      "comment": "class=SHARED_REFERENCE; default_sensitivity=PUBLIC; module=REFERENCE",
+      "columns": [
+        {
+          "name": "job_category_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "job_category_name",
+          "definition": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "isco_major_group",
+          "definition": "tinyint unsigned NOT NULL COMMENT 'ISCO-08 major group (1-9)'"
+        },
+        {
+          "name": "job_family",
+          "definition": "varchar(40) NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`job_category_code`)"
+      ],
+      "foreign_keys": []
+    },
+    "teams": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=ORGANIZATION",
+      "columns": [
+        {
+          "name": "team_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "department_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "team_code",
+          "definition": "varchar(30) NOT NULL"
+        },
+        {
+          "name": "team_name",
+          "definition": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "formed_date",
+          "definition": "date NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`team_id`)",
+        "UNIQUE KEY `uq_teams_tenant` (`tenant_id`,`team_id`)",
+        "UNIQUE KEY `uq_teams_code` (`tenant_id`,`team_code`)",
+        "UNIQUE KEY `uq_teams_dept` (`tenant_id`,`department_id`,`team_id`) COMMENT 'lets employees enforce team-belongs-to-department'",
+        "CONSTRAINT `fk_teams_department` FOREIGN KEY (`tenant_id`, `department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_teams_department",
+          "columns": [
+            "tenant_id",
+            "department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        }
+      ]
+    },
+    "tenants": {
+      "comment": "class=TENANT_ROOT; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=ORGANIZATION; one row per customer company",
+      "columns": [
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "tenant_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "company_name",
+          "definition": "varchar(120) NOT NULL"
+        },
+        {
+          "name": "industry_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "company_size",
+          "definition": "enum('SMALL','MEDIUM','LARGE','ENTERPRISE') NOT NULL"
+        },
+        {
+          "name": "country_code",
+          "definition": "char(2) NOT NULL COMMENT 'country of registration / HQ'"
+        },
+        {
+          "name": "base_currency_code",
+          "definition": "char(3) NOT NULL COMMENT 'all monetary amounts of this tenant are stored in this currency'"
+        },
+        {
+          "name": "email_domain",
+          "definition": "varchar(80) NOT NULL"
+        },
+        {
+          "name": "fiscal_year_start_month",
+          "definition": "tinyint unsigned NOT NULL DEFAULT '1'"
+        },
+        {
+          "name": "registered_date",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "status",
+          "definition": "enum('ACTIVE','TRIAL','SUSPENDED','CHURNED') NOT NULL DEFAULT 'ACTIVE'"
+        },
+        {
+          "name": "created_at",
+          "definition": "datetime NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "definition": "datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`tenant_id`)",
+        "UNIQUE KEY `uq_tenants_code` (`tenant_code`)",
+        "KEY `fk_tenants_industry` (`industry_code`)",
+        "KEY `fk_tenants_country` (`country_code`)",
+        "KEY `fk_tenants_currency` (`base_currency_code`)",
+        "CONSTRAINT `fk_tenants_country` FOREIGN KEY (`country_code`) REFERENCES `countries` (`country_code`)",
+        "CONSTRAINT `fk_tenants_currency` FOREIGN KEY (`base_currency_code`) REFERENCES `currencies` (`currency_code`)",
+        "CONSTRAINT `fk_tenants_industry` FOREIGN KEY (`industry_code`) REFERENCES `industry_types` (`industry_code`)",
+        "CONSTRAINT `ck_tenants_fy` CHECK ((`fiscal_year_start_month` between 1 and 12))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_tenants_country",
+          "columns": [
+            "country_code"
+          ],
+          "target": "countries",
+          "target_columns": [
+            "country_code"
+          ]
+        },
+        {
+          "name": "fk_tenants_currency",
+          "columns": [
+            "base_currency_code"
+          ],
+          "target": "currencies",
+          "target_columns": [
+            "currency_code"
+          ]
+        },
+        {
+          "name": "fk_tenants_industry",
+          "columns": [
+            "industry_code"
+          ],
+          "target": "industry_types",
+          "target_columns": [
+            "industry_code"
+          ]
+        }
+      ]
+    },
+    "timesheets": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=PROJECTS; department scope is NOT on this table - resolve through employees or employment_history",
+      "columns": [
+        {
+          "name": "timesheet_id",
+          "definition": "bigint unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "assignment_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "employee_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "week_start_date",
+          "definition": "date NOT NULL COMMENT 'Monday'"
+        },
+        {
+          "name": "hours_logged",
+          "definition": "decimal(5,2) NOT NULL"
+        },
+        {
+          "name": "billable_hours",
+          "definition": "decimal(5,2) NOT NULL"
+        },
+        {
+          "name": "timesheet_status",
+          "definition": "enum('SUBMITTED','APPROVED','REJECTED') NOT NULL"
+        },
+        {
+          "name": "submitted_at",
+          "definition": "datetime NOT NULL"
+        },
+        {
+          "name": "approved_by_employee_id",
+          "definition": "int unsigned DEFAULT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`timesheet_id`)",
+        "UNIQUE KEY `uq_timesheets_week` (`tenant_id`,`assignment_id`,`week_start_date`)",
+        "KEY `ix_timesheets_employee` (`tenant_id`,`employee_id`,`week_start_date`)",
+        "KEY `ix_timesheets_week` (`tenant_id`,`week_start_date`)",
+        "KEY `fk_timesheets_assignment` (`tenant_id`,`assignment_id`,`employee_id`)",
+        "KEY `fk_timesheets_approver` (`tenant_id`,`approved_by_employee_id`)",
+        "CONSTRAINT `fk_timesheets_approver` FOREIGN KEY (`tenant_id`, `approved_by_employee_id`) REFERENCES `employees` (`tenant_id`, `employee_id`)",
+        "CONSTRAINT `fk_timesheets_assignment` FOREIGN KEY (`tenant_id`, `assignment_id`, `employee_id`) REFERENCES `project_assignments` (`tenant_id`, `assignment_id`, `employee_id`)",
+        "CONSTRAINT `ck_timesheets_hours` CHECK (((`billable_hours` <= `hours_logged`) and (`hours_logged` <= 168)))"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_timesheets_approver",
+          "columns": [
+            "tenant_id",
+            "approved_by_employee_id"
+          ],
+          "target": "employees",
+          "target_columns": [
+            "tenant_id",
+            "employee_id"
+          ]
+        },
+        {
+          "name": "fk_timesheets_assignment",
+          "columns": [
+            "tenant_id",
+            "assignment_id",
+            "employee_id"
+          ],
+          "target": "project_assignments",
+          "target_columns": [
+            "tenant_id",
+            "assignment_id",
+            "employee_id"
+          ]
+        }
+      ]
+    },
+    "training_programs": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=TRAINING",
+      "columns": [
+        {
+          "name": "training_program_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "program_code",
+          "definition": "varchar(30) NOT NULL"
+        },
+        {
+          "name": "program_title",
+          "definition": "varchar(150) NOT NULL"
+        },
+        {
+          "name": "primary_skill_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "delivery_mode",
+          "definition": "enum('CLASSROOM','ONLINE','BLENDED','ON_THE_JOB') NOT NULL"
+        },
+        {
+          "name": "provider_type",
+          "definition": "enum('INTERNAL','EXTERNAL') NOT NULL"
+        },
+        {
+          "name": "duration_hours",
+          "definition": "decimal(5,1) NOT NULL"
+        },
+        {
+          "name": "cost_per_participant",
+          "definition": "decimal(12,2) NOT NULL COMMENT 'sensitivity=INTERNAL'"
+        },
+        {
+          "name": "is_mandatory",
+          "definition": "tinyint(1) NOT NULL DEFAULT '0'"
+        },
+        {
+          "name": "awards_certification",
+          "definition": "tinyint(1) NOT NULL DEFAULT '0'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`training_program_id`)",
+        "UNIQUE KEY `uq_training_programs_tenant` (`tenant_id`,`training_program_id`)",
+        "UNIQUE KEY `uq_training_programs_code` (`tenant_id`,`program_code`)",
+        "KEY `fk_training_programs_skill` (`primary_skill_id`)",
+        "CONSTRAINT `fk_training_programs_skill` FOREIGN KEY (`primary_skill_id`) REFERENCES `skill_catalog` (`skill_id`)",
+        "CONSTRAINT `fk_training_programs_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_training_programs_skill",
+          "columns": [
+            "primary_skill_id"
+          ],
+          "target": "skill_catalog",
+          "target_columns": [
+            "skill_id"
+          ]
+        },
+        {
+          "name": "fk_training_programs_tenant",
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants",
+          "target_columns": [
+            "tenant_id"
+          ]
+        }
+      ]
+    },
+    "work_shifts": {
+      "comment": "class=TENANT_CONFIG; tenant_key=tenant_id; default_sensitivity=PUBLIC; module=ATTENDANCE",
+      "columns": [
+        {
+          "name": "shift_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "shift_code",
+          "definition": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "shift_name",
+          "definition": "varchar(60) NOT NULL"
+        },
+        {
+          "name": "start_time",
+          "definition": "time NOT NULL"
+        },
+        {
+          "name": "end_time",
+          "definition": "time NOT NULL"
+        },
+        {
+          "name": "break_minutes",
+          "definition": "smallint unsigned NOT NULL"
+        },
+        {
+          "name": "is_night_shift",
+          "definition": "tinyint(1) NOT NULL DEFAULT '0'"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`shift_id`)",
+        "UNIQUE KEY `uq_work_shifts_tenant` (`tenant_id`,`shift_id`)",
+        "UNIQUE KEY `uq_work_shifts_code` (`tenant_id`,`shift_code`)",
+        "CONSTRAINT `fk_shifts_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_shifts_tenant",
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants",
+          "target_columns": [
+            "tenant_id"
+          ]
+        }
+      ]
+    },
+    "workforce_capacity": {
+      "comment": "class=TENANT_OWNED; tenant_key=tenant_id; default_sensitivity=INTERNAL; module=PROJECTS; monthly department capacity snapshot (planning)",
+      "columns": [
+        {
+          "name": "capacity_id",
+          "definition": "int unsigned NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "tenant_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "department_id",
+          "definition": "int unsigned NOT NULL"
+        },
+        {
+          "name": "capacity_month",
+          "definition": "date NOT NULL"
+        },
+        {
+          "name": "budgeted_headcount",
+          "definition": "smallint unsigned NOT NULL"
+        },
+        {
+          "name": "actual_headcount",
+          "definition": "smallint unsigned NOT NULL COMMENT 'active at month end'"
+        },
+        {
+          "name": "hires",
+          "definition": "smallint unsigned NOT NULL"
+        },
+        {
+          "name": "exits",
+          "definition": "smallint unsigned NOT NULL"
+        },
+        {
+          "name": "available_hours",
+          "definition": "decimal(10,2) NOT NULL"
+        },
+        {
+          "name": "overtime_hours",
+          "definition": "decimal(10,2) NOT NULL"
+        },
+        {
+          "name": "project_hours",
+          "definition": "decimal(10,2) NOT NULL"
+        },
+        {
+          "name": "open_requisitions",
+          "definition": "smallint unsigned NOT NULL"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (`capacity_id`)",
+        "UNIQUE KEY `uq_workforce_capacity` (`tenant_id`,`department_id`,`capacity_month`)",
+        "CONSTRAINT `fk_capacity_department` FOREIGN KEY (`tenant_id`, `department_id`) REFERENCES `departments` (`tenant_id`, `department_id`)"
+      ],
+      "foreign_keys": [
+        {
+          "name": "fk_capacity_department",
+          "columns": [
+            "tenant_id",
+            "department_id"
+          ],
+          "target": "departments",
+          "target_columns": [
+            "tenant_id",
+            "department_id"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "userId": "example-employee",
+  "role": "EMPLOYEE",
+  "tenantId": 101,
+  "employeeId": 1001
+}

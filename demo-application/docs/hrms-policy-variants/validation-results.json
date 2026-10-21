@@ -1,0 +1,226 @@
+{
+  "source_sha256": "d3079c66c2bf33f17869f5d00a799ec743751bce4c1b2b5215485750ad0fb2ed",
+  "schema_tables": 68,
+  "schema_columns": 601,
+  "declared_foreign_keys": 138,
+  "enum_domains_in_schema": 59,
+  "variants": {
+    "01-employee": {
+      "allowed_tables": 51,
+      "denied_tables": 17,
+      "denied_columns": 22,
+      "row_rules": 69
+    },
+    "02-manager": {
+      "allowed_tables": 32,
+      "denied_tables": 36,
+      "denied_columns": 27,
+      "row_rules": 31
+    },
+    "03-admin": {
+      "allowed_tables": 64,
+      "denied_tables": 4,
+      "denied_columns": 15,
+      "row_rules": 51
+    }
+  },
+  "structural_checks": "PASS: JSON parseability, policy table/column identifiers, row-rule fields/claims, compact role/context alignment, nine short rules per file, each under 3 KB, derived tables denied",
+  "application_claim_resolution": "PASS: actual resolvePolicyValues helper resolves policies; compact rules context matches all referenced user claims",
+  "application_access_checks": [
+    {
+      "variant": "01-employee",
+      "name": "self_name",
+      "expected_allowed": true,
+      "passed": true
+    },
+    {
+      "variant": "01-employee",
+      "name": "denied_id_aggregate",
+      "expected_allowed": false,
+      "passed": true
+    },
+    {
+      "variant": "01-employee",
+      "name": "denied_project",
+      "expected_allowed": false,
+      "passed": true
+    },
+    {
+      "variant": "01-employee",
+      "name": "denied_bank_transform",
+      "expected_allowed": false,
+      "passed": true
+    },
+    {
+      "variant": "02-manager",
+      "name": "department_counts",
+      "expected_allowed": true,
+      "passed": true
+    },
+    {
+      "variant": "02-manager",
+      "name": "denied_pay_aggregate",
+      "expected_allowed": false,
+      "passed": true
+    },
+    {
+      "variant": "02-manager",
+      "name": "denied_attendance",
+      "expected_allowed": false,
+      "passed": true
+    },
+    {
+      "variant": "03-admin",
+      "name": "allowed_pay_aggregate",
+      "expected_allowed": true,
+      "passed": true
+    },
+    {
+      "variant": "03-admin",
+      "name": "denied_storage_uri",
+      "expected_allowed": false,
+      "passed": true
+    },
+    {
+      "variant": "03-admin",
+      "name": "denied_inherited_table",
+      "expected_allowed": false,
+      "passed": true
+    }
+  ],
+  "isolated_direct_ownership_checks": [
+    {
+      "variant": "01-employee",
+      "name": "self_guard_with_tenant_repair",
+      "expected_pass": true,
+      "status": "REPAIRED",
+      "reason": null,
+      "passed": true
+    },
+    {
+      "variant": "01-employee",
+      "name": "other_employee_blocked",
+      "expected_pass": false,
+      "status": "BLOCKED",
+      "reason": "ROW_FILTER_MISMATCH",
+      "passed": true
+    },
+    {
+      "variant": "01-employee",
+      "name": "missing_self_guard_blocked",
+      "expected_pass": false,
+      "status": "BLOCKED",
+      "reason": "ROW_FILTER_MISMATCH",
+      "passed": true
+    },
+    {
+      "variant": "01-employee",
+      "name": "optional_self_guard_blocked",
+      "expected_pass": false,
+      "status": "BLOCKED",
+      "reason": "ROW_FILTER_MISMATCH",
+      "passed": true
+    },
+    {
+      "variant": "01-employee",
+      "name": "left_join_guards",
+      "expected_pass": true,
+      "status": "REPAIRED",
+      "reason": null,
+      "passed": true
+    },
+    {
+      "variant": "01-employee",
+      "name": "draft_review_blocked",
+      "expected_pass": false,
+      "status": "BLOCKED",
+      "reason": "ROW_FILTER_MISMATCH",
+      "passed": true
+    },
+    {
+      "variant": "01-employee",
+      "name": "confidential_document_blocked",
+      "expected_pass": false,
+      "status": "BLOCKED",
+      "reason": "ROW_FILTER_MISMATCH",
+      "passed": true
+    },
+    {
+      "variant": "02-manager",
+      "name": "department_guard",
+      "expected_pass": true,
+      "status": "REPAIRED",
+      "reason": null,
+      "passed": true
+    },
+    {
+      "variant": "02-manager",
+      "name": "other_department_blocked",
+      "expected_pass": false,
+      "status": "BLOCKED",
+      "reason": "ROW_FILTER_MISMATCH",
+      "passed": true
+    },
+    {
+      "variant": "02-manager",
+      "name": "missing_department_guard_blocked",
+      "expected_pass": false,
+      "status": "BLOCKED",
+      "reason": "ROW_FILTER_MISMATCH",
+      "passed": true
+    },
+    {
+      "variant": "02-manager",
+      "name": "missing_finalized_status_blocked",
+      "expected_pass": false,
+      "status": "BLOCKED",
+      "reason": "ROW_FILTER_MISMATCH",
+      "passed": true
+    },
+    {
+      "variant": "02-manager",
+      "name": "project_owner_guard",
+      "expected_pass": true,
+      "status": "REPAIRED",
+      "reason": null,
+      "passed": true
+    },
+    {
+      "variant": "03-admin",
+      "name": "tenant_root_correct_key",
+      "expected_pass": true,
+      "status": "REPAIRED",
+      "reason": null,
+      "passed": true
+    },
+    {
+      "variant": "03-admin",
+      "name": "recruitment_composite_join",
+      "expected_pass": true,
+      "status": "REPAIRED",
+      "reason": null,
+      "passed": true
+    },
+    {
+      "variant": "03-admin",
+      "name": "inherited_source_unregistered",
+      "expected_pass": false,
+      "status": "CANNOT_REPAIR",
+      "reason": "UNKNOWN_TENANT_OWNERSHIP",
+      "passed": true
+    },
+    {
+      "variant": "03-admin",
+      "name": "shared_source_unsupported",
+      "expected_pass": false,
+      "status": "CANNOT_REPAIR",
+      "reason": "UNKNOWN_TENANT_OWNERSHIP",
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "No runtime files changed; isolation checks use a process-local 51-direct-table registry derived from the dump.",
+    "Shared/derived sources remain unsupported, as documented; positive checks are not live end-to-end readiness claims.",
+    "No database connection, SQL execution, LLM generation, NER or masking verification was performed."
+  ]
+}

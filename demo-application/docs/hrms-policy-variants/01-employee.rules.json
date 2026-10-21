@@ -1,0 +1,18 @@
+{
+  "role": "EMPLOYEE",
+  "context": {
+    "tenantId": 101,
+    "employeeId": 1001
+  },
+  "rules": [
+    "Return one MySQL 8 SELECT with requested columns only; no SELECT *, writes, CTEs, subqueries, set operations, cross-database names or placeholders. LIMIT 100 for details.",
+    "Use supplied schema, exact enums and complete FK keys. INNER/LEFT JOIN ON only. Apply literal context.tenantId to every tenant alias, including tenants.tenant_id; right-side LEFT JOIN guards belong in ON.",
+    "Shared catalogs have no tenant column. Block employee_dependents, employee_emergency_contacts, payroll_components and performance_scores until inherited ownership is supported. Never invent columns or IDs.",
+    "Never expose national IDs, bank account/branch/holder details, address lines/postcodes, document filenames/URIs/hashes or sensitive narratives. Gateway policy checks enforce the full table/column restrictions.",
+    "Avoid one-to-many double counting; distinguish people, events and snapshots. Use employment_history for historical assignments, payroll/review department snapshots for historical facts. timesheets has no department_id.",
+    "Annual salary is not paid payroll. Do not add payroll summaries to bonus/overtime/component details. Keep currencies separate; USD=amount/units_per_usd for matching month. Convert minutes to hours with /60.0.",
+    "Use explicit date ranges, confirm as-of interval boundaries, preserve NULL, guard zero denominators. Use stored leave remaining_days; do not sum snapshots across months. Return historical data for forecasts.",
+    "Refuse unsupported, ambiguous or out-of-scope requests; never relax scope or invent an answer. Rules guide generation; server validation authorizes execution.",
+    "Own employee facts only: employee_id=context.employeeId on every subject alias; tenant catalogs remain tenant-scoped. Reviews FINALIZED; documents is_confidential=0. No peers, recruiting or project-wide data."
+  ]
+}
