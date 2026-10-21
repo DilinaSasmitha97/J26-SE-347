@@ -6,6 +6,7 @@ import DataPresentation from '../components/DataPresentation.jsx';
 import PredictionCard from '../components/PredictionCard.jsx';
 import IntentClassificationCard, { INTENT_LABELS, PRESENTATION_TYPE_LABELS } from '../components/IntentClassificationCard.jsx';
 import TenantIsolationCard from '../components/TenantIsolationCard.jsx';
+import AstTraceDialog from '../components/AstTraceDialog.jsx';
 
 // The browser supplies the operator's pasted context to the Node demo gateway.
 // The gateway validates it before generation, verification and masked execution.
@@ -324,6 +325,8 @@ function InspectionCard({ inspect, policy }) {
 }
 
 function DecisionCard({ verify }) {
+  const [trace, setTrace] = useState(null);
+  const traceButton = useRef(null);
   if (!verify) return null;
   if (verify.error) {
     return (
@@ -335,6 +338,7 @@ function DecisionCard({ verify }) {
     );
   }
   const r = verify.result;
+  const closeTrace = () => { setTrace(null); requestAnimationFrame(() => traceButton.current?.focus()); };
   return (
     <div className={`decision-result pl-result-card ${r.passed ? 'is-pass' : 'is-fail'}`} aria-live="polite">
       <div className="decision-topline">
@@ -347,18 +351,26 @@ function DecisionCard({ verify }) {
       </div>
       <p className="decision-message">{r.message}</p>
       <div className="check-list">
-        {r.checks.map((check) => (
-          <div className="check-item" key={check.label}>
-            <span className={`check-mark ${check.passed ? 'pass' : 'fail'}`}><Icon name={check.passed ? 'check' : 'close'} size={15} /></span>
-            <div>
-              <strong>{check.label}</strong>
-              <p>{check.message}</p>
-              {check.reason && <p className="pl-mono pl-reason">{check.reason}</p>}
-            </div>
-            <span className={`mini-status ${check.passed ? 'pass' : 'fail'}`}>{check.passed ? 'Passed' : 'Failed'}</span>
-          </div>
-        ))}
+        {r.checks.map((check) => {
+          const body = (
+            <>
+              <span className={`check-mark ${check.passed ? 'pass' : 'fail'}`}><Icon name={check.passed ? 'check' : 'close'} size={15} /></span>
+              <div>
+                <strong>{check.label}</strong>
+                <p>{check.message}</p>
+                {check.reason && <p className="pl-mono pl-reason">{check.reason}</p>}
+                {check.astTrace && <span className="check-link"><Icon name="code" size={13} /> View AST breakdown</span>}
+              </div>
+              <span className={`mini-status ${check.passed ? 'pass' : 'fail'}`}>{check.passed ? 'Passed' : 'Failed'}</span>
+            </>
+          );
+          return check.astTrace ? (
+            <button type="button" className="check-item is-clickable" key={check.label} ref={traceButton}
+              onClick={() => setTrace(check.astTrace)} aria-haspopup="dialog">{body}</button>
+          ) : <div className="check-item" key={check.label}>{body}</div>;
+        })}
       </div>
+      {trace && <AstTraceDialog trace={trace} onClose={closeTrace} />}
       <div className="inspection-summary">
         <div className="summary-heading"><span>Evaluated context</span><span className="source-badge">backend</span></div>
         <dl>
