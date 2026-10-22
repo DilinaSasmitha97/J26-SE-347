@@ -1,0 +1,13 @@
+{
+  "policyId": "policy-security-layer-demo",
+  "version": "1.0",
+  "role": "ADMIN",
+  "allowedOperations": ["SELECT"],
+  "allowedTables": ["employees", "departments", "attendance_records"],
+  "deniedColumns": ["employees.marital_status", "employees.termination_reason"],
+  "rowRules": [
+    { "table": "employees", "field": "tenant_id", "operator": "=", "valueFrom": "tenantId" },
+    { "table": "departments", "field": "tenant_id", "operator": "=", "valueFrom": "tenantId" },
+    { "table": "attendance_records", "field": "tenant_id", "operator": "=", "valueFrom": "tenantId" }
+  ]
+}

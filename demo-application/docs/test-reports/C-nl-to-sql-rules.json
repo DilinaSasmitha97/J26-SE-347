@@ -1,0 +1,9 @@
+{
+  "role": "ADMIN",
+  "context": { "tenantId": 101 },
+  "rules": [
+    "Return one MySQL 8 SELECT with the requested columns only; never SELECT *, writes, UNION or multiple statements.",
+    "Use only employees, departments and attendance_records. Join departments ON d.department_id = e.department_id.",
+    "Filter every table by tenant_id = 101 and add LIMIT 10 to detail queries."
+  ]
+}
